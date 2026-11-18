@@ -35,6 +35,8 @@ export const SKILLS = {
 export const BUFFS = {
   medita: { name: '🧘 Concentración', atk: 1.25, def: 1.25, regen: 0.012 },
   furia: { name: '📣 Furia', atk: 1.4 },
+  descanso: { name: '😴 Descansado', xp: 1.1 },
+  juntos: { name: '💞 Juntos', atk: 1.1, def: 1.1 },
 };
 
 export function installSkills(Game, D) {

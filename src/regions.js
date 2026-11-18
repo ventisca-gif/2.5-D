@@ -283,6 +283,11 @@ export const ROOMS = [
     items: [['hay', 0, 0], ['hay', 0, 1], ['bed', 6, 1, Math.PI / 2, 1, 2], ['table', 3, 1], ['stool', 3, 2, 0, 1, 1, false], ['barrel', 6, 4], ['fireplace', 3, 0, 0, 1, 1, true], ['window', 5, 0, 0, 1, 1, false]],
     npcs: [{ id: 'ramon', name: 'Abuelo Ramón', x: 2, z: 2, wander: 1, look: { shirt: 0x7a6a4a, pants: 0x4a3a2a, hair: 0xe0e0e0, beard: 0xe8e8e8, hat: 'straw', skin: 0xe0aa80 } }],
   },
+  {
+    id: 'casa5', name: 'Tu casa en Villarroca', w: 9, d: 6, floor: 0xb89062, wall: 0xf0e4c8, wood: 0x6a4428,
+    items: [['bed', 8, 1, 0, 1, 2], ['window', 3, 0, 0, 1, 1, false], ['window', 6, 0, 0, 1, 1, false], ['fireplace', 0, 2, Math.PI / 2], ['poster', 0, 4, Math.PI / 2, 1, 1, false]],
+    npcs: [],
+  },
 ];
 
 export function makeInteriors(buildings) {

@@ -184,6 +184,8 @@ export function dialogFor(id, G) {
   } else if (id === 'mara') {
     text = text || NPC_LINES.mara[Math.floor(Math.random() * 2)];
     sell('potion', 10, '🍶 Ron de contrabando (10 oro)');
+    opts.push({ label: '🦜 Loro parlanchín (500 oro)', action: () => G.adoptPet('loro', { gold: 500 }) });
+    opts.push({ label: '🐒 Mono ladronzuelo (700 oro)', action: () => G.adoptPet('mono', { gold: 700 }) });
     sell('sable_corsario', 260);
     sell('tricornio', 120);
     sell('amuleto_coral', 200);
@@ -192,7 +194,7 @@ export function dialogFor(id, G) {
     sell('potion', 15);
     sell('f_meat', 12);
     sell('f_bread', 6);
-    if (id === 'coral') sell('f_fish', 12);
+    if (id === 'coral') { sell('f_fish', 12); opts.push({ label: '🐈 Adoptar al gato del puerto (300 oro)', action: () => G.adoptPet('gato', { gold: 300 }) }); }
     opts.push({ label: '🍲 Sopa caliente: curar todo (5 oro)', action: () => G.buy({ gold: 5 }, () => { P.hp = P.maxHp; G.toast('❤️ Salud al máximo'); }) });
   } else if (id === 'lucia') {
     text = text || NPC_LINES.lucia[1];
@@ -203,9 +205,14 @@ export function dialogFor(id, G) {
     sell('fish', 5);
   } else if (id === 'nerea' && QUESTS[G.quest.stage] && G.quest.stage >= 8) {
     sell('casaca_corsario', 220);
+  } else if (id === 'lope') {
+    text = text || NPC_LINES.lope[0];
+    if (!G.flags.house) opts.push({ label: '🏠 Comprar la casa de la plaza (6000 oro)', action: () => G.buyHouse() });
+    else text = '¿Qué tal la casa? Recuerda que dentro puedes dormir y decorarla a tu gusto.';
   } else if (id === 'marga') {
     text = text || NPC_LINES.marga[0];
     opts.push({ label: '⚓ Astillero: mejorar y reparar', action: () => G.openShipyard() });
+    opts.push({ label: '🏴 Diseñar la bandera de tu tripulación', action: () => G.designFlag() });
   } else if (id === 'selim') {
     text = text || NPC_LINES.selim[1];
     sell('bandana_roja', 80); sell('gorra_marinera', 120); sell('camisa_marinera', 150); sell('chaqueta_pirata', 380); sell('sombrero_capitan', 450);
@@ -235,6 +242,8 @@ export function dialogFor(id, G) {
     const total = mats.reduce((a, [k, n]) => a + n * ITEMS[k].value, 0);
     opts.push({ label: `💰 Vender materiales (${total} oro)`, action: () => { if (!total) return G.toast('No tienes materiales'); for (const [k] of mats) P.inv[k] = 0; P.gold += total; G.sfx('coin'); G.toast(`+${total} oro`); } });
   }
+  if (id === 'nerea') opts.push({ label: `🏁 Regata alrededor de Isla Bruma (50 oro)${G.stats.raceBest ? ' · récord ' + G.stats.raceBest + 's' : ''}`, action: () => G.buy({ gold: 50 }, () => G.startRace()) });
+  if (id === 'marisol') opts.push({ label: '⚔️ Torneo de duelos de Villarroca (1 al día)', action: () => G.startTournament() });
   if (!text) {
     const lines = NPC_LINES[id] || ['...'];
     text = lines[Math.floor(Math.random() * lines.length)];

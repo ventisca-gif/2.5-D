@@ -267,6 +267,14 @@ export function installNaval(Game, D) {
     this.jobXp && this.jobXp('marinero', 25);
     this.contractTick && this.contractTick('ship', 'ship');
     this.addBounty(s.type === 'marine' ? 150 : 40, 'ship_' + s.type);
+    if (s.famous && !s.boarded) {
+      // el famoso escapa en un bote, pero su recompensa cuenta
+      const st = this.famous[s.famous.id];
+      p.gold += Math.round(st.bounty / 400);
+      this.addBounty(Math.round(st.bounty * 0.1), 'famous_' + s.famous.id);
+      this.famousDefeated(s.famous.id);
+      this.toast(`🚣 ${s.famous.name} escapa en un bote... ¡pero has hundido su barco!`);
+    }
     this.toast(s.type === 'marine' ? '💥 ¡Fragata de la Marina hundida!' : '💥 ¡Barco pirata hundido!', 'area');
     this.puff(s.x, 1, s.z, 0x8a8a8a, true);
     sfx('quest');
@@ -295,6 +303,7 @@ export function installNaval(Game, D) {
         const r = Math.random();
         if (alive < 2) {
           if (!this.isMarine() && (this.bounty || 0) >= 100 && r < 0.3 + Math.min(0.4, (this.bounty || 0) / 8000)) this.spawnEnemyShip('marine');
+          else if (r < 0.45 && p.level >= 20 && Math.random() < 0.35 && this.spawnFamousShip()) { /* barco de un pirata famoso */ }
           else if (r < (deep ? 0.75 : 0.5)) this.spawnEnemyShip('pirate');
           else if (deep && p.level >= 35 && Math.random() < 0.3 && this.playtime - (this.levT || -9999) > 600) { this.levT = this.playtime; this.leviathanAttack(); }
           else if (deep && !N.serpents.some((s) => !s.dead) && p.level >= 15) this.spawnSerpent();
@@ -312,7 +321,7 @@ export function installNaval(Game, D) {
         continue;
       }
       const dx = b.x - s.x, dz = b.z - s.z, d = Math.hypot(dx, dz);
-      if (!this.sailing || d > 70) { this.scene.remove(s.mesh); s.label.el.remove(); N.ships.splice(i, 1); continue; }
+      if (!this.sailing || d > 70) { if (s.famous && this.famous[s.famous.id].isle === 'mar') this.famous[s.famous.id].isle = 'tortuga'; this.scene.remove(s.mesh); s.label.el.remove(); N.ships.splice(i, 1); continue; }
       const toP = Math.atan2(dx, dz);
       const want = d > 10 ? toP : toP + (Math.PI / 2) * s.side;
       const diff = angDiff(want, s.heading);
@@ -570,6 +579,15 @@ export function installNaval(Game, D) {
     this.viewTarget = this.isMobile ? 12 : 13.5;
     const n = clamp(3 + Math.floor(ship.level / 15), 3, 7);
     const type = ship.type === 'marine' ? 'marine' : 'pirate';
+    if (ship.famous) {
+      // el pirata famoso defiende su cubierta en persona
+      ship.boarded = true;
+      const f = ship.famous, key = this.famousDef(f);
+      const fe = this.makeEnemy(key, ARENA_X + 9, ARENA_Z + 6, this.famous[f.id].lvl);
+      fe.temp = true; fe.famous = f; fe.provoked = true; fe.state = 'chase'; fe.updateColor();
+      if (this.net.isClient && this.net.active) fe.local = true; else this.net.announceSpawn(fe);
+      this.boarding.temps.push(fe);
+    }
     const spots = [];
     for (let z = 3; z <= 10; z++) for (let x = 8; x <= 10; x++) spots.push([ARENA_X + x, ARENA_Z + z]);
     spots.sort(() => Math.random() - 0.5);
@@ -583,15 +601,14 @@ export function installNaval(Game, D) {
     sfx('quest');
   };
   P.spawnTemp = function (type, x, z, lvl) {
-    const s = { area: [x, z, x, z], lvl: [lvl, lvl] };
-    const e = new D.Enemy(this, type, s, s.lvl);
+    const e = this.makeEnemy(type, x, z, lvl);
     e.temp = true;
     e.provoked = true;
-    e.x = x; e.z = z; e.home = { x, z };
-    e.idx = this.enemies.length;
     e.state = 'chase';
+    // en un cliente, lo que aparece solo para ti (tu abordaje, tu torneo...) lo controla tu juego
+    if (this.net.isClient && this.net.active) e.local = true;
     e.updateColor();
-    this.enemies.push(e);
+    setTimeout(() => this.net.announceSpawn(e), 0);
     return e;
   };
   P.updateBoarding = function (dt) {
@@ -632,6 +649,7 @@ export function installNaval(Game, D) {
     }
   };
   P.purgeTemps = function () {
+    if (this.net.isHost && this.net.active) return; // los índices deben seguir iguales para los clientes
     const base = this.enemies.slice(0, this.baseEnemies);
     const rest = this.enemies.slice(this.baseEnemies).filter((e) => !e.removed);
     this.enemies = base.concat(rest);

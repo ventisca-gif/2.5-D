@@ -24,7 +24,8 @@ import { installNaval, makeArenaRegion } from './naval.js';
 import { installLife, FAMOUS } from './life.js';
 import { installSkills } from './skills.js';
 import { installBuild } from './build.js';
-import { installExtra } from './extra.js';
+import { installExtra, EVENT_COS } from './extra.js';
+import { installMore, makeDungeonRegion } from './more.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -86,6 +87,7 @@ const ENEMY_DEF = {
   serafin: { name: 'Azrael, el Serafín Caído', hp: () => 26000, atk: () => 270, speed: 3.0, xp: () => 30000, gold: () => 6000, aggro: 7, cd: 1.3, boss: true, super: 'serafin', bounty: 5000 },
   dragon: { name: 'Ignaros, el Dragón Rey', hp: () => 32000, atk: () => 300, speed: 2.4, xp: () => 36000, gold: () => 7000, aggro: 7, cd: 1.6, boss: true, super: 'dragon', bounty: 6000 },
   leviathan: { name: 'Leviatán Abisal', hp: (L) => 7000 + L * 90, atk: (L) => 40 + L * 2.6, speed: 0, xp: () => 0, gold: () => 0, aggro: 12, cd: 2.2, boss: true, super: 'leviathan' },
+  crypt_king: { name: 'Rey de la Cripta', hp: (L) => 1800 + L * 90, atk: (L) => 12 + L * 2.6, speed: 2.4, xp: (L) => 400 + L * 40, gold: (L) => 100 + L * 8, aggro: 9, cd: 1.5, boss: true, super: 'crypt' },
   tentacle: { name: 'Tentáculo', hp: (L) => 900 + L * 18, atk: (L) => 20 + L * 2, speed: 0, xp: (L) => 200 + L * 10, gold: (L) => 30 + L, aggro: 12, cd: 1.8 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
@@ -252,7 +254,7 @@ class Player extends Actor {
         const e = this.pendingHit.e;
         this.pendingHit = null;
         if (!e.dead && this.dist(e) < 2.2) {
-          const crit = Math.random() < 0.12;
+          const crit = Math.random() < 0.12 + (g.petCrit ? g.petCrit() : 0);
           const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1)));
           if (e.isRemote) { if (g.net.pvpHit(e, dmg)) g.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, 1.4, e.z); }
           else if (e.isNPC) g.damageNPC(e, dmg, crit); else g.hitEnemy(e, dmg, crit);
@@ -648,6 +650,7 @@ class Enemy extends Actor {
     else if (type === 'skull') model = makeFlameSkull();
     else if (type === 'serafin') model = HUM({ ...EQUIP.c_serafin.look, ...EQUIP.c_alas_serafin.look, sword: true, blade: 0xfff4c0, bladeLen: 0.7, guard: 0xffd040, skin: 0xf0d8c0, anime: true, female: false, eyeColor: 3 });
     else if (type === 'dragon') model = HUM({ ...EQUIP.c_dragon.look, axe: true, skin: 0x8a3a2a, anime: true, eyeColor: 1 });
+    else if (type === 'crypt_king') model = HUM({ bone: 0xe0d8c0, hat: 'horned', hatColor: 0xd8d0b8, hornColor: 0x3a3030, cape: 0x3a0a1a, sword: true, blade: 0x7aff8a, guard: 0xd8a838, eyeGlow: 0x7aff8a, pauldron: 0x3a3040, trim: 0xd8a838 });
     else if (type === 'tentacle' || type === 'leviathan') model = makeTentacleModel(type === 'leviathan');
     else if (type.startsWith('famous_')) { const f = FAMOUS.find((k) => 'famous_' + k.id === type); model = HUM(animeLook({ id: f.id, look: f.look })); }
     else if (type === 'marine' || type === 'marine_boss') model = HUM(MARINE_LOOK(type === 'marine_boss' ? 2 : seed % 5 === 0 ? 1 : 0, seed));
@@ -665,6 +668,7 @@ class Enemy extends Actor {
     if (type.startsWith('famous_')) model_scale(model, 1.18);
     if (type === 'serafin') model_scale(model, 1.6);
     if (type === 'dragon') model_scale(model, 1.75);
+    if (type === 'crypt_king') model_scale(model, 1.55);
     this.type = type;
     this.def = ENEMY_DEF[type];
     this.spawnDef = spawn;
@@ -777,7 +781,7 @@ class Enemy extends Actor {
   }
   update(dt) {
     const g = this.g;
-    if (g.net.isClient && g.net.active) { this.netUpdate(dt); return; }
+    if (g.net.isClient && g.net.active && !this.local) { this.netUpdate(dt); return; }
     if (this.stunT > 0 && !this.dead) { this.stunT -= dt; this.st.moving = false; return; }
     if (this.def.super) this.superTick(dt);
     if (this.model.kind === 'tentacle' && !this.dead) { this.model.root.rotation.z = Math.sin(this.g.time * 1.7 + this.idx) * 0.12; if (this.st.attackT > 0) this.model.root.rotation.x = Math.sin(this.st.attackT * 10) * 0.5; else this.model.root.rotation.x = 0; }
@@ -899,7 +903,8 @@ class Game {
     this.addPosters();
     this.arena = makeArenaRegion();
     this.addMarga();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena]);
+    this.dungeon = makeDungeonRegion();
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -912,6 +917,7 @@ class Game {
     this.sailing = false;
     this.flags = {};
     this.posters = [];
+    this.caves = [];
     this.side = {};
     this.chests = [];
     this.social = {};
@@ -1033,6 +1039,7 @@ class Game {
       if (p.type === 'campfire') this.stations.push({ type: 'fuego', x: p.x, z: p.z });
       if (p.type === 'forge') this.stations.push({ type: 'forja', x: p.x, z: p.z });
       if (p.type === 'poster') this.posters.push({ x: p.x, z: p.z });
+      if (p.type === 'cave') this.caves.push({ x: p.x, z: p.z + 1 });
       if (p.type === 'chest') this.chests.push({ id: p.id || `cofre_${p.x}_${p.z}`, x: p.x, z: p.z, loot: p.loot || { gold: 30 } });
     }
     for (const r of this.rooms) {
@@ -1465,6 +1472,7 @@ class Game {
   }
   enterRoom(r) {
     const p = this.player;
+    if (r.id === 'casa5' && !this.flags.house) { this.toast('🏠 Se vende. Habla con el Escribano Lope (Ayuntamiento): 6000 oro'); p.path = []; p.target = null; return; }
     p.x = r.inside.x; p.z = r.inside.z; p.path = []; p.target = null;
     setTimeout(() => this.placeFollowers(p.tx, p.tz), 0);
     p.face = Math.PI;
@@ -1619,6 +1627,7 @@ class Game {
     const p = this.player;
     if (this.flags[c.id]) return this.ui.toast('El cofre está vacío');
     this.flags[c.id] = true;
+    if (Math.random() < 0.5) setTimeout(() => this.addTreasureMap(), 1200);
     const gold = c.loot.gold || 0, pot = c.loot.potion || 0;
     p.gold += gold;
     p.inv.potion += pot;
@@ -1702,7 +1711,19 @@ class Game {
     for (const c of this.chests) {
       if (!this.flags[c.id] && Math.max(Math.abs(c.x - p.tx), Math.abs(c.z - p.tz)) <= 1) return { icon: '🎁', label: 'Abrir', fn: () => p.setTarget({ kind: 'chest', ref: c }) };
     }
+    if (this.dgLock) void 0;
     for (const ps of this.posters) if (Math.hypot(ps.x - p.x, ps.z - p.z) < 1.7) return { icon: '📜', label: 'Se busca', fn: () => this.panels.openPosters() };
+    if (this.inDungeon()) {
+      if (Math.hypot(p.x - this.dungeon.exit.x, p.z - this.dungeon.exit.z) < 1.8) return { icon: '🚪', label: 'Salir', fn: () => this.leaveDungeon() };
+    }
+    for (const c of this.caves) if (Math.hypot(c.x - p.x, c.z - p.z) < 1.9) return { icon: '🕯️', label: 'Cripta', fn: () => this.enterDungeon(c) };
+    const tm = this.mapNear();
+    if (tm) return { icon: '⛏️', label: 'Cavar', fn: () => this.dig(tm) };
+    const room0 = this.roomAt(p.x, p.z);
+    if (room0 && room0.id === 'casa5') {
+      const bd = room0.room.items.find((it) => it[0] === 'bed');
+      if (bd && Math.hypot(room0.X + bd[1] - p.x, room0.Z + bd[2] - p.z) < 1.8) return { icon: '😴', label: 'Dormir', fn: () => this.sleepHere() };
+    }
     const hold = this.inHold();
     if (hold) {
       const dn = this.decorNear();
@@ -1829,8 +1850,17 @@ class Game {
   }
 
   // golpe a un enemigo: en un cliente se lo manda al anfitrión
+  // crea un enemigo suelto (lo usan el multijugador y los sistemas de eventos)
+  makeEnemy(type, x, z, lvl) {
+    const s = { area: [Math.round(x), Math.round(z), Math.round(x), Math.round(z)], lvl: [lvl, lvl] };
+    const e = new Enemy(this, type, s, s.lvl);
+    e.x = x; e.z = z; e.home = { x: Math.round(x), z: Math.round(z) };
+    e.idx = this.enemies.length;
+    this.enemies.push(e);
+    return e;
+  }
   hitEnemy(e, dmg, crit, byCrew) {
-    if (this.net.isClient && this.net.active) {
+    if (this.net.isClient && this.net.active && !e.local) {
       this.net.hit(e, dmg, crit);
       e.st.flash = 0.18;
       this.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, e.model.height + 0.2, e.z);
@@ -1881,6 +1911,8 @@ class Game {
       if (Math.random() < (type === 'boss' ? 1 : 0.08)) { p.inv.potion++; this.ui.toast('🍶 ¡Encontraste ron curativo!'); }
       let k = 0;
       this.jobXp('cazador', 2 + Math.floor(level / 10));
+      this.petOnKill(x, z);
+      if (Math.random() < 0.015) this.addTreasureMap();
       this.contractTick('kill', type);
       const dropK = 1 + this.jobLevel('cazador') * 0.02;
       for (const [id, ch] of DROPS[type] || []) if (Math.random() < ch * dropK) setTimeout(() => this.give(id, 1, x, z), 350 + 250 * k++);
@@ -1894,7 +1926,7 @@ class Game {
     p.gainXp(xp);
     this.crewGainXp(xp);
     this.onKill(type);
-    if (type.startsWith('famous_')) { this.onKill('famous'); if (isKiller || true) this.famousDefeated(type.slice(7)); }
+    if (type.startsWith('famous_')) { this.onKill('famous'); this.famousDefeated(type.slice(7)); if (isKiller) this.addTreasureMap(); }
   }
   // el anfitrión elige a quién persigue cada enemigo (el jugador vivo más cercano)
   enemyTarget(e) {
@@ -1924,6 +1956,8 @@ class Game {
     const crew = r.crew && r.crew.length ? r.crew.join(', ') : 'sin tripulación';
     const txt = `Nivel ${r.lv}. Tripulación: ${crew}. ${r.partner ? 'Pareja: ' + r.partner + '. ' : ''}${team ? 'Es de tu equipo.' : ''}`;
     const opts = [];
+    if (!this.spouseP && !this.partner()) opts.push({ label: '💍 Pedir matrimonio', action: () => this.proposeRemote(r) });
+    if (r.spouse) opts.unshift({ label: `💒 Casado/a con ${r.spouse}`, action: null });
     if (!team) opts.push({ label: '🤝 Invitar a mi equipo', action: () => this.net.invite(r.id) });
     else opts.push({ label: '🚪 Salir del equipo', action: () => this.net.leaveTeam() });
     if (this.net.room.pvp && !team) opts.push({ label: '⚔️ Atacar (PvP)', action: () => { this.player.setTarget({ kind: 'enemy', ref: r }); this.selection.visible = true; this.selTarget = r; } });
@@ -2112,6 +2146,8 @@ class Game {
       v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
       inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
       playtime: Math.round(this.playtime), day: this.day, area: this.boarding ? 'Mar de Bruma' : this.W.areaName(p.tx, p.tz), ...pos,
+      pets: this.ownPets || [], pet: this.petType || null, petXp: this.petXp || {}, flagCfg: this.flagCfg || null, love: this.loveData || null, spouseP: this.spouseP || null,
+      tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow })) : [], townDef: this.townDef || {},
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
@@ -2310,6 +2346,11 @@ class Game {
     if (data.famous) { this.famousInit(); for (const [k, v] of Object.entries(data.famous)) if (this.famous[k]) Object.assign(this.famous[k], v); }
     if (data.weather) this.weather = data.weather;
     this.jobs = data.jobs || {};
+    this.ownPets = data.pets || []; this.petXp = data.petXp || {}; this.setPet(data.pet || null);
+    this.flagCfg = data.flagCfg || null; this.loveData = data.love || null; this.spouseP = data.spouseP || null;
+    this.tmaps = data.tmaps || []; this.player.inv.mapa_tesoro = this.tmaps.length; this.raceBoard = data.raceBoard || [];
+    if (this.flagCfg) this.applyFlag(this.ship, this.flagCfg);
+    { const hr = this.houseRoom(); if (hr && hr.doorLabel) hr.doorLabel.nm.textContent = this.flags && data.flags && data.flags.house ? '🏠 Tu casa' : '🏠 Se vende'; }
     this.jobBoard = data.jobBoard || null;
     this.wardrobe = data.wardrobe || [];
     this.migrateCos();
@@ -2503,6 +2544,7 @@ class Game {
     }
     if (ROMANCE.has(n.id)) {
       if (s.partner) {
+        o.push({ label: `💌 Citas (${Object.keys(this.love().dates).length}/5)${s.married ? ' 💒' : ''}`, action: () => this.dateMenu(n) });
         o.push({ label: '💋 Besar', action: () => this.coupleAct(n, 'kiss') });
         o.push({ label: '🤗 Abrazar', action: () => this.coupleAct(n, 'hug') });
         o.push({ label: '💃 Bailar juntos', action: () => this.coupleAct(n, 'dance') });
@@ -2522,7 +2564,8 @@ class Game {
     if (!p.inv[id]) return;
     p.inv[id]--;
     const it = ITEMS[id];
-    const likes = (GIFT_LIKES[n.id] || []).includes(id);
+    const likes = (GIFT_LIKES[n.id] || []).includes(id) || ((id === 'collar_perlas' || id === 'anillo_jade') && this.soc(n.id).partner);
+    if (this.soc(n.id).partner && (id === 'collar_perlas' || id === 'anillo_jade')) this.dateDone('regalo');
     const v = likes ? 15 : id.startsWith('f_') ? 10 : it.type === 'mat' && it.value >= 10 ? 7 : 4;
     this.addFriend(n, v);
     this.ui.openDialog(n.name, likes ? `¡¿${it.name}?! ¡Es mi favorito! Muchísimas gracias.` : `Oh, ${it.name.toLowerCase()}. ¡Gracias, qué detalle!`, [{ label: 'De nada', action: null }]);
@@ -2770,6 +2813,13 @@ class Game {
       this.updateRaids(dt);
       this.updateFamous(dt);
       this.updateFishing(dt);
+      this.updatePet(dt);
+      this.updateLove(dt);
+      this.updateRace(dt);
+      this.updateTournament(dt);
+      this.updateDungeon(dt);
+      this.updateRemoteExtras(dt);
+      this.mapT = (this.mapT || 0) - dt; if (this.mapT <= 0) { this.mapT = 1; this.updateMaps(); }
       this.updateEvents(dt);
       this.updateSkills && this.updateSkills(dt);
       this.updateBuild && this.updateBuild(dt);
@@ -2968,6 +3018,7 @@ installLife(Game, { sfx, Enemy, buildLook, animeLook });
 installSkills(Game, { sfx, EQUIP });
 installBuild(Game, { sfx, T });
 installExtra(Game, { sfx, Enemy, NPC, ITEMS, EQUIP, T });
+installMore(Game, { sfx, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
 
 window.addEventListener('load', () => {
   setTimeout(() => {

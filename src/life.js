@@ -51,6 +51,7 @@ export function installLife(Game, D) {
 
   // ============================================================ piratas famosos
   P.famousInit = function () {
+    this.famousList = FAMOUS;
     if (this.famous) return;
     this.famous = {};
     FAMOUS.forEach((f, i) => { this.famous[f.id] = { isle: ISLES[(i * 3 + 1) % ISLES.length], lvl: f.lvl, bounty: f.bounty, down: 0, moveT: 60 + Math.random() * 240 }; });
@@ -108,6 +109,7 @@ export function installLife(Game, D) {
         e.temp = true; e.famous = f; e.x = sp.x; e.z = sp.z; e.home = { ...sp };
         e.idx = this.enemies.length;
         this.enemies.push(e);
+        this.net.announceSpawn(e);
         this.famousActors[f.id] = e;
         if (f.tier === 2) this.toast(`🏴‍☠️ Se rumorea que ${f.name} «${f.ep}» está en ${ISLE_NAME[here]}`, 'area');
       } else if (actor && (!wantHere || actor.removed) && !actor.provoked) {

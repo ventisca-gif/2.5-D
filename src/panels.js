@@ -6,6 +6,7 @@ import { animateModel } from './characters.js';
 import { QUESTS, SIDE_QUESTS } from './quests.js';
 import { STRUCTS } from './build.js';
 import { JOBS, JOB_MAX, DECOR } from './extra.js';
+import { PETS } from './more.js';
 import { friendLevel, heartsText, MAX_CREW } from './social.js';
 
 const $ = (id) => document.getElementById(id);
@@ -54,6 +55,10 @@ export class Panels {
     if (act === 'cos') { g.equipCos(b.dataset.id); return this.openWardrobe(this.wslot); }
     if (act === 'cosoff') { g.unequip(this.wslot); return this.openWardrobe(this.wslot); }
     if (act === 'cosslot') return this.openWardrobe(b.dataset.slot);
+    if (act === 'mapclue') { const m = g.tmaps[Number(b.dataset.i)]; if ((p.inv.ficha || 0) < 1) { g.toast('Necesitas 1 ficha de gremio'); return; } p.inv.ficha--; m.known = true; return this.openBitacora('mapas'); }
+    if (act === 'pet') { g.setPet(b.dataset.id || null); return this.openBitacora('vida'); }
+    if (act === 'hatch') { if ((p.inv.huevo_dragon || 0) > 0) { p.inv.huevo_dragon--; g.adoptPet('dragon'); g.toast('🐲 ¡El huevo se abre! Nace tu cría de dragón', 'area'); } else if ((p.inv.ficha || 0) >= 30) { p.inv.ficha -= 30; g.adoptPet('dragon'); } else g.toast('Necesitas un huevo de dragón o 30 fichas'); return this.openBitacora('vida'); }
+    if (act === 'flag') { this.close(); g.designFlag(); return; }
     if (act === 'claim') { g.claimContract(Number(b.dataset.i)); return this.openBitacora('oficios'); }
     if (act === 'guild') { const c = g.cosPrice(b.dataset.id); if ((p.inv.ficha || 0) < c.tok) { g.toast('Te faltan fichas de gremio'); return; } p.inv.ficha -= c.tok; g.addCos(b.dataset.id); return this.openBitacora('oficios'); }
     if (act === 'decor') { this.close(); g.placeDecor(b.dataset.id); return; }
@@ -219,7 +224,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['oficios', '🛠 Oficios'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -229,6 +234,10 @@ export class Panels {
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
         <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'mapas') {
+      body = this.mapsHtml();
+    } else if (tab === 'vida') {
+      body = this.vidaHtml();
     } else if (tab === 'oficios') {
       body = this.oficiosHtml();
     } else if (tab === 'wanted') {
@@ -314,6 +323,29 @@ export class Panels {
       <div class="sub">🛠 Tablón de trabajos de hoy (día ${g.day + 1})</div>${cons}
       <div class="sub">🎟 Tienda del gremio</div>${shop}`;
   }
+  mapsHtml() {
+    const g = this.g;
+    const NAMES = { main: 'Isla Bruma', tortuga: 'Isla Tortuga', calavera: 'Isla Calavera', duna: 'Isla Duna', selva: 'Isla Selva', bastion: 'Bastión de la Marina', ceniza: 'Isla Ceniza' };
+    const list = (g.tmaps || []).map((m, i) => `<div class="tmap"><img src="${g.mapCanvas(m)}" alt=""><div><b>Mapa ${i + 1}</b><p>${esc(m.clue)}</p><p>${m.known ? `📍 Isla: <b>${NAMES[m.isle]}</b>. Busca la X y pulsa ⛏️ Cavar encima.` : '❔ Isla desconocida: compara la forma de la costa o visita islas.'}</p>${m.known ? '' : `<button class="pbtn small" data-p="mapclue" data-i="${i}">🔍 Descifrar con 1 ficha</button>`}</div></div>`).join('');
+    return `<p class="muted small">Los mapas salen de cofres, enemigos, la pesca, la cripta y los piratas famosos. Cada uno dibuja el terreno alrededor del tesoro: reconoce la isla, llega a la X y cava. Al pisar la isla correcta, el mapa se descifra solo.</p>${list || '<p class="muted">Aún no tienes mapas del tesoro.</p>'}`;
+  }
+  vidaHtml() {
+    const g = this.g, p = g.player, st = g.stats;
+    const own = g.ownPets || [];
+    const pets = Object.entries(PETS).map(([id, d]) => {
+      const has = own.includes(id);
+      const btn = has ? (g.petType === id ? '<span class="muted small">✔ Contigo</span>' : `<button class="pbtn small" data-p="pet" data-id="${id}">Llevar</button>`) : id === 'dragon' ? `<button class="pbtn small" data-p="hatch">🥚 Hacer nacer (${p.inv.huevo_dragon || 0} huevos)</button>` : `<span class="muted small">${esc(d.where)} · ${d.price} oro</span>`;
+      return `<div class="rec"><span class="rname">${d.icon} ${esc(d.name)}${has && g.petType === id ? ` · Nv. ${g.petLevel()}` : ''}</span><span class="small muted">${esc(d.perk)}</span>${btn}</div>`;
+    }).join('');
+    const flag = g.flagCfg ? `<img class="flagimg" src="${g.flagURL()}" alt="">` : '<span class="muted">sin diseñar</span>';
+    const L = g.love(), pt = g.partner();
+    const board = (g.raceBoard || []).map((r, i) => `<li>${i + 1}. ${esc(r.name)} — ${r.t}s</li>`).join('');
+    return `<div class="sub">🐾 Mascotas</div>${pets}${g.petType ? '<button class="pbtn small" data-p="pet" data-id="">Dejar a la mascota en casa</button>' : ''}
+      <div class="sub">🏴 Bandera de tu tripulación</div><div class="rec">${flag}<button class="pbtn" data-p="flag">Diseñar</button></div>
+      <div class="sub">💞 Pareja</div><p>${pt ? `${esc(pt.name)} · citas ${Object.keys(L.dates).length}/5${g.soc(pt.id).married ? ' · 💒 casados (+10% daño y defensa juntos)' : ''}` : g.spouseP ? `💒 Casado/a con ${esc(g.spouseP)} (otro jugador)` : 'Sin pareja todavía.'}</p>
+      <div class="sub">🏆 Hazañas</div><p>🏁 Mejor regata: <b>${st.raceBest ? st.raceBest + ' s' : '—'}</b> · ⚔️ Torneos ganados: <b>${st.tourneys || 0}</b> · 🕯️ Criptas superadas: <b>${st.dungeons || 0}</b> · 💰 Tesoros: <b>${st.treasures || 0}</b> · 🏠 Casa: <b>${g.flags.house ? 'sí' : 'no'}</b></p>
+      ${board ? `<div class="sub">🏁 Mejores tiempos de regata</div><ul class="qlist">${board}</ul>` : ''}`;
+  }
   // ------------------------------------------------------------------ construcción
   openBuild() {
     const g = this.g, p = g.player;
@@ -331,7 +363,7 @@ export class Panels {
     const fmt = (n) => n.toLocaleString('es');
     const cards = list.map((w, i) => `<button class="wanted ${w.me ? 'me' : ''} ${w.down ? 'down' : ''}" data-p="poster" data-i="${i}">
         <div class="wt">SE BUSCA</div><img src="${g.portrait(w.key, w.look)}" alt=""><div class="wv">VIVO O MUERTO</div>
-        <div class="wn">${esc(w.name)}</div><div class="wb">🪙 ${fmt(w.bounty)}</div><div class="wm">MARINA</div></button>`).join('');
+        <div class="wn">${esc(w.name)}</div><div class="wb">🪙 ${fmt(w.bounty)}</div><div class="wm">${w.me && g.flagCfg ? `<img class="wflag" src="${g.flagURL()}" alt="">` : ''}MARINA</div></button>`).join('');
     let det = '<p class="muted small">Toca un cartel para ver más. Los piratas famosos viajan entre islas, cazan monstruos y su recompensa sube. Acércate a uno y pulsa ⚔️ Retar.</p>';
     if (sel !== undefined && list[sel]) {
       const w = list[sel];
@@ -406,6 +438,14 @@ export class Panels {
       ['👹 Superjefes', 'Azrael, el Serafín Caído (Isla Calavera) e Ignaros, el Dragón Rey (Isla Ceniza), son de nivel 101 y sueltan sus armaduras cosméticas. En aguas profundas, el Leviatán Abisal puede atrapar tu barco: toda la tripulación lucha en cubierta. Los jefes ganan vida según cuántos aliados luchan, y con muchos tripulantes cada uno pega algo menos, para que 3 o 10 sea justo.'],
       ['🚢 Barcos', 'Marga vende balandra (rápida), bergantín y galeón (enorme). Decora velas, casco, bandera y mascarón, y ponle nombre. Junto al mar pulsa 📯 para llamar a tu barco, y navegando puedes desembarcar en cualquier costa. En la bodega pulsa 🪑 Decorar para amueblar tu camarote.'],
       ['🎉 Eventos', 'De vez en cuando: festival en Villarroca (rebajas y baile), lluvia de estrellas (+50% XP), mercader errante con ropa rara, invasión de esqueletos de noche y tesoros a la deriva en el mar.'],
+      ['🐾 Mascotas', 'Loro y mono (Mara, Isla Tortuga), gato (Coral, La Sirena Tuerta) y cría de dragón (huevo de Ignaros o del tesoro, o 30 fichas). Te siguen, ayudan en combate, suben de nivel y cada una tiene su ventaja. Elige cuál llevar en Bitácora › Vida.'],
+      ['🕯️ Cripta de la Bruma', 'Entradas en la cueva de los murciélagos (Isla Selva) y en el templo de arena (Isla Duna). 4 salas: limpia cada una para que se abra la reja. Al final, el Rey de la Cripta. En multijugador entráis juntos: hay más enemigos y el tesoro es para todos.'],
+      ['🏁 Regata y ⚔️ torneo', 'Nerea organiza una regata alrededor de Isla Bruma: pasa por las 8 boyas y vuelve a la verde (oro, plata o bronce). Marisol organiza un torneo diario de 3 duelos en la plaza. Las regatas de otros jugadores aparecen en tu tabla.'],
+      ['🏠 Casa', 'El Escribano Lope vende la casa de la plaza (6000 oro). Dentro puedes dormir (cura y +10% de experiencia) y decorarla con 🪑 como el camarote.'],
+      ['🏴 Bandera', 'Diseña la bandera de tu tripulación (Marga o Bitácora › Vida): sale en tu barco, en tu cartel de Se busca y en el barco que ven los demás jugadores.'],
+      ['💌 Citas y boda', 'Con pareja tienes 5 citas: cena en la taberna, atardecer en la playa de la mano, regalo especial, baile de noche y paseo en barco. Con 3 citas y un Anillo de compromiso (forja) os casáis en la plaza: ropa de boda y +10% de daño y defensa cuando estáis juntos. En multijugador puedes casarte con otro jugador.'],
+      ['🗺️ Mapas del tesoro', 'Cada mapa dibuja el terreno alrededor de una X. Reconoce la isla, ve allí y pulsa ⛏️ Cavar.'],
+      ['☠ Barcos de famosos', 'Los piratas famosos también navegan: si te encuentran, te atacan con su barco. Húndelo para que huya, o abórdalo y vence al famoso en su cubierta.'],
       ['🎯 Botones', 'El botón grande ⚔️ siempre ataca (navegando dispara los cañones). El botón azul de al lado sirve para hablar, abrir, talar, entrar, mirar carteles, retar a piratas... Así puedes pelear aunque tu pareja o tu tripulación estén pegados a ti.'],
       ['✨ Clases y habilidades', 'Tu clase depende del arma: espada = Espadachín, hacha = Bárbaro, lanza o tridente = Lancero. Cada clase tiene 5 habilidades (barra encima del botón de ataque) que se desbloquean en los niveles 2, 6, 12, 20 y 30. Gastan estamina y tienen recarga.'],
       ['🧘 Meditar', 'Pulsa 🧘 fuera de combate y quédate quieto 3 segundos: ganas Concentración (más daño, más defensa y regeneración) durante 90 s. Se recarga en 2 minutos.'],

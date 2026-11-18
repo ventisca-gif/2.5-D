@@ -497,6 +497,16 @@ export function makeProp(p, M) {
       box(g, 0.24, 0.05, 0.03, M.white, 0.7, 2.68, 0);
       break;
     }
+    case 'cave': {
+      // entrada a la Cripta de la Bruma
+      const dk = mat(0x4a4450, { map: M.tx.stone });
+      box(g, 0.5, 1.8, 0.8, dk, -0.75, 0.9, 0, 1); box(g, 0.5, 1.8, 0.8, dk, 0.75, 0.9, 0, 1); box(g, 2.0, 0.5, 0.9, dk, 0, 1.95, 0, 1);
+      box(g, 1.0, 1.6, 0.1, mat(0x050508), 0, 0.8, 0.2);
+      box(g, 0.1, 0.3, 0.1, M.darkWood, -0.6, 1.4, 0.45); box(g, 0.12, 0.14, 0.12, M.fire, -0.6, 1.62, 0.45);
+      box(g, 0.1, 0.3, 0.1, M.darkWood, 0.6, 1.4, 0.45); box(g, 0.12, 0.14, 0.12, M.fire, 0.6, 1.62, 0.45);
+      box(g, 0.5, 0.35, 0.05, mat(0xe0d0b0), 0, 2.0, 0.47);
+      break;
+    }
     case 'poster': {
       // tablón de Se busca
       for (const x of [-0.42, 0.42]) cyl(g, 0.05, 0.06, 1.6, M.darkWood, x, 0.8, 0, 5);

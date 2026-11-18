@@ -30,6 +30,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **Mundo vivo**: 16 piratas famosos que viajan y luchan con inteligencia, tablones de Se busca con retrato, clima (lluvia, tormentas, niebla, nieve) y estaciones, vecinos que duermen de noche y van a la taberna.
 - **Clases y habilidades**: Espadachín, Bárbaro o Lancero según tu arma, 5 habilidades cada una; meditación con mejora temporal.
 - **Bando**: pirata o Marina. **Construcción** de estructuras 2×2 y defensas de pueblo. Tripulación activa de 3, recolección en islas, timonel automático y cubierta caminable. Gestos de pareja (beso, abrazo, baile, en brazos).
+- **Más vida**: mascotas, Cripta de la Bruma cooperativa, regata y torneo, casa propia, bandera de tripulación, citas y boda (también entre jugadores), mapas del tesoro y barcos de piratas famosos.
 - **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.

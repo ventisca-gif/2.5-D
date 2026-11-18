@@ -94,8 +94,11 @@ export class Net {
     this.teams.clear();
     this.room = { pvp: false, players: [] };
     this.myId = null;
-    // los enemigos vuelven a la IA local
+    // los enemigos vuelven a la IA local; los temporales del anfitrión desaparecen
+    for (const e of Object.values(this.g.netMap || {})) if (!e.removed) e.remove();
+    this.g.netMap = {};
     for (const e of this.g.enemies) if (e.state === 'net') e.state = 'idle';
+    if (this.g.purgeTemps) this.g.purgeTemps();
   }
   // cliente -> anfitrión
   send(obj) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify(obj)); }
@@ -117,7 +120,7 @@ export class Net {
   }
   myInfo() {
     const g = this.g, p = g.player;
-    return { name: p.name, lv: p.level, ap: p.ap, eq: p.equip, crew: g.crew().map((n) => n.name), partner: g.partner() ? g.partner().name : null };
+    return { name: p.name, lv: p.level, ap: p.ap, eq: p.equip, crew: g.crew().map((n) => n.name), partner: g.partner() ? g.partner().name : null, ...(g.netExtraInfo ? g.netExtraInfo() : {}) };
   }
   infoOf(id) {
     if (id === this.myId) return this.myInfo();
@@ -151,6 +154,7 @@ export class Net {
         if (!c) return;
         const first = !c.info;
         c.info = d;
+        if (first) this.sendAllTemps(from);
         this.upsertRemote(from, d, null);
         if (first) g.ui.toast(`👋 ${d.name} se unió a la partida`);
         this.broadcastRoom();
@@ -167,6 +171,8 @@ export class Net {
         this.remoteSwing(from);
         this.hsend('*', { t: 'atk', id: from });
         break;
+      case 'x': this.onX(from, d.m); if (d.to === 0 || d.to === undefined) break; this.hsend(d.to === '*' ? '*' : d.to, { t: 'x', from, m: d.m }); break;
+      case 'xh': g.onNetHost && g.onNetHost(from, d.m); break;
       case 'hit': {
         const e = g.enemies[d.e];
         if (e && !e.dead) g.damageEnemy(e, d.dmg, d.crit, null, from);
@@ -250,7 +256,7 @@ export class Net {
       case 'full': g.ui.toast('La partida está llena (máx. 5)'); break;
       case 'w': {
         if (typeof m.tod === 'number') g.tod = m.tod;
-        m.en.forEach((a, i) => { const e = g.enemies[i]; if (e) e.net = a; });
+        m.en.forEach((a, i) => { const e = i < g.baseEnemies ? g.enemies[i] : (g.netMap || {})[i]; if (e) e.net = a; });
         const seen = new Set();
         for (const pl of m.pl) {
           if (pl.id === this.myId) continue;
@@ -267,13 +273,47 @@ export class Net {
         g.panels.refreshNet();
         break;
       case 'atk': if (m.id !== this.myId) this.remoteSwing(m.id); break;
-      case 'hurt': { const e = g.enemies[m.e]; if (e) g.damagePlayer(e, m.atk); break; }
+      case 'hurt': { const e = m.e < g.baseEnemies ? g.enemies[m.e] : (g.netMap || {})[m.e]; if (e) g.damagePlayer(e, m.atk); break; }
       case 'hurtP': g.netHurtByPlayer(m.from, m.dmg); break;
       case 'kill': g.grantKill(m.et, m.lvl, m.x, m.z, m.killer, m.xp); break;
       case 'inv': g.netInvite(m.from, m.name); break;
       case 'toast': g.ui.toast(m.msg); break;
+      case 'spawn': this.clientSpawn(m); break;
+      case 'x': this.onX(m.from, m.m); break;
     }
   }
+  // ---- enemigos temporales sincronizados (piratas famosos, redadas, mazmorra, abordajes del anfitrión)
+  spawnMsg(e) { return { t: 'spawn', i: e.idx, type: e.type, lvl: e.level, x: r2(e.x), z: r2(e.z), rm: e.removed ? 1 : 0, nm: e.label.nm.textContent, mhp: e.maxHp }; }
+  announceSpawn(e) { if (this.isHost && this.active) this.hsend('*', this.spawnMsg(e)); }
+  sendAllTemps(to) {
+    const g = this.g;
+    for (let i = g.baseEnemies; i < g.enemies.length; i++) this.hsend(to, this.spawnMsg(g.enemies[i]));
+  }
+  clientSpawn(m) {
+    const g = this.g;
+    g.netMap = g.netMap || {};
+    if (g.netMap[m.i]) return;
+    if (m.type.startsWith('famous_') && g.famousInit) { g.famousInit(); const f = (g.famousList || []).find((k) => 'famous_' + k.id === m.type); if (f) g.famousDef(f); }
+    if (!g.ENEMY_DEF[m.type]) return;
+    const e = g.makeEnemy(m.type, m.x, m.z, m.lvl);
+    e.temp = true; e.netIdx = m.i; e.state = 'net';
+    if (m.nm) e.label.nm.textContent = m.nm;
+    if (m.mhp) e.maxHp = m.mhp;
+    g.netMap[m.i] = e;
+    if (m.rm) e.remove();
+  }
+  // mensajes genéricos entre jugadores (bodas, regatas, mazmorra...)
+  sendX(m, to = '*') {
+    if (!this.active) return;
+    if (this.isHost) { this.hsend(to, { t: 'x', from: 0, m }); }
+    else this.send({ t: 'x', m, to });
+  }
+  toHost(m) {
+    if (!this.active) return;
+    if (this.isHost) this.g.onNetHost && this.g.onNetHost(0, m);
+    else this.send({ t: 'xh', m });
+  }
+  onX(from, m) { if (from !== this.myId && this.g.onNetX) this.g.onNetX(from, m); }
 
   // ------------------------------------------------------------------ acciones del jugador local
   attackAnim() {
@@ -281,7 +321,7 @@ export class Net {
     if (this.isHost) this.hsend('*', { t: 'atk', id: 0 });
     else this.send({ t: 'atk' });
   }
-  hit(e, dmg, crit) { this.send({ t: 'hit', e: e.idx, dmg, crit }); }
+  hit(e, dmg, crit) { this.send({ t: 'hit', e: e.netIdx ?? e.idx, dmg, crit }); }
   pvpHit(r, dmg) {
     if (!this.room.pvp) { this.g.ui.toast('🕊️ El PvP está desactivado'); return false; }
     if (this.sameTeam(this.myId, r.id)) { this.g.ui.toast('🤝 Es de tu equipo'); return false; }
@@ -321,6 +361,7 @@ export class Net {
     }
     if (info) {
       r.name = info.name; r.lv = info.lv; r.crew = info.crew || []; r.partner = info.partner; r.team = info.team;
+      r.pet = info.pet || null; r.flag = info.flag || null; r.spouse = info.spouse || null;
       const key = JSON.stringify([info.ap, info.eq]);
       if (key !== r.lookKey && info.ap) {
         r.lookKey = key;
@@ -409,7 +450,7 @@ export class Net {
     if (this.tick > 0 || this.connecting) return;
     this.tick = 0.1;
     if (this.isHost) {
-      const en = g.enemies.slice(0, g.baseEnemies || g.enemies.length).map((e) => [r2(e.x), r2(e.z), r2(e.face), Math.max(0, Math.round(e.hp)), e.dead ? 1 : 0, e.st.moving ? 1 : 0, e.atkSeq || 0, e.level, e.maxHp]);
+      const en = g.enemies.map((e) => [r2(e.x), r2(e.z), r2(e.face), Math.max(0, Math.round(e.hp)), e.dead ? 1 : 0, e.st.moving ? 1 : 0, e.atkSeq || 0, e.level, e.maxHp]);
       const pl = [{ id: 0, ...this.myState() }];
       for (const [id, c] of this.clients) if (c.state) pl.push({ id, ...c.state });
       this.hsend('*', { t: 'w', tod: Math.round(g.tod * 100) / 100, en, pl });

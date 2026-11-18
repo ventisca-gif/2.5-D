@@ -57,6 +57,7 @@ export function makeNewIslets() {
     const rx = cx - 14, rz = cz - 14;
     for (const [dx, dz, d] of [[-2, -2, 'x'], [-1, -2, 'x'], [2, -2, 'x'], [-2, 1, 'z'], [2, 2, 'x'], [1, 2, 'x'], [2, -1, 'z']]) wall(rx + dx, rz + dz, d, true);
     prop('chest', rx, rz, 0, true, { id: 'duna_templo', loot: { gold: 260, potion: 2 }, big: true });
+    prop('cave', rx, rz - 3, 0, true);
     R.reserve(rx, rz, 3);
     populate(R, 1);
     const { ox, oz, N } = R;
@@ -90,6 +91,7 @@ export function makeNewIslets() {
     const bx = cx, bz = cz - 17;
     for (const [dx, dz, d] of [[-3, -1, 'z'], [-3, 0, 'z'], [-3, 1, 'z'], [3, -1, 'z'], [3, 0, 'z'], [3, 1, 'z'], [-2, -2, 'x'], [2, -2, 'x']]) wall(bx + dx, bz + dz, d, true);
     prop('skullrock', bx, bz - 1, 0, true);
+    prop('cave', bx, bz + 2, 0, true);
     R.reserve(bx, bz, 4);
     populate(R, 1);
     const { ox, oz, N } = R;

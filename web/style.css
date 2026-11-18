@@ -437,3 +437,9 @@ body.sailing #skillBar { display: none; }
 .jobrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
 .jobbar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
 .jobbar i { display: block; height: 100%; background: linear-gradient(90deg, #e0b040, #ffe080); }
+
+.tmap { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.tmap img { width: 150px; height: 150px; border: 3px solid #8a6a3a; border-radius: 4px; flex-shrink: 0; }
+.tmap p { font-size: 12px; margin: 4px 0; }
+.flagimg { width: 90px; height: 60px; border: 2px solid #5a3a1a; }
+.wflag { width: 22px; height: 15px; vertical-align: middle; margin-right: 4px; border: 1px solid #5a3a1a; }
