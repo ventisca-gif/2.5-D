@@ -43,6 +43,7 @@
     <div id="joy"><div id="joyKnob"></div></div>
     <div id="actions">
       <button id="btnRun" class="abtn"><span>🏃</span><small>Correr</small></button>
+      <button id="btnBlock" class="abtn"><span>🛡️</span><small>Parar</small></button>
       <button id="btnMount" class="abtn hidden"><span>🐴</span><small>Montar</small></button>
       <button id="btnMed" class="abtn"><span>🧘</span><small>Meditar</small></button>
       <button id="btnPotion" class="abtn"><span>🍶</span><small id="potCount">0</small></button>
@@ -55,6 +56,8 @@
     </div>
     <div id="toasts"></div>
     <div id="eventBanner" class="hidden"></div>
+    <div id="comboTxt"></div>
+    <div id="oxyBar" class="panel hidden"><span>🫧</span><div class="bar oxy"><div id="oxyFill"></div></div></div>
   </div>
 
   <div id="dialog" class="hidden">
@@ -72,6 +75,7 @@
         <button data-act="save">Guardar partida</button>
         <button data-act="sound">Sonido: Sí</button>
         <button data-act="music">Música: Sí</button>
+        <button data-act="photo">📷 Modo foto</button>
         <button data-act="quality">Calidad: Media</button>
         <button data-act="help">❓ Guía</button>
         <button data-act="net">👥 Multijugador local</button>
@@ -123,6 +127,9 @@
     </div>
   </div>
 
+  <div id="photoFrame"></div>
+  <div id="photoFlash"></div>
+  <div id="photoUI" class="hidden"></div>
   <div id="panel" class="hidden"></div>
   <div id="update" class="hidden"></div>
 

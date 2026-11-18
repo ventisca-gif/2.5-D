@@ -224,7 +224,7 @@ export class UI {
     this.set('area', g.W.areaName(p.tx, p.tz).toUpperCase());
     const h = Math.floor(g.tod), m = Math.floor((g.tod % 1) * 60);
     const night = g.tod < 6.5 || g.tod > 19.5;
-    this.set('clock', `${g.weatherIcon ? g.weatherIcon() : ''} ${night ? '☾' : ''}${String(h).padStart(2, '0')}:${String(Math.floor(m / 10) * 10).padStart(2, '0')}`);
+    this.set('clock', `${g.weatherIcon ? g.weatherIcon() : ''}${g.lowTide && g.lowTide() ? ' 🌊↓' : ''} ${night ? '☾' : ''}${String(h).padStart(2, '0')}:${String(Math.floor(m / 10) * 10).padStart(2, '0')}`);
     this.set('coords', g.W.isInterior(p.x) ? 'interior' : `${p.tx}, ${p.tz}`);
     const q = g.questInfo();
     this.set('qtitle', q.title);

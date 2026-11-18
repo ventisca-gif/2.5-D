@@ -11,28 +11,84 @@ export const MOUNTS = {
   salamandra: { name: 'Salamandra de lava', icon: '🦎', price: 4000, seller: 'brasa', speed: 2.0, col: 0x3a2a2a, mane: 0xff6020, lizard: true },
 };
 export function mountModel(type) {
-  const d = MOUNTS[type], g = new THREE.Group();
+  const d = MOUNTS[type];
+  if (d.lizard) return lizardModel(d);
+  const camel = !!d.hump;
+  const g = new THREE.Group();
+  const body = new THREE.Group(); g.add(body);
+  const mats = {};
+  const M = (c) => mats[c] || (mats[c] = new THREE.MeshLambertMaterial({ color: c }));
+  const coat = camel ? 0xc8a066 : 0xc8a06a, dark = camel ? 0x8a6a3a : 0x2a2018, muzzle = camel ? 0xa8845a : 0x3a2a20;
+  const mesh = (geo, c, x, y, z, rx = 0, ry = 0, rz = 0, parent = body) => { const m = new THREE.Mesh(geo, M(c)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; parent.add(m); return m; };
+  const caps = (r, l, seg = 8) => new THREE.CapsuleGeometry(r, l, 4, seg);
+  const H = camel ? 1.05 : 0.98; // altura del lomo
+  // tronco: pecho, barriga y grupa
+  mesh(caps(0.165, 0.7, 12), coat, 0, H, 0, Math.PI / 2).scale.set(0.9, 1, 1);
+  mesh(new THREE.SphereGeometry(0.2, 12, 10), coat, 0, H + 0.03, 0.4).scale.set(0.85, 1.12, 0.95);
+  mesh(new THREE.SphereGeometry(0.2, 12, 10), coat, 0, H + 0.04, -0.4).scale.set(0.95, 1.05, 1.0);
+  mesh(new THREE.BoxGeometry(0.03, 0.02, 0.95), dark, 0, H + 0.2, 0); // raya de mula
+  if (camel) { mesh(new THREE.SphereGeometry(0.2, 12, 10), coat, 0, H + 0.22, -0.05).scale.set(0.9, 1.1, 1.2); }
+  // cuello arqueado y cabeza
+  const neck = new THREE.Group(); neck.position.set(0, H + 0.1, 0.5); body.add(neck);
+  mesh(caps(camel ? 0.075 : 0.085, camel ? 0.5 : 0.46, 10), coat, 0, camel ? 0.22 : 0.22, camel ? 0.12 : 0.1, camel ? -0.25 : -0.45, 0, 0, neck);
+  const head = new THREE.Group(); head.position.set(0, camel ? 0.5 : 0.5, camel ? 0.28 : 0.22); neck.add(head);
+  mesh(caps(0.07, 0.28, 10), coat, 0, -0.02, 0.1, 1.25, 0, 0, head);
+  mesh(new THREE.SphereGeometry(0.068, 10, 8), muzzle, 0, -0.1, 0.27, 0, 0, 0, head).scale.set(0.95, 0.85, 1.15);
+  for (const sx of [-1, 1]) {
+    mesh(new THREE.ConeGeometry(0.026, 0.11, 6), coat, sx * 0.045, 0.1, -0.03, -0.2, 0, sx * 0.25, head);
+    mesh(new THREE.SphereGeometry(0.016, 6, 5), 0x111111, sx * 0.07, 0.03, 0.08, 0, 0, 0, head);
+    mesh(new THREE.SphereGeometry(0.012, 5, 4), 0x111111, sx * 0.03, -0.11, 0.35, 0, 0, 0, head);
+  }
+  // crin y tupé
+  if (!camel) {
+    for (let i = 0; i < 9; i++) mesh(new THREE.BoxGeometry(0.035, 0.17, 0.08), dark, (i % 2 ? 0.035 : -0.035), 0.06 + i * 0.05, -0.05 + i * 0.022, -0.45, 0, i % 2 ? 0.35 : -0.35, neck);
+    mesh(new THREE.BoxGeometry(0.05, 0.1, 0.05), dark, 0, 0.1, 0.04, 0.7, 0, 0, head);
+  }
+  // cola larga
+  const tail = new THREE.Group(); tail.position.set(0, H + 0.12, -0.58); body.add(tail);
+  for (let i = 0; i < 5; i++) mesh(new THREE.CapsuleGeometry(camel ? 0.025 : 0.055 - i * 0.006, 0.14, 3, 6), dark, 0, -0.06 - i * 0.12, -0.07 - i * 0.025, -0.35 + i * 0.07, 0, 0, tail);
+  // patas articuladas con calcetines oscuros y cascos
+  const legs = [];
+  for (const [x, z] of [[-0.09, 0.4], [0.09, 0.4], [-0.09, -0.4], [0.09, -0.4]]) {
+    const hip = new THREE.Group(); hip.position.set(x, H - 0.12, z); body.add(hip);
+    const L1 = camel ? 0.46 : 0.44, L2 = camel ? 0.42 : 0.42;
+    mesh(caps(0.062, L1 - 0.12, 8), coat, 0, -L1 / 2, 0, 0, 0, 0, hip);
+    const knee = new THREE.Group(); knee.position.y = -L1; hip.add(knee);
+    mesh(caps(0.034, L2 - 0.08, 8), camel ? coat : dark, 0, -L2 / 2, 0, 0, 0, 0, knee);
+    mesh(new THREE.CylinderGeometry(0.05, 0.055, 0.06, 10), 0x111111, 0, -L2, 0.01, 0, 0, 0, knee);
+    hip.userData.knee = knee;
+    legs.push(hip);
+  }
+  // silla, manta, estribos y riendas
+  mesh(new THREE.BoxGeometry(0.38, 0.03, 0.4), 0x8a1a1a, 0, H + (camel ? 0.4 : 0.17), -0.02);
+  mesh(caps(0.11, 0.14, 8), 0x5a3418, 0, H + (camel ? 0.45 : 0.21), -0.02, Math.PI / 2, 0, 0).scale.set(1.2, 0.55, 1);
+  mesh(new THREE.BoxGeometry(0.06, 0.1, 0.05), 0x5a3418, 0, H + (camel ? 0.52 : 0.27), 0.1);
+  for (const sx of [-1, 1]) {
+    mesh(new THREE.BoxGeometry(0.012, 0.3, 0.012), 0x3a2414, sx * 0.2, H + 0.02, 0);
+    mesh(new THREE.TorusGeometry(0.035, 0.008, 4, 8), 0xb8b0a0, sx * 0.2, H - 0.14, 0, 0, Math.PI / 2, 0);
+    mesh(new THREE.BoxGeometry(0.01, 0.01, 0.62), 0x3a2414, sx * 0.06, H + 0.36, 0.44, -0.55, 0, 0);
+  }
+  g.userData = { legs, body, neck, tail, h: H + (camel ? 0.48 : 0.25) };
+  return g;
+}
+function lizardModel(d) {
+  const g = new THREE.Group();
   const M = (c) => new THREE.MeshLambertMaterial({ color: c });
   const body = new THREE.Group(); g.add(body);
   const add = (geo, c, x, y, z, rx = 0, parent = body) => { const m = new THREE.Mesh(geo, M(c)); m.position.set(x, y, z); m.rotation.x = rx; m.castShadow = true; parent.add(m); return m; };
-  const L = d.lizard;
-  add(new THREE.BoxGeometry(L ? 0.42 : 0.36, L ? 0.22 : 0.34, 0.95), d.col, 0, L ? 0.3 : 0.62, 0);
-  if (d.hump) add(new THREE.SphereGeometry(0.17, 8, 6), d.col, 0, 0.86, -0.05);
-  const neck = new THREE.Group(); neck.position.set(0, L ? 0.34 : 0.72, 0.45); body.add(neck);
-  add(new THREE.BoxGeometry(0.16, L ? 0.14 : 0.42, 0.16), d.col, 0, L ? 0 : 0.18, 0.05, L ? 0 : -0.5, neck);
-  add(new THREE.BoxGeometry(0.17, 0.17, 0.3), d.col, 0, L ? 0.02 : 0.38, L ? 0.2 : 0.22, 0, neck);
-  add(new THREE.BoxGeometry(0.05, L ? 0.05 : 0.32, 0.2), d.mane, 0, L ? 0.12 : 0.26, -0.02, -0.5, neck);
-  add(new THREE.BoxGeometry(0.34, 0.06, 0.4), 0x8a2a1a, 0, L ? 0.43 : 0.8, -0.02);
+  add(new THREE.CapsuleGeometry(0.22, 0.6, 4, 10), d.col, 0, 0.3, 0, Math.PI / 2);
+  add(new THREE.CapsuleGeometry(0.13, 0.22, 4, 8), d.col, 0, 0.36, 0.55, Math.PI / 2 - 0.2);
+  for (let i = 0; i < 6; i++) add(new THREE.ConeGeometry(0.05, 0.14, 4), d.mane, 0, 0.52, 0.3 - i * 0.14);
+  add(new THREE.ConeGeometry(0.1, 0.7, 6), d.col, 0, 0.3, -0.75, -Math.PI / 2);
+  for (const s of [-1, 1]) add(new THREE.SphereGeometry(0.03, 6, 5), 0xffd040, s * 0.08, 0.42, 0.68);
+  add(new THREE.BoxGeometry(0.4, 0.06, 0.4), 0x8a2a1a, 0, 0.53, -0.02);
   const legs = [];
-  for (const [x, z] of [[-0.13, 0.36], [0.13, 0.36], [-0.13, -0.36], [0.13, -0.36]]) {
-    const lg = new THREE.Group(); lg.position.set(x * (L ? 1.6 : 1), L ? 0.24 : 0.48, z); body.add(lg);
-    add(new THREE.BoxGeometry(0.09, L ? 0.24 : 0.48, 0.09), d.col, 0, L ? -0.12 : -0.24, 0, 0, lg);
-    add(new THREE.BoxGeometry(0.1, 0.06, 0.12), 0x2a2a2a, 0, L ? -0.24 : -0.47, 0.01, 0, lg);
-    if (L) lg.rotation.z = x < 0 ? 0.7 : -0.7;
+  for (const [x, z] of [[-0.2, 0.3], [0.2, 0.3], [-0.2, -0.3], [0.2, -0.3]]) {
+    const lg = new THREE.Group(); lg.position.set(x, 0.24, z); body.add(lg);
+    add(new THREE.CapsuleGeometry(0.05, 0.16, 4, 6), d.col, x > 0 ? 0.08 : -0.08, -0.08, 0, 0, lg).rotation.z = x > 0 ? -0.9 : 0.9;
     legs.push(lg);
   }
-  add(new THREE.BoxGeometry(0.06, 0.06, L ? 0.6 : 0.35), d.mane, 0, L ? 0.28 : 0.6, -0.6, L ? 0.2 : -0.7);
-  g.userData = { legs, body, h: L ? 0.42 : 0.78 };
+  g.userData = { legs, body, h: 0.56 };
   return g;
 }
 
@@ -141,8 +197,16 @@ export function installMore2(Game, D) {
     m.position.set(p.x, p.vy || 0, p.z);
     m.rotation.y = p.face;
     const ph = (this.time * (p.st.moving ? 14 : 2));
-    u.legs.forEach((l, i) => { l.rotation.x = p.st.moving ? Math.sin(ph + (i % 3 === 0 ? 0 : Math.PI)) * 0.6 : 0; });
-    u.body.position.y = p.st.moving ? Math.abs(Math.sin(ph)) * 0.05 : 0;
+    const run = p.speed > 7;
+    u.legs.forEach((l, i) => {
+      const off = run ? [0, 0.4, Math.PI, Math.PI + 0.4][i] : (i % 3 === 0 ? 0 : Math.PI);
+      const sw = p.st.moving ? Math.sin(ph + off) : 0;
+      l.rotation.x = sw * (run ? 0.7 : 0.45);
+      if (l.userData.knee) l.userData.knee.rotation.x = p.st.moving ? Math.max(0, -Math.cos(ph + off)) * (run ? 1.1 : 0.7) : 0;
+    });
+    u.body.position.y = p.st.moving ? Math.abs(Math.sin(ph)) * (run ? 0.08 : 0.04) : Math.sin(this.time * 1.5) * 0.008;
+    if (u.neck) u.neck.rotation.x = p.st.moving ? Math.sin(ph * 2) * 0.06 : Math.sin(this.time * 0.7) * 0.05;
+    if (u.tail) u.tail.rotation.x = p.st.moving ? 0.35 + Math.sin(ph) * 0.1 : Math.sin(this.time * 1.3) * 0.12;
   };
 
   // ============================================================ isla espectral
@@ -231,6 +295,8 @@ export function installMore2(Game, D) {
       else if ((st[m.id] || 0) >= m.n) { st[m.id] -= m.n; this.net.sendX({ k: 'chestGive', to: from, id: m.id, n: m.n }, from); }
       this.net.sendX({ k: 'chest', to: from, items: st }, from);
     } else if (m.k === 'ctfgrab' || m.k === 'ctfdrop' || m.k === 'ctfscore') this.ctfHost(from, m);
+    else if (m.k === 'mkGet') this.net.sendX({ k: 'mk', list: this.marketList() }, from);
+    else if (m.k && m.k.startsWith('mk')) this.marketHost(from, m);
   };
 
   // ============================================================ música y sonidos de ambiente
@@ -264,7 +330,7 @@ export function installMore2(Game, D) {
   };
   P.musicZone = function () {
     const p = this.player;
-    if (this.sailing) return 'mar';
+    if (this.sailing || (this.inCoralia && this.inCoralia())) return 'mar';
     if (this.inDungeon()) return 'cripta';
     const room = this.roomAt(p.x, p.z);
     if (room) return ['taberna', 'sirena'].includes(room.id) ? 'taberna' : 'pueblo';

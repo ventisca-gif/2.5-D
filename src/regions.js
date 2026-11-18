@@ -160,6 +160,16 @@ export function makeIslets() {
   tor.npcs.push({ id: 'mara', name: 'Contrabandista Mara', x: tc.x + 1, z: tc.z + 1, wander: 2, look: { shirt: 0x2a5a5a, pants: 0x3a2a1a, hair: 0x1a1a1a, longHair: true, hat: 'bandana', capColor: 0x6a2a8a, skin: 0xa86a3a, coat: true, sash: 0x6a2a8a, baldric: 0x3a2414, earring: true, bootCuff: true, sword: true } });
   tor.npcs.push({ id: 'pepe', name: 'Grumete Pepe', x: tc.x - 2, z: tc.z + 2, wander: 3, small: true, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0xd8a040, skin: 0xf0c49a, hat: 'bandana', capColor: 0x2a6ab0 } });
   populate(tor, 1);
+  // bajío de la marea: con marea baja se puede caminar hasta la Roca de la Marea (este)
+  tor.tidal = new Set();
+  for (let x = tc.x + 9; x <= tc.x + 17; x++) for (const dz of [0, 1]) if (tor.tile(x, tc.z + dz) === T.WATER) tor.tidal.add(KEY(x, tc.z + dz));
+  for (let dz = -2; dz <= 2; dz++) for (let dx = -2; dx <= 2; dx++) if (dx * dx + dz * dz <= 5) tor.setTile(tc.x + 18 + dx, tc.z + dz, T.SAND);
+  tor.props.push({ type: 'chest', x: tc.x + 18, z: tc.z, rot: 0, id: 'marea_cofre', loot: { gold: 350, potion: 2 } }); tor.block(tc.x + 18, tc.z);
+  for (let z = tc.z - 4; z <= tc.z + 5; z++) for (let x = tc.x + 6; x <= tc.x + 14; x++) if (tor.tile(x, z) === T.WATER && Math.hypot(x - tc.x, z - tc.z) < 15) tor.tidal.add(KEY(x, z));
+  tor.low = false;
+  { const t0 = tor.tile, w0 = tor.walkable;
+    tor.tile = (x, z) => { const t = t0(x, z); return t === T.WATER && tor.low && tor.tidal.has(KEY(x, z)) ? T.SAND : t; };
+    tor.walkable = (x, z) => w0(x, z) || (tor.low && tor.tidal.has(KEY(x, z))); }
   // escondite pirata al este de Tortuga
   for (const [dx, dz, r] of [[7, -4, 0.4], [7, 4, -0.6]]) { tor.props.push({ type: 'tent', x: tc.x + dx, z: tc.z + dz, rot: r }); tor.block(tc.x + dx, tc.z + dz); }
   tor.props.push({ type: 'campfire', x: tc.x + 6, z: tc.z + 1 }); tor.block(tc.x + 6, tc.z + 1);

@@ -73,6 +73,8 @@ export class Panels {
     if (act === 'craft') { g.craft(Number(b.dataset.i)); return this.openCraft(this.station); }
     if (act === 'gift') { const n = this.giftTo; this.close(); g.giveGift(n, b.dataset.id); return; }
     if (act === 'crewtoggle') { g.toggleCrewWait(b.dataset.id); return this.openBitacora('crew'); }
+    if (act === 'mkpost') { const id = $('mkItem').value, n = Math.max(1, Number($('mkN').value) || 1), pr = Math.max(1, Number($('mkP').value) || 1); g.marketPost(id, n, pr); return; }
+    if (act === 'mkbuy') { const o = (g.market || []).find((k) => String(k.id) === b.dataset.id); if (o) g.marketBuy(o); return; }
     if (act === 'cjob') { g.cycleCrewJob(b.dataset.id); return this.openBitacora('crew'); }
     if (act === 'title') { g.title = b.dataset.t || null; g.applyTitle(); return this.openBitacora('logros'); }
     if (act === 'stash') { g.stashMove(b.dataset.id, Number(b.dataset.n), b.dataset.d); return; }
@@ -321,6 +323,14 @@ export class Panels {
     const mine = Object.entries(p.inv).filter(([id, n]) => n > 0 && ITEMS[id] && id !== 'mapa_tesoro').map(([id, n]) => `<div class="rec"><span class="rname">${ITEMS[id].icon} ${esc(ITEMS[id].name)} ×${n}</span><button class="pbtn small" data-p="stash" data-id="${id}" data-n="1" data-d="put">Guardar 1</button><button class="pbtn small" data-p="stash" data-id="${id}" data-n="${n}" data-d="put">Todo</button></div>`).join('');
     this.show('stash', clan ? `📦 Cofre del clan «${esc(g.clan.name)}»` : '📦 Tu cofre', `<div class="sub">En el cofre</div>${inChest || '<p class="muted">Vacío.</p>'}<div class="sub">Tu mochila</div>${mine}`, true);
   }
+  openMarket(list) {
+    const g = this.g, p = g.player, me = g.net.myId;
+    const rows = (list || []).map((o) => `<div class="mkrow"><span>${ITEMS[o.item] ? ITEMS[o.item].icon + ' ' + esc(ITEMS[o.item].name) : esc(o.item)} ×${o.n}</span><span class="muted">${esc(o.name)}</span><span>🪙 ${o.price}</span>${o.seller === me ? `<button class="pbtn small" data-p="mkbuy" data-id="${o.id}">Retirar</button>` : `<button class="pbtn small" data-p="mkbuy" data-id="${o.id}" ${p.gold >= o.price ? '' : 'disabled'}>Comprar</button>`}</div>`).join('');
+    const opts = Object.entries(p.inv).filter(([id, n]) => n > 0 && ITEMS[id] && !['mapa_tesoro'].includes(id)).map(([id, n]) => `<option value="${id}">${ITEMS[id].icon} ${esc(ITEMS[id].name)} (${n})</option>`).join('');
+    this.show('market', '🏪 Mercado entre jugadores', `<p class="muted small">Vende y compra objetos a otros jugadores de la partida. El anfitrión guarda las ofertas. Tienes ${p.gold} oro.</p>
+      <div class="mkform"><select id="mkItem">${opts}</select><input id="mkN" type="number" min="1" value="1" style="width:60px"><input id="mkP" type="number" min="1" value="50" style="width:80px"><button class="pbtn" data-p="mkpost">Poner a la venta</button></div>
+      <div class="sub">Ofertas</div>${rows || '<p class="muted">No hay ofertas todavía.</p>'}`, true);
+  }
   oficiosHtml() {
     const g = this.g, p = g.player;
     const jobs = Object.entries(JOBS).map(([id, j]) => {
@@ -455,6 +465,13 @@ export class Panels {
       ['👹 Superjefes', 'Azrael, el Serafín Caído (Isla Calavera) e Ignaros, el Dragón Rey (Isla Ceniza), son de nivel 101 y sueltan sus armaduras cosméticas. En aguas profundas, el Leviatán Abisal puede atrapar tu barco: toda la tripulación lucha en cubierta. Los jefes ganan vida según cuántos aliados luchan, y con muchos tripulantes cada uno pega algo menos, para que 3 o 10 sea justo.'],
       ['🚢 Barcos', 'Marga vende balandra (rápida), bergantín y galeón (enorme). Decora velas, casco, bandera y mascarón, y ponle nombre. Junto al mar pulsa 📯 para llamar a tu barco, y navegando puedes desembarcar en cualquier costa. En la bodega pulsa 🪑 Decorar para amueblar tu camarote.'],
       ['🎉 Eventos', 'De vez en cuando: festival en Villarroca (rebajas y baile), lluvia de estrellas (+50% XP), mercader errante con ropa rara, invasión de esqueletos de noche y tesoros a la deriva en el mar.'],
+      ['🔔 Ciudad de Coralia', 'Marga vende la campana de buceo. En alta mar, desde ⚙️ Barco, bajas a la ciudad hundida: tritones, medusas gigantes, la Reina Abisal Nerissa y 5 cofres que se rellenan cada día. Vigila la barra de aire 🫧 y vuelve a la campana para subir.'],
+      ['🌾 Granja', 'Construye huertos, un gallinero y un establo junto a tu casa. Planta semillas de Lucía (trigo, zanahoria, calabaza), riégalas (la lluvia también) y cosecha. Las gallinas ponen huevos y la vaca da leche; si les das trigo, el doble. Hay recetas nuevas: tortilla, tarta de calabaza, guiso, batido y almejas.'],
+      ['🏪 Mercado', 'En multijugador, Ilyas o el panel 👥 Online abren el mercado: pon objetos a la venta con tu precio y compra lo que venden los demás.'],
+      ['📖 Historias', 'Cada tripulante tiene su pasado y una misión personal (habla con él o ella con bastante amistad). Al completarla se vuelve leal: +25% de daño y te da un regalo.'],
+      ['🛡️ Parada y combos', 'Mantén 🛡️ Parar (o B) para bloquear (recibes un 40% del daño). Si lo pulsas justo antes del golpe haces una PARADA perfecta: no recibes daño, aturdes al enemigo y tu siguiente golpe hace el doble. Cada tercer golpe seguido es un Remate (x1,8).'],
+      ['🌊 Mareas', 'La marea sube y baja dos veces al día (🌊↓ en el reloj = marea baja). Con marea baja aparece un bajío al este de Isla Tortuga que lleva a la Roca de la Marea, con su cofre, y salen almejas para recoger.'],
+      ['📷 Modo foto', 'En el menú: oculta la interfaz, elige pose, marco (madera, pergamino, Se busca, instantánea) y filtro, acerca o aleja y pulsa 📸. En el móvil se guarda en la galería (Imágenes › Bruma).'],
       ['🐴 Monturas', 'Caballo (Lucía, granja), camello (Zaid, Oasis de Sal) y salamandra de lava (Brasa, Isla Ceniza). Pulsa 🐴 (o K) para montar: vas mucho más rápido y apenas gastas estamina. Te bajas solo al entrar en casas, nadar o embarcar.'],
       ['🌫️ Isla Espectral', 'Con niebla (o de madrugada, de 0:00 a 4:00) aparece al suroeste una isla que no está en los mapas, con el Capitán Espectro Valdrak (nivel 85) y ropa espectral única. Llega en barco y desembarca en su costa.'],
       ['🏴 Clanes', 'En multijugador, funda un clan (👥 Online): todos llevan su nombre y la bandera del fundador. El cofre de vuestras casas es común (lo guarda el anfitrión).'],
@@ -515,6 +532,7 @@ export class Panels {
     this.netMsg = '';
     if (a === 'host') { const r = n.host(); if (r.error) this.netMsg = r.error; }
     if (a === 'ctf') { this.close(); this.g.ctfStart(); return; }
+    if (a === 'market') { this.g.openMarket(); return; }
     if (a === 'clan') { this.g.foundClan(); return this.renderNet(); }
     if (a === 'leaveClan') { this.g.leaveClan(); return this.renderNet(); }
     if (a === 'scan') {
@@ -567,6 +585,7 @@ export class Panels {
         <div class="netbtns">
           ${n.isHost ? `<button class="wbtn" data-p="net" data-a="pvp">${n.room.pvp ? '🕊️ Desactivar PvP' : '⚔️ Activar PvP'}</button>` : ''}
           ${n.isHost ? '<button class="wbtn" data-p="net" data-a="ctf">🏴 Captura la bandera (mar)</button>' : ''}
+          <button class="wbtn" data-p="net" data-a="market">🏪 Mercado</button>
           ${g.clan ? `<button class="wbtn" data-p="net" data-a="leaveClan">Salir del clan «${esc(g.clan.name)}»</button>` : '<button class="wbtn" data-p="net" data-a="clan">🏴 Fundar clan</button>'}
           ${myTeam != null ? '<button class="wbtn" data-p="net" data-a="leaveTeam">Salir del equipo</button>' : ''}
           <button class="wbtn danger2" data-p="net" data-a="leave">🚪 Salir de la partida</button>

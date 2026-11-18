@@ -200,6 +200,7 @@ export function dialogFor(id, G) {
     opts.push({ label: '🍲 Sopa caliente: curar todo (5 oro)', action: () => G.buy({ gold: 5 }, () => { P.hp = P.maxHp; G.toast('❤️ Salud al máximo'); }) });
   } else if (id === 'lucia') {
     text = text || NPC_LINES.lucia[1];
+    sell('semilla_trigo', 3); sell('semilla_zanahoria', 5); sell('semilla_calabaza', 8);
     sell('wheat', 3);
     sell('mushroom', 4);
     sell('apple', 2);
@@ -238,6 +239,7 @@ export function dialogFor(id, G) {
     sell('f_meat', 10);
   } else if (id === 'ilyas') {
     text = text || NPC_LINES.ilyas[0];
+    if (G.net.active) opts.push({ label: '🏪 Mercado entre jugadores', action: () => G.openMarket() });
     sell('cloth', 6);
     sell('leather', 10);
     const mats = Object.entries(P.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].type === 'mat' && ITEMS[k].value > 0);

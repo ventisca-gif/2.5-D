@@ -58,6 +58,10 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 ## v2.8
 - `more2.js`: monturas (`MOUNTS`: caballo de Lucía, camello de Zaid, salamandra de Brasa; `toggleMount`, botón 🐴/K, `p.yOff`, pose `st.ride`; remotos con `s.mt`), Isla Espectral (`makeGhostIslet`, región que solo existe con niebla o de 0 a 4 h: `R.hidden`, `updateGhost`, jefe `ghost_captain`), clanes (`clan`, `foundClan`/`inviteClan`; nombre y bandera del fundador) y cofre (personal o del clan guardado por el anfitrión: `stashes`, `onNetHost`), música generativa por zona (`updateMusic`, `ZONES`; ajuste `settings.music`), logros con títulos (`LOGROS`, `title`, etiqueta `.ttl`), casas (`HOUSES`: casa5, casaplaya —se crea en `addBeachHouse`—, casa2 mansión; cama y cofre) y muebles de lujo (`PREMIUM_DECOR`, catálogo de Bruno `flags.furn`), puestos de tripulación (`CREW_JOBS`, `soc.cjob`) y PvP naval (`pvpShips`, `shiphit`) + Captura la bandera (`ctfStart`, lo controla el anfitrión).
 
+## v2.9
+- `more3.js`: Ciudad de Coralia (región `coralia` en x=2100, `underwater`; se baja con la campana de buceo de Marga `flags.diveBell` desde ⚙️ Barco; aire `oxy`; enemigos `merfolk`, `jelly`, jefa `abyss_queen`; 5 cofres diarios), granja (huerto con semillas y riego, `gallinero` y `establo`; oficio `granjero`; recetas nuevas), mercado entre jugadores (lo guarda el anfitrión: `marketHost`, mensajes `mk*`), historias de la tripulación (`CREW_STORIES`, `crewQ`, `soc.loyal` +25% daño), combos (`comboMul`, remate cada 3 golpes) y parada perfecta (`blockPress`/`blockDamage`, botón 🛡️ o B), mareas (`tideLevel`, bajío `tor.tidal` al este de Tortuga hasta la Roca de la Marea, almejas) y modo foto (`photoMode`, poses `st.pose`, marcos y filtros; Android guarda con `AndroidBridge.saveImage` en Imágenes/Bruma).
+- Caballo/camello rediseñados en `mountModel` (more2.js): proporciones reales, patas con rodilla, crin, cola, silla y riendas.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

@@ -2,6 +2,8 @@
 // Defensas de pueblo: das materiales al líder del pueblo y se levantan torres y cañones.
 import * as THREE from 'three';
 import { box, cyl, mat } from './props.js';
+import { ITEMS } from './items.js';
+const ITEMS_NAME = (id) => (ITEMS[id] ? ITEMS[id].name : id);
 
 export const STRUCTS = {
   empalizada: { name: 'Empalizada', icon: '🪵', cost: { wood: 8 }, hp: 160, desc: 'Muro de troncos que bloquea el paso.' },
@@ -10,7 +12,9 @@ export const STRUCTS = {
   canon: { name: 'Cañón defensivo', icon: '💣', cost: { iron: 6, stone: 8, polvora: 2 }, hp: 360, shoot: { r: 9, cd: 3.2, k: 2.4, ball: true }, desc: 'Cañonazo con daño en área.' },
   fogata: { name: 'Fogata', icon: '🔥', cost: { wood: 4, stone: 2 }, hp: 80, desc: 'Para cocinar donde quieras.' },
   tienda: { name: 'Tienda de campaña', icon: '⛺', cost: { cloth: 4, wood: 4 }, hp: 100, desc: 'Cerca de ella recuperas vida poco a poco.' },
-  huerto: { name: 'Huerto', icon: '🌱', cost: { wood: 4, wheat: 2 }, hp: 80, desc: 'Da trigo, manzanas y setas cada pocos minutos.' },
+  huerto: { name: 'Huerto', icon: '🌱', cost: { wood: 4, wheat: 2 }, hp: 80, desc: 'Planta semillas, riega y cosecha.' },
+  gallinero: { name: 'Gallinero', icon: '🐔', cost: { wood: 10, wheat: 4 }, hp: 90, desc: 'Las gallinas ponen huevos.' },
+  establo: { name: 'Establo', icon: '🐄', cost: { wood: 16, stone: 6 }, hp: 140, desc: 'La vaca da leche.' },
 };
 const LEADERS = { marisol: 'Villarroca', nerea: 'Puerto Salitre', mara: 'Isla Tortuga', zaid: 'Oasis de Sal', ixa: 'Aldea Liana', lucas: 'Villa Grillete', lucia: 'Granja de los Trigales' };
 const TOWN_COST = (lvl) => ({ gold: 100 * lvl * lvl, wood: 20 * lvl, stone: 15 * lvl, iron: lvl > 1 ? 6 * (lvl - 1) : 0 });
@@ -54,6 +58,26 @@ function structMesh(t, M) {
       cyl(g, 0.03, 0.03, 1.7, wood, 0, 0.85, 0, 4);
       break;
     }
+    case 'gallinero': case 'establo': {
+      const cow = t === 'establo';
+      for (const [x, z, w, d] of [[0, -0.95, 1.9, 0.06], [0, 0.95, 1.9, 0.06], [-0.95, 0, 0.06, 1.9], [0.95, 0, 0.06, 1.9]]) box(g, w, 0.45, d, wood, x, 0.22, z);
+      box(g, 0.8, 0.8, 0.7, plank, -0.5, 0.4, -0.5); { const r = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.4, 4), M.roof(0x8a3a2a)); r.rotation.y = Math.PI / 4; r.position.set(-0.5, 1.0, -0.5); g.add(r); }
+      const animals = [];
+      for (let i = 0; i < (cow ? 1 : 3); i++) {
+        const a = new THREE.Group();
+        if (cow) {
+          box(a, 0.3, 0.3, 0.6, mat(0xf4f0e8), 0, 0.4, 0); box(a, 0.12, 0.12, 0.12, mat(0x2a2a2a), 0.08, 0.5, 0.1);
+          box(a, 0.2, 0.2, 0.22, mat(0xf4f0e8), 0, 0.55, 0.36); box(a, 0.12, 0.08, 0.06, mat(0xe8a8a8), 0, 0.5, 0.48);
+          for (const [lx, lz] of [[-0.1, 0.2], [0.1, 0.2], [-0.1, -0.2], [0.1, -0.2]]) box(a, 0.07, 0.25, 0.07, mat(0x2a2a2a), lx, 0.13, lz);
+        } else {
+          box(a, 0.16, 0.16, 0.2, mat(0xf4f0e8), 0, 0.14, 0); box(a, 0.1, 0.1, 0.1, mat(0xf4f0e8), 0, 0.26, 0.09);
+          box(a, 0.04, 0.05, 0.04, mat(0xd82a2a), 0, 0.33, 0.09); box(a, 0.03, 0.03, 0.05, mat(0xe0a020), 0, 0.26, 0.16);
+        }
+        g.add(a); animals.push(a);
+      }
+      g.userData.animals = animals;
+      break;
+    }
     case 'huerto':
       box(g, 1.8, 0.12, 1.8, mat(0x6a4a2a), 0, 0.06, 0);
       for (const z of [-0.6, 0, 0.6]) for (const x of [-0.6, 0, 0.6]) { cyl(g, 0.02, 0.02, 0.3, mat(0x3a8a3a), x, 0.25, z, 4); const l = cyl(g, 0.12, 0.02, 0.12, mat(0x4aa848), x, 0.42, z, 5); l.userData.crop = true; }
@@ -87,6 +111,7 @@ export function installBuild(Game, D) {
     const b = { t, x, z, hp: opt.hp ?? def.hp * (opt.strong ? 2 : 1), maxHp: def.hp * (opt.strong ? 2 : 1), town: opt.town, strong: !!opt.strong, cd: Math.random() * 2, grow: opt.grow ?? 0 };
     b.mesh = structMesh(t, this.M);
     b.mesh.position.set(x + 0.5, 0, z + 0.5);
+    b.animals = b.mesh.userData.animals;
     this.scene.add(b.mesh);
     b.label = this.ui.makeLabel('enemy', `${def.icon} ${def.name}${b.town ? ' (' + b.town + ')' : ''}`, { hp: true });
     b.label.nm.style.color = '#bfe6ff';
@@ -106,7 +131,7 @@ export function installBuild(Game, D) {
   };
   P.loadBuilds = function (list) {
     for (const b of [...(this.builds || [])]) this.removeStruct(b);
-    for (const s of list) if (STRUCTS[s.t]) this.addStruct(s.t, s.x, s.z, { hp: s.hp, town: s.town, strong: s.strong, grow: s.grow });
+    for (const s of list) if (STRUCTS[s.t]) { const b = this.addStruct(s.t, s.x, s.z, { hp: s.hp, town: s.town, strong: s.strong, grow: s.grow }); Object.assign(b, { crop: s.crop || null, cropN: s.cropN, cropT: s.cropT, water: s.water, stock: s.stock || 0 }); }
   };
   P.placeStruct = function (t) {
     const p = this.player, def = STRUCTS[t];
@@ -149,10 +174,11 @@ export function installBuild(Game, D) {
       const c = { stone: 6, iron: 2 };
       opts.push({ label: '🛡️ Reforzar: doble de vida (6 piedra, 2 hierro)', action: () => this.buy(c, () => { b.strong = true; b.maxHp *= 2; b.hp = b.maxHp; this.ui.setHp(b.label, 1); this.toast('🛡️ Estructura reforzada'); }) });
     }
-    if (b.t === 'huerto' && b.grow >= 1) opts.push({ label: '🌾 Recoger cosecha', action: () => { b.grow = 0; this.give('wheat', 3, b.x, b.z); this.give('apple', 2); if (Math.random() < 0.5) this.give('mushroom', 1); sfx('coin'); } });
+    if (b.t === 'huerto') opts.push(...this.farmMenu(b));
+    if (b.t === 'gallinero' || b.t === 'establo') opts.push(...this.animalMenu(b));
     if (!b.town) opts.push({ label: '♻️ Desmontar (recuperas la mitad)', action: () => { for (const [k, v] of Object.entries(def.cost)) this.give(k, Math.floor(v / 2)); this.removeStruct(b); } });
     opts.push({ label: 'Cerrar', action: null });
-    this.ui.openDialog(`${def.icon} ${def.name}`, `${def.desc} Vida: ${Math.round(b.hp)}/${b.maxHp}${b.strong ? ' (reforzada)' : ''}.${b.t === 'huerto' ? ` Cosecha: ${Math.min(100, Math.round(b.grow * 100))}%` : ''}`, opts);
+    this.ui.openDialog(`${def.icon} ${def.name}`, `${def.desc} Vida: ${Math.round(b.hp)}/${b.maxHp}${b.strong ? ' (reforzada)' : ''}.${b.t === 'huerto' ? (b.crop ? ` ${ITEMS_NAME(b.crop)}: ${Math.min(100, Math.round(b.grow * 100))}% · agua ${Math.round((b.water || 0) * 100)}%` : ' Vacío: planta semillas.') : ''}${b.stock ? ` Listo para recoger: ${b.stock}` : ''}`, opts);
   };
 
   // ---- defensas de los pueblos
@@ -203,7 +229,7 @@ export function installBuild(Game, D) {
       const dP = Math.hypot(cx - p.x, cz - p.z);
       if (dP < 22) { if (b.hp < b.maxHp || dP < 6) this.ui.placeLabel(b.label, cx, (b.t === 'torre' ? 3.6 : 1.9), cz); else if (b.label._vis) { b.label._vis = false; b.label.el.style.display = 'none'; } }
       else if (b.label._vis) { b.label._vis = false; b.label.el.style.display = 'none'; }
-      if (b.t === 'huerto' && b.grow < 1) { b.grow = Math.min(1, b.grow + dt / 180); b.mesh.traverse((o) => { if (o.userData.crop) o.scale.setScalar(0.4 + b.grow * 0.9); }); }
+
       if (b.t === 'tienda' && dP < 2.5 && !p.dead && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.01 * dt);
       if (dP > 40) continue;
       b.cd -= dt;

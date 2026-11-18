@@ -469,6 +469,7 @@ export function installNaval(Game, D) {
   P.sailMenu = function () {
     const opts = [];
     opts.push({ label: '⬇️ Bajar a la bodega', action: () => this.enterHold() });
+    if (this.flags.diveBell) opts.push({ label: '🔔 Bajar con la campana de buceo (Ciudad de Coralia)', action: () => this.dive() });
     opts.push({ label: this.deck ? '🧭 Volver al timón' : '🚶 Pasear por la cubierta', action: () => this.toggleDeck() });
     if (this.autoHelm) {
       const h = this.npcById(this.autoHelm);
@@ -746,6 +747,8 @@ export function installNaval(Game, D) {
     }
     opts.push(...this.shipyardExtra());
     opts.push({ label: '🎨 Decorar el barco y ponerle nombre', action: () => this.decorShip() });
+    if (!this.flags.diveBell) opts.push({ label: '🔔 Campana de buceo (3000 oro): baja a la Ciudad de Coralia desde tu barco', action: () => this.buy({ gold: 3000 }, () => { this.flags.diveBell = true; this.toast('🔔 ¡Campana de buceo instalada! Úsala desde ⚙️ Barco en alta mar', 'area'); }) });
+    else if (!this.flags.diveBell2) opts.push({ label: '🫧 Campana mejorada (4000 oro): el doble de aire', action: () => this.buy({ gold: 4000 }, () => { this.flags.diveBell2 = true; this.toast('🫧 Ahora tienes el doble de aire bajo el agua'); }) });
     opts.push({ label: '🧨 Comprar 3 pólvora (30 oro)', action: () => this.buy({ gold: 30 }, () => this.give('polvora', 3)) });
     opts.push({ label: 'Adiós', action: null });
     this.ui.openDialog(`⚓ Astillera Marga · «${this.shipName()}» (${this.shipType().name})`,

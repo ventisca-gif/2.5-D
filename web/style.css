@@ -448,3 +448,28 @@ body.sailing #skillBar { display: none; }
 body.sailing #btnMount { display: none; }
 .logro { display: flex; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
 .logro.no { opacity: 0.45; }
+
+#comboTxt { position: absolute; right: calc(120px + var(--sar)); bottom: calc(160px + var(--sab)); font: 900 22px Georgia, serif; color: #ffd040; text-shadow: 0 2px 4px #000; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+#oxyBar { position: absolute; top: calc(60px + var(--sat, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 6px; align-items: center; padding: 4px 10px; width: 220px; }
+#oxyBar.hidden { display: none; }
+.bar.oxy { flex: 1; height: 10px; }
+.bar.oxy #oxyFill { height: 100%; width: 100%; background: linear-gradient(90deg, #6ad8ff, #d8f8ff); }
+body.sailing #btnBlock { display: none; }
+#btnBlock:active { background: #3a5a7a; }
+body.photo #hud, body.photo #labels { display: none !important; }
+#photoUI { position: absolute; left: 0; right: 0; bottom: calc(14px + var(--sab)); display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; z-index: 30; }
+#photoUI.hidden { display: none; }
+#photoUI button { background: rgba(20,14,10,0.85); color: #f1ead8; border: 1px solid #e0b040; border-radius: 18px; padding: 8px 12px; font-size: 13px; }
+#photoUI button.big { background: #e0b040; color: #2a1a0a; font-weight: 700; }
+#photoFrame { position: absolute; inset: 0; pointer-events: none; z-index: 20; display: none; }
+body.photo #photoFrame { display: block; }
+#photoFrame.fr-madera { border: 16px solid #5a3a1a; box-shadow: inset 0 0 0 4px #d8a838; }
+#photoFrame.fr-pergamino { box-shadow: inset 0 0 120px 40px rgba(120,80,30,0.85); }
+#photoFrame.fr-sebusca { border-top: 54px solid rgba(232,216,168,0.92); border-bottom: 60px solid rgba(232,216,168,0.92); }
+#photoFrame.fr-polaroid { border: 18px solid #f8f6f0; border-bottom-width: 70px; }
+#photoFrame.fl-sepia { backdrop-filter: sepia(0.85); } #photoFrame.fl-bn { backdrop-filter: grayscale(1); } #photoFrame.fl-calido { backdrop-filter: saturate(1.3) sepia(0.25); } #photoFrame.fl-frio { backdrop-filter: hue-rotate(15deg); }
+#photoFlash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.18s; }
+#photoFlash.on { opacity: 0.9; transition: none; }
+.mkrow { display: grid; grid-template-columns: 1.4fr 0.8fr 0.8fr auto; gap: 6px; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+.mkform { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+.mkform select, .mkform input { background: #1a120c; color: #f1ead8; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }

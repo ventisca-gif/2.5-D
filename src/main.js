@@ -28,6 +28,8 @@ import { installExtra, EVENT_COS } from './extra.js';
 import { installMore, makeDungeonRegion } from './more.js';
 import { installMore2, makeGhostIslet, HOUSES, MOUNTS, PREMIUM_DECOR, mountModel } from './more2.js';
 import { DECOR } from './extra.js';
+import { installMore3, makeCoralia, makeJellyModel } from './more3.js';
+import { LOGROS } from './more2.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -89,6 +91,9 @@ const ENEMY_DEF = {
   serafin: { name: 'Azrael, el Serafín Caído', hp: () => 26000, atk: () => 270, speed: 3.0, xp: () => 30000, gold: () => 6000, aggro: 7, cd: 1.3, boss: true, super: 'serafin', bounty: 5000 },
   dragon: { name: 'Ignaros, el Dragón Rey', hp: () => 32000, atk: () => 300, speed: 2.4, xp: () => 36000, gold: () => 7000, aggro: 7, cd: 1.6, boss: true, super: 'dragon', bounty: 6000 },
   leviathan: { name: 'Leviatán Abisal', hp: (L) => 7000 + L * 90, atk: (L) => 40 + L * 2.6, speed: 0, xp: () => 0, gold: () => 0, aggro: 12, cd: 2.2, boss: true, super: 'leviathan' },
+  merfolk: { name: 'Tritón de Coralia', hp: (L) => 50 + 14 * L, atk: (L) => 6 + 2.3 * L, speed: 2.8, xp: (L) => 18 + 8 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 6, cd: 1.3 },
+  jelly: { name: 'Medusa gigante', hp: (L) => 30 + 10 * L, atk: (L) => 5 + 2.2 * L, speed: 1.6, xp: (L) => 14 + 7 * L, gold: (L) => 5 + Math.floor(Math.random() * (4 + L)), aggro: 4, cd: 1.6, fly: true },
+  abyss_queen: { name: 'Reina Abisal Nerissa', hp: () => 11000, atk: () => 170, speed: 2.6, xp: () => 12000, gold: () => 3500, aggro: 8, cd: 1.3, boss: true, super: 'abyss', bounty: 2500 },
   ghost_captain: { name: 'Capitán Espectro Valdrak', hp: () => 14000, atk: () => 210, speed: 2.8, xp: () => 16000, gold: () => 4000, aggro: 8, cd: 1.3, boss: true, super: 'ghost', bounty: 3000 },
   crypt_king: { name: 'Rey de la Cripta', hp: (L) => 1800 + L * 90, atk: (L) => 12 + L * 2.6, speed: 2.4, xp: (L) => 400 + L * 40, gold: (L) => 100 + L * 8, aggro: 9, cd: 1.5, boss: true, super: 'crypt' },
   tentacle: { name: 'Tentáculo', hp: (L) => 900 + L * 18, atk: (L) => 20 + L * 2, speed: 0, xp: (L) => 200 + L * 10, gold: (L) => 30 + L, aggro: 12, cd: 1.8 },
@@ -258,7 +263,7 @@ class Player extends Actor {
         this.pendingHit = null;
         if (!e.dead && this.dist(e) < 2.2) {
           const crit = Math.random() < 0.12 + (g.petCrit ? g.petCrit() : 0);
-          const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1)));
+          const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1) * g.comboMul()));
           if (e.isRemote) { if (g.net.pvpHit(e, dmg)) g.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, 1.4, e.z); }
           else if (e.isNPC) g.damageNPC(e, dmg, crit); else g.hitEnemy(e, dmg, crit);
         }
@@ -547,7 +552,7 @@ class NPC extends Actor {
             this.attackCd = 1.1;
             this.st.attackT = 0.32;
             g.slash(this, 0xbfe6ff);
-            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3) * g.crewScale());
+            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3) * g.crewScale() * (s.loyal ? 1.25 : 1));
             setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.hitEnemy(foe, dmg, false, this); }, 150);
           }
         } else {
@@ -653,6 +658,9 @@ class Enemy extends Actor {
     else if (type === 'skull') model = makeFlameSkull();
     else if (type === 'serafin') model = HUM({ ...EQUIP.c_serafin.look, ...EQUIP.c_alas_serafin.look, sword: true, blade: 0xfff4c0, bladeLen: 0.7, guard: 0xffd040, skin: 0xf0d8c0, anime: true, female: false, eyeColor: 3 });
     else if (type === 'dragon') model = HUM({ ...EQUIP.c_dragon.look, axe: true, skin: 0x8a3a2a, anime: true, eyeColor: 1 });
+    else if (type === 'merfolk') model = HUM(animeLook({ id: 'triton' + seed, look: { skin: 0x4ab0a0, hair: 0x1a5a7a, shirt: 0x2a7a8a, pants: 0x1a5a6a, armor: true, armorColor: 0x3a9aa8, spear: true, trident: true } }));
+    else if (type === 'jelly') model = makeJellyModel();
+    else if (type === 'abyss_queen') model = HUM(animeLook({ id: 'nerissa', look: { skin: 0x7ad0c0, hair: 0x2ad8e8, longHair: true, dress: true, dressColor: 0x1a6a8a, shirt: 0x2a8aa8, hat: 'circlet', halo: 0x3ad8ff, spear: true, trident: true, cape: 0x1a4a6a } }));
     else if (type === 'ghost_captain') model = HUM({ bone: 0xbfe8e8, hat: 'tricorn', hatColor: 0x1a2a30, feather: 0x7af0e0, coat: true, shirt: 0x2a4a50, cape: 0x3a6a70, sword: true, blade: 0x7af0e0, guard: 0x7af0e0, eyeGlow: 0x7af0e0 });
     else if (type === 'crypt_king') model = HUM({ bone: 0xe0d8c0, hat: 'horned', hatColor: 0xd8d0b8, hornColor: 0x3a3030, cape: 0x3a0a1a, sword: true, blade: 0x7aff8a, guard: 0xd8a838, eyeGlow: 0x7aff8a, pauldron: 0x3a3040, trim: 0xd8a838 });
     else if (type === 'tentacle' || type === 'leviathan') model = makeTentacleModel(type === 'leviathan');
@@ -673,6 +681,7 @@ class Enemy extends Actor {
     if (type === 'serafin') model_scale(model, 1.6);
     if (type === 'dragon') model_scale(model, 1.75);
     if (type === 'crypt_king') model_scale(model, 1.55);
+    if (type === 'abyss_queen') model_scale(model, 1.5);
     if (type === 'ghost_captain') { model_scale(model, 1.5); for (const m of model.mats) { m.transparent = true; m.opacity = 0.75; } }
     this.type = type;
     this.def = ENEMY_DEF[type];
@@ -911,7 +920,8 @@ class Game {
     this.arena = makeArenaRegion();
     this.addMarga();
     this.dungeon = makeDungeonRegion();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon]);
+    this.coralia = makeCoralia();
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1193,7 +1203,7 @@ class Game {
       n.baseLevel = npcLevel(n.id, area);
       n.setStats(n.baseLevel);
     }
-    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns)]) {
+    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns]) {
       for (let i = 0; i < s.count; i++) { const e = new Enemy(this, s.type, s, s.lvl); e.idx = this.enemies.length; this.enemies.push(e); }
     }
     this.baseEnemies = this.enemies.length;
@@ -1297,6 +1307,7 @@ class Game {
       if (k === 'e') { e.preventDefault(); const a = this.contextAction(); if (a && a.fn && a.label !== 'Atacar') a.fn(); }
       if (k === 'q') this.player.usePotion();
       if (k === 'k') this.toggleMount();
+      if (k === 'b' && !e.repeat) this.blockPress(true);
       if (k === 'i' || k === 'b') this.panels.isOpen ? this.panels.close() : this.panels.openInventory();
       if (k === 'l') this.panels.isOpen ? this.panels.close() : this.panels.openBitacora();
       if (k === 'r') this.player.running = !this.player.running;
@@ -1311,7 +1322,7 @@ class Game {
         if (b) b.click();
       }
     });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.key.toLowerCase()));
+    window.addEventListener('keyup', (e) => { this.keys.delete(e.key.toLowerCase()); if (e.key.toLowerCase() === 'b') this.blockPress(false); });
     window.addEventListener('blur', () => this.keys.clear());
 
     // pointerdown: responde aunque otro dedo esté en el joystick (multitáctil)
@@ -1327,6 +1338,9 @@ class Game {
     press('btnUse', () => { if (!this.started || this.paused || this.ui.dialogOpen) return; const a = this.contextAction(); if (a && a.fn && a.label !== 'Atacar') a.fn(); });
     press('btnMed', () => this.meditate());
     press('btnMount', () => this.toggleMount());
+    $('btnBlock').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this.blockPress(true); });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('btnBlock').addEventListener(ev, () => this.blockPress(false));
+    $('photoUI').addEventListener('click', (e) => { const b = e.target.closest('[data-ph]'); if (b) this.photoAction(b.dataset.ph); });
     press('btnBuild', () => this.panels.openBuild());
     $('btnBag').addEventListener('click', () => { if (this.started) this.panels.openInventory(); });
     $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
@@ -1655,6 +1669,7 @@ class Game {
     const p = this.player;
     if (this.flags[c.id]) return this.ui.toast('El cofre está vacío');
     this.flags[c.id] = true;
+    if (c.id.startsWith('coralia_')) { this.flags[c.id + '_day'] = this.day; this.give('coral', 2, c.x, c.z); }
     if (Math.random() < 0.5) setTimeout(() => this.addTreasureMap(), 1200);
     const gold = c.loot.gold || 0, pot = c.loot.potion || 0;
     p.gold += gold;
@@ -1741,7 +1756,12 @@ class Game {
     }
     if (this.dgLock) void 0;
     for (const ps of this.posters) if (Math.hypot(ps.x - p.x, ps.z - p.z) < 1.7) return { icon: '📜', label: 'Se busca', fn: () => this.panels.openPosters() };
-    if (this.inDungeon()) {
+    if (this.inCoralia()) {
+      if (Math.hypot(p.x - this.coralia.exit.x, p.z - this.coralia.exit.z) < 1.8) return { icon: '🔔', label: 'Subir', fn: () => this.surface() };
+    }
+    const clam = this.clamNear();
+    if (clam) return { icon: '🐚', label: 'Almeja', fn: () => this.pickClam(clam) };
+    if (this.inDungeon() && !this.inCoralia()) {
       if (Math.hypot(p.x - this.dungeon.exit.x, p.z - this.dungeon.exit.z) < 1.8) return { icon: '🚪', label: 'Salir', fn: () => this.leaveDungeon() };
     }
     for (const c of this.caves) if (Math.hypot(c.x - p.x, c.z - p.z) < 1.9) return { icon: '🕯️', label: 'Cripta', fn: () => this.enterDungeon(c) };
@@ -1999,7 +2019,8 @@ class Game {
   damagePlayer(e, atk) {
     const p = this.player;
     if (p.dead) return;
-    const dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def))));
+    let dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def))));
+    if (p.blocking) { dmg = this.blockDamage(e, dmg); if (dmg <= 0) return; }
     if (e.isNPC && p.hp - dmg <= p.maxHp * 0.15) { this.endFight(e, 'lose'); return; }
     p.hp -= dmg;
     p.lastCombat = this.time;
@@ -2087,9 +2108,11 @@ class Game {
   }
   onShipSunk(type) {
     this.sideTick('ship', type);
+    this.storyTick('ship', type);
   }
   onKill(type) {
     this.sideTick('kill', type);
+    this.storyTick('kill', type);
     const cur = questAt(this.quest.stage, this);
     if (!cur || cur.type !== 'kill' || cur.target !== type) return;
     this.quest.progress++;
@@ -2177,11 +2200,12 @@ class Game {
       v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
       inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
       playtime: Math.round(this.playtime), day: this.day, area: this.boarding ? 'Mar de Bruma' : this.W.areaName(p.tx, p.tz), ...pos,
+      crewQ: this.crewQ || {}, market: this.net.isHost ? (this.market || []) : [],
       mounts: this.ownMounts || [], mountSel: this.mountSel || null, logros: this.logros || {}, title: this.title || null, clan: this.clan || null, stashes: this.stashes || {},
       pets: this.ownPets || [], pet: this.petType || null, petXp: this.petXp || {}, flagCfg: this.flagCfg || null, love: this.loveData || null, spouseP: this.spouseP || null,
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
-      shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow })) : [], townDef: this.townDef || {},
+      shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
   }
@@ -2304,6 +2328,7 @@ class Game {
       sfx('click');
       if (act === 'resume') this.toggleMenu(false);
       if (act === 'save') { this.save(); this.ui.toast('💾 Partida guardada'); this.toggleMenu(false); }
+      if (act === 'photo') { this.toggleMenu(false); this.photoMode(true); }
       if (act === 'music') { this.settings.music = this.settings.music === false; store(SETTINGS_KEY, this.settings); this.refreshMenu(); }
       if (act === 'sound') {
         this.settings.sound = !this.settings.sound;
@@ -2385,6 +2410,7 @@ class Game {
     this.tmaps = data.tmaps || []; this.player.inv.mapa_tesoro = this.tmaps.length; this.raceBoard = data.raceBoard || [];
     if (this.flagCfg) this.applyFlag(this.ship, this.flagCfg);
     this.refreshHouseLabels();
+    this.crewQ = data.crewQ || {};
     this.ownMounts = data.mounts || []; this.mountSel = data.mountSel || null; this.logros = data.logros || {}; this.title = data.title || null; this.clan = data.clan || null; this.stashes = data.stashes || {};
     this.jobBoard = data.jobBoard || null;
     this.wardrobe = data.wardrobe || [];
@@ -2575,6 +2601,7 @@ class Game {
     }
     if (s.crew) {
       o.push({ label: s.wait ? '▶ Sígueme' : '⏸ Espera aquí', action: () => this.toggleCrewWait(n.id) });
+      const so = this.crewStoryOpt(n); if (so) o.push(so);
       o.push({ label: '👋 Dejar la tripulación', action: () => this.dismiss(n) });
     }
     if (ROMANCE.has(n.id)) {
@@ -2850,6 +2877,9 @@ class Game {
       this.updateFishing(dt);
       this.updatePet(dt);
       this.updateMount(dt);
+      this.updateCoralia(dt);
+      this.updateFarm(dt);
+      this.updateTides(dt);
       this.updateGhost(dt);
       this.updateCrewJobs(dt);
       this.updateCtf(dt);
@@ -2860,7 +2890,7 @@ class Game {
       this.updateTournament(dt);
       this.updateDungeon(dt);
       this.updateRemoteExtras(dt);
-      this.mapT = (this.mapT || 0) - dt; if (this.mapT <= 0) { this.mapT = 1; this.updateMaps(); }
+      this.mapT = (this.mapT || 0) - dt; if (this.mapT <= 0) { this.mapT = 1; this.updateMaps(); this.updateStories(); }
       this.updateEvents(dt);
       this.updateSkills && this.updateSkills(dt);
       this.updateBuild && this.updateBuild(dt);
@@ -3060,6 +3090,13 @@ installSkills(Game, { sfx, EQUIP });
 installBuild(Game, { sfx, T });
 installExtra(Game, { sfx, Enemy, NPC, ITEMS, EQUIP, T });
 installMore2(Game, { sfx, audio });
+installMore3(Game, { sfx });
+LOGROS.push(
+  { id: 'coralia', name: 'Reina del abismo', title: 'Señor de las mareas', desc: 'Derrota a la Reina Abisal en Coralia', ok: (g) => (g.stats.k_abyss_queen || 0) >= 1 },
+  { id: 'parada', name: 'Maestro esgrimista', title: 'Maestro esgrimista', desc: 'Haz 25 paradas perfectas', ok: (g) => (g.stats.parries || 0) >= 25 },
+  { id: 'fotos', name: 'Fotógrafo', title: 'Fotógrafo', desc: 'Haz 10 fotos', ok: (g) => (g.stats.photos || 0) >= 10 },
+  { id: 'lealtad', name: 'Corazón de la tripulación', title: 'Capitán querido', desc: 'Completa 5 historias de tu tripulación', ok: (g) => Object.values(g.crewQ || {}).filter((q) => q.s === 2).length >= 5 },
+);
 for (const d of PREMIUM_DECOR) DECOR.push({ ...d, premium: true });
 installMore(Game, { sfx, mountModel, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
 

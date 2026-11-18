@@ -365,6 +365,7 @@ export function installMore(Game, D) {
       this.ring(p.x, p.z, 1.5, 0xffd040);
       this.toast(`💰 ¡Tesoro desenterrado! +${g} oro`, 'area');
       this.stats.treasures = (this.stats.treasures || 0) + 1;
+      if (this.storyTick) this.storyTick('treasure');
       sfx('quest');
     }, 1800);
   };
@@ -633,6 +634,7 @@ export function installMore(Game, D) {
   // ============================================================ multijugador: mensajes de las nuevas funciones
   P.onNetX = function (from, m) {
     if (this.onNetX2 && this.onNetX2(from, m)) return;
+    if (this.onNetX3 && this.onNetX3(from, m)) return;
     const r = this.net.remotes.get(from);
     const name = r ? r.name : '?';
     if (m.k === 'toast') this.toast(m.msg);

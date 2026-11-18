@@ -313,6 +313,16 @@ function poses(p, st, dt) {
     p.body.position.y = Math.abs(Math.sin(T * 6)) * 0.07;
   }
   if (st.ride) { p.legL.rotation.set(-1.25, 0, -0.55); p.legR.rotation.set(-1.25, 0, 0.55); if (!st.attackT || st.attackT <= 0) { p.armL.rotation.set(-0.7, 0, 0); p.armR.rotation.set(-0.7, 0, 0); } }
+  if (st.block) { p.armR.rotation.set(-1.3, 0, -0.6); p.armL.rotation.set(-1.4, 0, 0.5); p.torso.rotation.x = 0.1; }
+  switch (st.pose) {
+    case 'wave': p.armR.rotation.set(-2.7, 0, 0.3 + Math.sin(T * 8) * 0.35); break;
+    case 'victory': p.armL.rotation.set(-2.9, 0, -0.35); p.armR.rotation.set(-2.9, 0, 0.35); p.head.rotation.x = -0.25; break;
+    case 'sit': p.legL.rotation.x = -1.5; p.legR.rotation.x = -1.5; p.body.position.y = -0.32; p.armL.rotation.set(-0.5, 0, 0); p.armR.rotation.set(-0.5, 0, 0); break;
+    case 'dance': p.body.rotation.y = Math.sin(T * 3) * 0.7; p.armL.rotation.set(-2.5 + Math.sin(T * 6) * 0.4, 0, -0.3); p.armR.rotation.set(-2.5 + Math.cos(T * 6) * 0.4, 0, 0.3); p.body.position.y = Math.abs(Math.sin(T * 6)) * 0.07; break;
+    case 'meditate': p.legL.rotation.set(-1.5, 0, -0.8); p.legR.rotation.set(-1.5, 0, 0.8); p.body.position.y = -0.3; p.armL.rotation.set(-0.6, 0, -0.4); p.armR.rotation.set(-0.6, 0, 0.4); break;
+    case 'sword': p.armR.rotation.set(-1.4, 0, 0.5); p.armL.rotation.set(-0.6, 0, -0.5); p.legL.rotation.x = -0.4; p.legR.rotation.x = 0.3; p.torso.rotation.y = 0.4; break;
+    default: break;
+  }
   if (st.carry) { p.armL.rotation.set(-1.35, 0, 0.3); p.armR.rotation.set(-1.35, 0, -0.3); }
   if (st.carried) { p.legL.rotation.x = -1.4; p.legR.rotation.x = -1.4; p.armL.rotation.set(-2.4, 0, -0.2); p.armR.rotation.set(-0.5, 0, 0.5); }
   if (st.meditate) {

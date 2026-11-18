@@ -344,6 +344,35 @@ public class MainActivity extends Activity {
             }).start();
         }
 
+        // guarda una foto del modo foto en la galería (Imágenes/Bruma)
+        @JavascriptInterface
+        public String saveImage(String b64, String name) {
+            try {
+                byte[] data = android.util.Base64.decode(b64, android.util.Base64.DEFAULT);
+                if (Build.VERSION.SDK_INT >= 29) {
+                    android.content.ContentValues v = new android.content.ContentValues();
+                    v.put("_display_name", name);
+                    v.put("mime_type", "image/png");
+                    v.put("relative_path", "Pictures/Bruma");
+                    Uri uri = getContentResolver().insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v);
+                    java.io.OutputStream os = getContentResolver().openOutputStream(uri);
+                    os.write(data);
+                    os.close();
+                    return "Galería › Imágenes › Bruma";
+                }
+                File dir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+                if (dir != null && !dir.exists()) dir.mkdirs();
+                File f = new File(dir, name);
+                java.io.FileOutputStream fo = new java.io.FileOutputStream(f);
+                fo.write(data);
+                fo.close();
+                sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(f)));
+                return f.getAbsolutePath();
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
         @JavascriptInterface
         public void openUrl(final String url) {
             runOnUiThread(new Runnable() {
