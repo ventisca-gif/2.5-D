@@ -249,7 +249,7 @@ export class UI {
     const ctx = c.getContext('2d');
     const col = {
       [T.WATER]: '#2f7fb8', [T.SAND]: '#e2cd96', [T.GRASS]: '#6aa848', [T.DARK]: '#5a983e',
-      [T.DIRT]: '#b4895a', [T.STONE]: '#b4b2ac', [T.DOCK]: '#8a6a44', [T.FIELD]: '#c9a24a', [T.ROCK]: '#5a504e', [T.LAVA]: '#ff6418', [T.SNOW]: '#eef2f8', [T.CANDY]: '#f6aac8', [T.METAL]: '#82848c',
+      [T.DIRT]: '#b4895a', [T.STONE]: '#b4b2ac', [T.DOCK]: '#8a6a44', [T.FIELD]: '#c9a24a', [T.ROCK]: '#5a504e', [T.LAVA]: '#ff6418', [T.SNOW]: '#eef2f8', [T.CANDY]: '#f6aac8', [T.METAL]: '#82848c', [T.MOSS]: '#4a5c34', [T.FUNGI]: '#604678', [T.VOID]: '#241834',
     };
     for (let j = 0; j < B.size; j++) for (let i = 0; i < B.size; i++) {
       ctx.fillStyle = col[W.tileAll(B.x0 + i, B.z0 + j)];

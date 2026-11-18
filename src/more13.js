@@ -124,7 +124,8 @@ export function installMore13(Game, D) {
         const bal = new THREE.Mesh(new THREE.SphereGeometry(0.9, 14, 10), new THREE.MeshLambertMaterial({ color: 0xd8602a })); bal.position.set(R.arrive.x - 1.5, 4, R.arrive.z); g.add(bal);
         const bask = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.8), new THREE.MeshLambertMaterial({ color: 0x8a6a44 })); bask.position.set(R.arrive.x - 1.5, 0.25, R.arrive.z); g.add(bask);
       } else {
-        const plane = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), new THREE.MeshLambertMaterial(R.zone === 'abismo' ? { color: 0xff5010, emissive: 0xa02000 } : { color: 0x2a6a9a, transparent: true, opacity: 0.95 }));
+        const zp = Z[R.zone].plane;
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshLambertMaterial(zp || (R.zone === 'abismo' ? { color: 0xff5010, emissive: 0xa02000 } : { color: 0x2a6a9a, transparent: true, opacity: 0.95 })));
         plane.rotation.x = -Math.PI / 2; plane.position.set(c.x, -0.35, c.z); g.add(plane);
         const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.12, 8, 20), new THREE.MeshBasicMaterial({ color: R.zone === 'abismo' ? 0xff3a10 : 0xd8b040 })); ring.position.set(R.arrive.x - 1.5, 1, R.arrive.z); g.add(ring); R.ring = ring;
       }
@@ -153,7 +154,7 @@ export function installMore13(Game, D) {
       return `Misión 2: tráeme ${n} × ${ITEMS[m].name}.`;
     }
     if (q === 2) {
-      if ((this.stats['k_' + z.boss] || 0) > 0) opts.push({ label: `✔ Entregar: ${this.ENEMY_DEF[z.boss].name} derrotado`, action: () => { this.zq[key] = 3; this.give('esencia_titan', 2); p.gold += 30000; this.toast(`👑 ¡Has liberado ${z.name}! +30000 oro y 2 esencias de titán`, 'area'); if (['celeste', 'pasado', 'abismo'].every((k) => (this.zq[k] || 0) >= 3)) { this.flags.plan_celestial = true; this.toast('📜 ¡Has vencido a los tres jefes: plano de la Armadura Celestial Suprema!', 'area'); } sfx('quest'); } });
+      if ((this.stats['k_' + z.boss] || 0) > 0) opts.push({ label: `✔ Entregar: ${this.ENEMY_DEF[z.boss].name} derrotado`, action: () => { this.zq[key] = 3; this.give(z.bossReward || 'esencia_titan', 2); p.gold += z.bossGold || 30000; this.toast(`👑 ¡Has liberado ${z.name}! +30000 oro y 2 esencias de titán`, 'area'); if (['celeste', 'pasado', 'abismo'].every((k) => (this.zq[k] || 0) >= 3)) { this.flags.plan_celestial = true; this.toast('📜 ¡Has vencido a los tres jefes: plano de la Armadura Celestial Suprema!', 'area'); } sfx('quest'); } });
       return `Misión 3: derrota a ${this.ENEMY_DEF[z.boss].name}.`;
     }
     return 'Has salvado esta tierra. Siempre serás bienvenido.';
@@ -170,7 +171,7 @@ export function installMore13(Game, D) {
     let sp = null;
     for (let i = 0; i < 30 && !sp; i++) { const x = p.tx + Math.round((Math.random() - 0.5) * 6), z = p.tz + Math.round((Math.random() - 0.5) * 6); if (this.W.walkable(x, z) && Math.hypot(x - p.x, z - p.z) > 1.5) sp = { x, z }; }
     if (!sp) return;
-    const lvl = Math.min(350, p.level + 3);
+    const lvl = Math.min(500, p.level + 3);
     const look = { shirt: 0x2a1a2a, pants: 0x1a1a1a, hair: 0xe8e8e8, skin: 0xd9a066, scarf: 0x8a1a1a, eyepatch: true };
     for (const id of Object.values(D.crewGear(lvl) || {})) if (EQUIP[id]) Object.assign(look, EQUIP[id].look);
     const n = new D.NPC(this, { id: 'nemesis', name: `${this.nem.name}`, x: sp.x, z: sp.z, wander: 0, look });
@@ -258,7 +259,7 @@ export function installMore13(Game, D) {
       this.smT = (this.smT ?? 120) - dt;
       if (this.smT > 0) return;
       this.smT = 200 + Math.random() * 200;
-      const kraken = Math.random() < 0.5, lvl = Math.min(350, this.player.level + 5);
+      const kraken = Math.random() < 0.5, lvl = Math.min(500, this.player.level + 5);
       const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color: kraken ? 0x8a2a4a : 0x2a3a5a });
       if (kraken) { const h = new THREE.Mesh(new THREE.SphereGeometry(1.6, 14, 10), mat); h.position.y = 1; h.scale.y = 1.3; g.add(h); for (let i = 0; i < 8; i++) { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.3, 3.5, 6), mat); const a = (i / 8) * Math.PI * 2; t.position.set(Math.cos(a) * 1.8, 0.8, Math.sin(a) * 1.8); t.rotation.z = Math.cos(a) * 0.8; t.rotation.x = Math.sin(a) * 0.8; g.add(t); } }
       else { const body = new THREE.Mesh(new THREE.SphereGeometry(1.6, 14, 10), mat); body.scale.set(1, 0.7, 3.2); body.position.y = 0.4; g.add(body); const tail = new THREE.Mesh(new THREE.BoxGeometry(3, 0.15, 0.9), mat); tail.position.set(0, 0.5, -5); g.add(tail); }
@@ -364,7 +365,7 @@ export function installMore13(Game, D) {
     return null;
   };
   P.updateMore13 = function (dt) {
-    if (!this.W._isIntPatched) { this.W._isIntPatched = true; const base = this.W.isInterior; this.W.isInterior = (x) => base(x) && !(x >= 2990 && x < 3600); }
+    if (!this.W._isIntPatched) { this.W._isIntPatched = true; const base = this.W.isInterior; this.W.isInterior = (x) => base(x) && !(x >= 2990 && x < 4700); }
     this.updateZone();
     this.updateNemesis(dt);
     this.updateSeaMonster(dt);

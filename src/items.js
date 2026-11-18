@@ -2,7 +2,7 @@
 import { HAIR_AF, HAIR_AM, HAIR_COLORS_A, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './anime.js';
 
 import { addExpansion, crewGearX, crewTierX, NEW_TIER_NAMES } from './sets.js';
-export const MAX_LEVEL = 350;
+export const MAX_LEVEL = 500;
 
 // ----------------------------------------------------------------- objetos simples
 export const ITEMS = {
@@ -381,6 +381,14 @@ for (const [id, e] of Object.entries(EQUIP)) if (e.set && !ITEMS[id]) ITEMS[id] 
 export const DROPS = {
   wolf: [['meat', 0.6], ['leather', 0.5]],
   grifo: [['polvo_estelar', 0.35], ['leather', 0.6]],
+  sapo_gigante: [['musgo_maldito', 0.5]], bruja_pantano: [['musgo_maldito', 0.6], ['pocion_mayor', 0.2]], hidra_pantano: [['musgo_maldito', 0.8], ['esencia_titan', 0.1]],
+  reina_cienaga: [['nucleo_estelar', 1], ['musgo_maldito', 1], ['musgo_maldito', 1]],
+  hongo_andante: [['espora_luz', 0.6]], escarabajo_luz: [['espora_luz', 0.5]], druida_esporas: [['espora_luz', 0.7], ['esencia_titan', 0.1]],
+  micelio_rey: [['nucleo_estelar', 1], ['espora_luz', 1], ['espora_luz', 1]],
+  marinero_fantasma: [['madera_espectral', 0.6]], cangrejo_coloso: [['madera_espectral', 0.5], ['perla', 0.5]], kraken_joven: [['madera_espectral', 0.6], ['ambar_gris', 0.1]],
+  almirante_muerto: [['nucleo_estelar', 1], ['madera_espectral', 1], ['madera_espectral', 1]],
+  centinela_vacio: [['fragmento_vacio', 0.6]], devorador_estelar: [['fragmento_vacio', 0.6]], caballero_vacio: [['fragmento_vacio', 0.8], ['esencia_titan', 0.15]],
+  nihil: [['nucleo_estelar', 1], ['nucleo_estelar', 1], ['fragmento_vacio', 1], ['fragmento_vacio', 1]],
   caballero_celeste: [['polvo_estelar', 0.4], ['plata_lunar', 0.3]],
   golem_nube: [['oro_solar', 0.5], ['plata_lunar', 0.4]],
   rey_celeste: [['esencia_titan', 1], ['polvo_estelar', 1], ['polvo_estelar', 1], ['oro_solar', 1]],
@@ -430,6 +438,10 @@ DROPS.skeleton.push(['bandana_roja', 0.02]);
 // menas al picar rocas, según la zona
 export function oreDrop(area) {
   const r = Math.random();
+  if (area === 'Pantano Maldito') return r < 0.3 ? 'musgo_maldito' : null;
+  if (area === 'Bosque de Hongos Gigantes') return r < 0.3 ? 'espora_luz' : null;
+  if (area === 'Cementerio de Barcos') return r < 0.3 ? 'madera_espectral' : r < 0.36 ? 'fragmento_vacio' : null;
+  if (area === 'Ciudadela del Vacío') return r < 0.3 ? 'fragmento_vacio' : null;
   if (area === 'Ciudad Celeste' || area === 'Jardines Celestes') return r < 0.2 ? 'oro_solar' : r < 0.4 ? 'plata_lunar' : null;
   if (area === 'Isla Bruma (hace 100 años)' || area === 'Villarroca Antigua') return r < 0.22 ? 'mithril' : r < 0.3 ? 'adamantita' : null;
   if (area === 'Abismo Ardiente' || area === 'Fortaleza Infernal') return r < 0.28 ? 'piedra_infernal' : r < 0.33 ? 'adamantita' : null;

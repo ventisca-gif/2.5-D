@@ -220,7 +220,8 @@ export class Panels {
     this.station = station;
     const g = this.g, p = g.player;
     const titles = { forja: '⚒️ Forja de Tadeo', banco: '🪚 Banco de carpintero', fuego: '🍳 Cocina' };
-    const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => r.station === station);
+    const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => r.station === station && (!r.lvl || r.lvl <= p.level + 40));
+    const hidden = RECIPES.filter((r) => r.station === station && r.lvl && r.lvl > p.level + 40).length;
     const html = list.map(({ r, i }) => {
       const it = ITEMS[r.out];
       const needs = Object.entries(r.need).map(([id, n]) => {
@@ -237,7 +238,7 @@ export class Panels {
         <button class="pbtn" data-p="craft" data-i="${i}" ${can ? '' : 'disabled'}>${station === 'fuego' ? 'Cocinar' : 'Fabricar'}</button>
       </div>`;
     }).join('');
-    this.show('craft', titles[station], `<div class="recs">${html}</div>`, true);
+    this.show('craft', titles[station], `<div class="recs">${html}</div>${hidden ? `<p class="muted small">🔒 Hay ${hidden} recetas más de equipo de nivel alto: aparecerán al acercarte a su nivel.</p>` : ''}`, true);
   }
 
   // ------------------------------------------------------------------ bitácora
@@ -542,11 +543,14 @@ export class Panels {
       ['📰 La Gaceta de la Bruma', 'El periódico semanal cuenta tus hazañas, los rumores de las islas y esconde una pista con un mapa del tesoro cada semana. Cómprala a Pepe o léela desde ⚡ Atajos › Gaceta.'],
       ['💎 Cueva de Cristal', 'En el Archipiélago Burbuja hay una cueva entre cristales. Dentro, gira los espejos («Girar») para que el rayo de luz llegue al cristal grande y se abra la puerta del tesoro. Cambia cada día.'],
       ['🎂 Cumpleaños', 'Cada tripulante y tu pareja tienen su cumpleaños (lo ves al hablar con ellos). Si ese día les haces un regalo, ganan mucha amistad y lo recordarán; si te olvidas, se ponen tristes.'],
-      ['⭐ Nivel máximo 350', 'El nivel máximo sube de 100 a 350. Tu tripulación también puede llegar a 350 y se viste sola con las armaduras nuevas a partir del nivel 110. Las tres zonas de la expansión tienen enemigos de nivel 110 a 350.'],
+      ['🌀 Los mares lejanos (Nv. 350-500)', 'El nivel máximo sube a 500. El Oráculo de la Bruma (plaza de Villarroca) te lleva a todas las tierras lejanas. Cuatro islas nuevas, cada una distinta: 🐸 Pantano Maldito (Nv. 350+, ciénaga, sapos gigantes, brujas e hidras; jefa Reina Morvessa), 🍄 Bosque de Hongos Gigantes (Nv. 380+, setas luminosas, hongos andantes, escarabajos de luz y druidas; jefe Micelio), ⚓ Cementerio de Barcos (Nv. 410+, barcos naufragados, marineros fantasma, cangrejos colosos y krakens jóvenes; jefe Almirante Varkoth) y 🌑 Ciudadela del Vacío (Nv. 450+, rocas flotantes y estrellas, centinelas, devoradores y caballeros del vacío; jefe final Nihil, nivel 500). Cada una tiene un guardián con 3 misiones y forja.'],
+      ['⚔️ Arsenal de la expansión', `Cada uno de los 16 conjuntos tiene 6 armas: su arma única y además espada, mandoble (+15% daño), katana, hacha (+8%) y lanza (+4%). En total 96 armas de nivel 110-500. El hacha y la lanza cambian tus habilidades (clase bárbaro o lancero). La forja solo muestra las recetas cercanas a tu nivel.`],
+      ['💎 Minerales de los mares lejanos', '🌿 Musgo maldito (Pantano), 🍄 Espora de luz (Hongos), 🪵 Madera espectral (Cementerio), 🌑 Fragmento del vacío (Vacío y Cementerio), 🌟 Núcleo estelar (los cuatro grandes jefes y la última misión del Vacío).'],
+      ['⭐ Nivel máximo 500', 'El nivel máximo sube de 100 a 500. Tu tripulación también puede llegar a 500 y se viste sola con las armaduras nuevas a partir del nivel 110. Las tres zonas de la expansión tienen enemigos de nivel 110 a 350.'],
       ['🎈 Ciudad Celeste (Nv. 110-180)', 'Habla con la Inventora Volta (Isla Engranaje) para subir en globo. Isla sobre las nubes con grifos, caballeros celestes y gólems de nube. Jefe: Rey Celeste Aurion. Rocas: oro solar y plata lunar. La Sacerdotisa Aurelia da 3 misiones (plano del Templario Carmesí, oro solar y vencer al rey) y tiene forja. Para volver, ve al globo.'],
       ['⏳ Isla Bruma de hace 100 años (Nv. 160-250)', 'El Maestro Ishvar abre el portal del tiempo. Villarroca Antigua, bosques viejos, lobos ancestrales, caballeros antiguos, wyrms y espectros del tiempo. Jefe: Cronos, Guardián del Tiempo. Rocas: mithril y adamantita (rara). El Capitán Fundador Aldric da 3 misiones (plano de la Guardia Negra, escamas de wyrm y vencer a Cronos).'],
       ['🔥 Abismo Ardiente (Nv. 230-350)', 'La Herrera Brasa abre el portal desde Isla Ceniza. Mar de lava, demonios alados, caballeros infernales, dragones menores y titanes de magma. Jefe final: Malakor, Señor Infernal (nivel 350). Rocas: piedra infernal. El Ermitaño Vulcan da 3 misiones (plano del Tirano Violeta, sangre de dragón y vencer a Malakor). Al vencer a los 3 jefes ganas el plano de la Armadura Celestial Suprema.'],
-      ['🛡 Armaduras de la expansión', `12 conjuntos nuevos de 6 piezas (arma, escudo, casco, coraza, guantes y botas): 72 piezas, todas distintas. Se forjan en cualquier forja (también en las de las zonas nuevas). Necesitas el nivel indicado para forjarlas y llevarlas.<br>${NEW_SETS.map((s) => `• <b>${s.ch[0]}</b> · Nv. ${s.lvl} · ${s.w[0]} · ${Object.keys(s.mats).map((m) => (NEW_MATS[m] || (ITEMS[m] || {})).name).join(', ')}${s.plan ? ' · 📜 plano de misión' : ''}${s.bulk ? ' · 🗿 colosal (te hace más grande)' : ''}`).join('<br>')}`],
+      ['🛡 Armaduras de la expansión', `16 conjuntos nuevos de 6 piezas (arma única, escudo, casco, coraza, guantes y botas) más 5 armas extra por conjunto: 176 piezas, todas distintas. Se forjan en cualquier forja (también en las de las zonas nuevas). Necesitas el nivel indicado para forjarlas y llevarlas.<br>${NEW_SETS.map((s) => `• <b>${s.ch[0]}</b> · Nv. ${s.lvl} · ${s.w[0]} · ${Object.keys(s.mats).map((m) => (NEW_MATS[m] || (ITEMS[m] || {})).name).join(', ')}${s.plan ? ' · 📜 plano de misión' : ''}${s.bulk ? ' · 🗿 colosal (te hace más grande)' : ''}`).join('<br>')}`],
       ['💎 Minerales nuevos', `${Object.values(NEW_MATS).map((m) => `${m.icon} <b>${m.name}</b>: ${m.desc}`).join('<br>')}<br>🟤 <b>Ámbar gris</b>: lo sueltan los monstruos marinos cazados con arpón.`],
       ['🏰 Escudos y armaduras colosales', 'Hay tres tipos de escudo: rodela (redondo), escudo de cometa y pavés (escudo torre, muy alto). Las armaduras del Coloso Bárbaro, el Tirano Violeta, el Coloso Titánico y la Celestial Suprema son colosales: tu personaje se ve más grande.'],
       ['⚔️ Rival personal', 'Kael el Implacable aparece de vez en cuando (desde nivel 20) y te reta a duelo. Sube de nivel contigo y lleva siempre armadura de tu nivel. Vencerle da oro; a las 5 victorias, su capa.'],

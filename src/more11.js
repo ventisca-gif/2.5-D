@@ -74,7 +74,7 @@ export function installMore11(Game, D) {
     }
     const here = this.isleOf(this.player.x, this.player.z), C = this.conq[here];
     if (C && !C.fight && !this.sailing) {
-      const p = this.player, R = this.islets.find((r) => r.id === here), lvl = Math.min(350, p.level + 2), temps = [];
+      const p = this.player, R = this.islets.find((r) => r.id === here), lvl = Math.min(500, p.level + 2), temps = [];
       for (let i = 0; i < 5; i++) for (let k = 0; k < 30; k++) { const x = R.center.x + Math.round((Math.random() - 0.5) * 14), z = R.center.z + Math.round((Math.random() - 0.5) * 14); if (R.walkable(x, z) && Math.hypot(x - p.x, z - p.z) > 5) { const e = this.spawnTemp(i === 0 ? 'marine_boss' : 'pirate', x, z, i === 0 ? lvl + 2 : lvl); if (i === 0) { e.maxHp = Math.round(e.maxHp * 0.5); e.hp = e.maxHp; e.label.nm.textContent = `${C.name} · Nv. ${e.level}`; } temps.push(e); break; } }
       C.fight = { temps };
       this.toast(`⚔️ Los hombres de ${C.name} defienden ${C.isle}. ¡Derrótalos!`, 'area');

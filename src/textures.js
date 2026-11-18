@@ -33,6 +33,9 @@ const PALETTE = {
   [T.SNOW]: [236, 242, 248],
   [T.CANDY]: [246, 170, 200],
   [T.METAL]: [130, 132, 140],
+  [T.MOSS]: [74, 92, 52],
+  [T.FUNGI]: [96, 70, 120],
+  [T.VOID]: [36, 24, 52],
 };
 
 export function makeGroundTexture(W, pxPerTile = 24) {

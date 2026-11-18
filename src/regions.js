@@ -24,6 +24,10 @@ function biomeTile(biome, lx, lz, r, R, t, seed, def) {
     return shore ? (n > 0.5 ? T.ROCK : T.DIRT) : T.ROCK;
   }
   if (biome === 'fort') return shore ? T.SAND : t;
+  if (biome === 'swamp') return shore ? T.MOSS : n > 0.62 ? T.WATER : n > 0.45 ? T.MOSS : T.DARK;
+  if (biome === 'fungi') return shore ? T.SAND : n > 0.55 ? T.FUNGI : n > 0.4 ? T.DARK : T.FUNGI;
+  if (biome === 'wreck') return shore ? T.SAND : n > 0.6 ? T.ROCK : T.SAND;
+  if (biome === 'void') return shore ? T.ROCK : n > 0.66 ? T.ROCK : T.VOID;
   if (biome === 'sky') return shore ? T.STONE : n > 0.6 ? T.SNOW : n > 0.45 ? T.STONE : T.GRASS;
   if (biome === 'ancient') return shore ? T.SAND : n > 0.62 ? T.DIRT : n > 0.4 ? T.GRASS : T.DARK;
   if (biome === 'snow') return shore ? (n > 0.55 ? T.ROCK : T.SNOW) : n > 0.66 ? T.ROCK : T.SNOW;
@@ -125,6 +129,10 @@ export function populate(R, density = 1) {
       else if (r > 0.95) rock(x, z, true);
       continue;
     }
+    if (B === 'swamp') { if (r < 0.12 * density) tree(rnd() < 0.6 ? 'mangrove' : 'dead', x, z, 0.9 + rnd() * 0.6); else if (r > 0.97) rock(x, z, true); continue; }
+    if (B === 'fungi') { if (r < 0.03 * density) tree('dead', x, z, 0.8); else if (r > 0.96) rock(x, z); continue; }
+    if (B === 'wreck') { if (r < 0.02 * density) tree('dead', x, z, 0.8); else if (r > 0.95) rock(x, z); continue; }
+    if (B === 'void') { if (r > 0.93) rock(x, z, true); continue; }
     if (B === 'sky') { if (r < 0.04 * density) tree('oak', x, z, 0.8 + rnd() * 0.4); else if (r > 0.94) rock(x, z); continue; }
     if (B === 'ancient') { if (r < 0.16 * density) tree(rnd() < 0.5 ? 'oak' : 'pine', x, z, 1 + rnd() * 0.6); else if (r > 0.95) rock(x, z, true); continue; }
     if (B === 'snow') { if (r < 0.1 * density) tree('snowpine', x, z, 0.8 + rnd() * 0.5); else if (r > 0.96) rock(x, z); continue; }

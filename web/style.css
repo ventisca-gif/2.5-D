@@ -510,3 +510,8 @@ body.photo #photoFrame { display: block; }
 .t18 { --tc: #ff6a20; } .cell.t18, .rec.t18 { box-shadow: inset 0 0 0 2px #ff6a20; } .muted.t18 { color: #ff6a20; }
 .t19 { --tc: #8ad8ff; } .cell.t19, .rec.t19 { box-shadow: inset 0 0 0 2px #8ad8ff; } .muted.t19 { color: #8ad8ff; }
 .t20 { --tc: #fff4c0; } .cell.t20, .rec.t20 { box-shadow: inset 0 0 0 2px #fff4c0; } .muted.t20 { color: #fff4c0; }
+
+.cell.t21, .rec.t21 { box-shadow: inset 0 0 0 2px #9ad84a; } .muted.t21 { color: #9ad84a; }
+.cell.t22, .rec.t22 { box-shadow: inset 0 0 0 2px #7af0ff; } .muted.t22 { color: #7af0ff; }
+.cell.t23, .rec.t23 { box-shadow: inset 0 0 0 2px #7af0e0; } .muted.t23 { color: #7af0e0; }
+.cell.t24, .rec.t24 { box-shadow: inset 0 0 0 2px #d88aff; } .muted.t24 { color: #d88aff; }

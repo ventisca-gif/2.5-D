@@ -3,7 +3,7 @@
 import { mulberry32, fbm, hash2 } from './rng.js';
 
 export const N = 100;
-export const T = { WATER: 0, SAND: 1, GRASS: 2, DIRT: 3, STONE: 4, DOCK: 5, FIELD: 6, DARK: 7, ROCK: 8, LAVA: 9, SNOW: 10, CANDY: 11, METAL: 12 };
+export const T = { WATER: 0, SAND: 1, GRASS: 2, DIRT: 3, STONE: 4, DOCK: 5, FIELD: 6, DARK: 7, ROCK: 8, LAVA: 9, SNOW: 10, CANDY: 11, METAL: 12, MOSS: 13, FUNGI: 14, VOID: 15 };
 
 export const TOWN = { x0: 38, z0: 38, x1: 62, z1: 62 };
 

@@ -303,7 +303,7 @@ export function installMore10(Game, D) {
     const p = this.player, q = this.pqState();
     let sp = null; for (let k = 0; k < 30 && !sp; k++) { const x = p.tx + Math.round((Math.random() - 0.5) * 8), z = p.tz + Math.round((Math.random() - 0.5) * 8); if (this.W.walkable(x, z) && Math.hypot(x - p.x, z - p.z) > 3) sp = { x, z }; }
     if (!sp) return this.toast('Busca un sitio más abierto');
-    const e = this.spawnTemp('marine_boss', sp.x, sp.z, Math.min(350, p.level + 3));
+    const e = this.spawnTemp('marine_boss', sp.x, sp.z, Math.min(500, p.level + 3));
     e.maxHp = Math.round(e.maxHp * 0.6); e.hp = e.maxHp; e.provoked = true; e.state = 'chase';
     e.label.nm.textContent = `Capitán Varek · Nv. ${e.level}`;
     this.pqFight = { temps: [e], after: () => {

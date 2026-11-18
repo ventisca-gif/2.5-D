@@ -40,6 +40,7 @@ import { installMore10, makeOwnPort, makeIceBridge } from './more10.js';
 import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
 import { installMore13, makeExpansionIslets } from './more13.js';
+import { installMore14, makeFarIslets } from './more14.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -136,6 +137,22 @@ const ENEMY_DEF = {
   dragon_menor: { name: 'Dragón menor', hp: (L) => 140 + 28 * L, atk: (L) => 14 + 3.6 * L, speed: 2.6, xp: (L) => 70 + 21 * L, gold: (L) => 30 + Math.floor(Math.random() * (10 + L)), aggro: 7, cd: 1.5 },
   titan_magma: { name: 'Titán de magma', hp: (L) => 180 + 32 * L, atk: (L) => 15 + 3.8 * L, speed: 1.8, xp: (L) => 80 + 24 * L, gold: (L) => 35 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.9 },
   senor_infernal: { name: 'Malakor, Señor Infernal', hp: () => 250000, atk: () => 1400, speed: 2.8, xp: () => 700000, gold: () => 100000, aggro: 10, cd: 1.3, boss: true, super: 'infernal', sCol: 0xff3a10, sTxt: '¡Llamas del abismo!', sMin: 'caballero_infernal', bounty: 15000 },
+  sapo_gigante: { name: 'Sapo gigante del pantano', hp: (L) => 300 + 40 * L, atk: (L) => 60 + 15.0 * L, speed: 2.8, xp: (L) => 120 + 30 * L, gold: (L) => 60 + Math.floor(Math.random() * L), aggro: 6, cd: 1.3 },
+  bruja_pantano: { name: 'Bruja de la ciénaga', hp: (L) => 260 + 36 * L, atk: (L) => 66 + 15.6 * L, speed: 2.6, xp: (L) => 125 + 31 * L, gold: (L) => 65 + Math.floor(Math.random() * L), aggro: 7, cd: 1.2 },
+  hidra_pantano: { name: 'Hidra del pantano', hp: (L) => 400 + 46 * L, atk: (L) => 72 + 16.2 * L, speed: 2.2, xp: (L) => 140 + 34 * L, gold: (L) => 70 + Math.floor(Math.random() * L), aggro: 6, cd: 1.5 },
+  reina_cienaga: { name: 'Reina de la Ciénaga Morvessa', hp: () => 250000, atk: () => 6500, speed: 2.6, xp: () => 1500000, gold: () => 150000, aggro: 10, cd: 1.3, boss: true, super: 'cienaga', sCol: 0x9ad84a, sTxt: '¡Lodo venenoso!', sMin: 'sapo_gigante', bounty: 20000 },
+  hongo_andante: { name: 'Hongo andante', hp: (L) => 380 + 44 * L, atk: (L) => 72 + 16.5 * L, speed: 2.0, xp: (L) => 140 + 34 * L, gold: (L) => 70 + Math.floor(Math.random() * L), aggro: 5, cd: 1.6 },
+  escarabajo_luz: { name: 'Escarabajo de luz', hp: (L) => 320 + 40 * L, atk: (L) => 75 + 16.8 * L, speed: 3.0, xp: (L) => 140 + 34 * L, gold: (L) => 70 + Math.floor(Math.random() * L), aggro: 6, cd: 1.2 },
+  druida_esporas: { name: 'Druida de esporas', hp: (L) => 300 + 38 * L, atk: (L) => 81 + 17.4 * L, speed: 2.6, xp: (L) => 150 + 36 * L, gold: (L) => 75 + Math.floor(Math.random() * L), aggro: 7, cd: 1.2 },
+  micelio_rey: { name: 'Micelio, Rey de las Esporas', hp: () => 350000, atk: () => 7800, speed: 2.0, xp: () => 2000000, gold: () => 200000, aggro: 10, cd: 1.6, boss: true, super: 'micelio', sCol: 0xb04ad8, sTxt: '¡Nube de esporas!', sMin: 'hongo_andante', bounty: 25000 },
+  marinero_fantasma: { name: 'Marinero fantasma', hp: (L) => 330 + 40 * L, atk: (L) => 81 + 17.4 * L, speed: 3.0, xp: (L) => 150 + 36 * L, gold: (L) => 80 + Math.floor(Math.random() * L), aggro: 7, cd: 1.1 },
+  cangrejo_coloso: { name: 'Cangrejo coloso', hp: (L) => 480 + 52 * L, atk: (L) => 84 + 18.0 * L, speed: 2.0, xp: (L) => 165 + 38 * L, gold: (L) => 85 + Math.floor(Math.random() * L), aggro: 5, cd: 1.6 },
+  kraken_joven: { name: 'Kraken joven', hp: (L) => 360 + 44 * L, atk: (L) => 87 + 18.3 * L, speed: 2.4, xp: (L) => 160 + 37 * L, gold: (L) => 85 + Math.floor(Math.random() * L), aggro: 6, cd: 1.3, fly: true },
+  almirante_muerto: { name: 'Almirante Muerto Varkoth', hp: () => 500000, atk: () => 9000, speed: 2.8, xp: () => 3000000, gold: () => 250000, aggro: 10, cd: 1.3, boss: true, super: 'almirante', sCol: 0x7af0e0, sTxt: '¡Andanada fantasma!', sMin: 'marinero_fantasma', bounty: 30000 },
+  centinela_vacio: { name: 'Centinela del vacío', hp: (L) => 520 + 56 * L, atk: (L) => 90 + 19.2 * L, speed: 2.2, xp: (L) => 180 + 42 * L, gold: (L) => 95 + Math.floor(Math.random() * L), aggro: 6, cd: 1.6 },
+  devorador_estelar: { name: 'Devorador estelar', hp: (L) => 400 + 46 * L, atk: (L) => 96 + 19.8 * L, speed: 3.6, xp: (L) => 175 + 41 * L, gold: (L) => 95 + Math.floor(Math.random() * L), aggro: 7, cd: 1.0, fly: true },
+  caballero_vacio: { name: 'Caballero del vacío', hp: (L) => 460 + 52 * L, atk: (L) => 102 + 20.4 * L, speed: 2.8, xp: (L) => 190 + 44 * L, gold: (L) => 100 + Math.floor(Math.random() * L), aggro: 7, cd: 1.2 },
+  nihil: { name: 'Nihil, el Devorador de Mundos', hp: () => 800000, atk: () => 12000, speed: 3.0, xp: () => 5000000, gold: () => 500000, aggro: 12, cd: 1.2, boss: true, super: 'nihil', sCol: 0xb03aff, sTxt: '¡El fin de todo!', sMin: 'caballero_vacio', bounty: 50000 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -731,7 +748,23 @@ class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
     const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
-    if (type === 'grifo') model = tintModel(makeBeast2('tiger'), 0xe8c060, 0.65);
+    if (type === 'sapo_gigante') model = tintModel(makeBeast2('boar'), 0x5a8a3a, 0.7);
+    else if (type === 'bruja_pantano') model = HUM({ shirt: 0x2a3a1a, dress: true, dressColor: 0x2a3a1a, robe: 0x3a2a4a, hat: 'hood', hatColor: 0x1a2a10, skin: 0x7a9a6a, hair: 0x1a1a1a, longHair: true, female: true, eyeGlow: 0x9aff4a, sword: true, blade: 0x9ad84a, bladeLen: 0.4 });
+    else if (type === 'hidra_pantano') model = tintModel(makeScorpion(), 0x2a5a3a, 0.75);
+    else if (type === 'reina_cienaga') model = HUM({ ...EQUIP.peto_cienaga.look, ...EQUIP.casco_cienaga.look, ...EQUIP.arma_cienaga.look, female: true, skin: 0x7a9a6a, eyeGlow: 0x9aff4a });
+    else if (type === 'hongo_andante') model = tintModel(makeGolem('stone'), 0xb04ad8, 0.7);
+    else if (type === 'escarabajo_luz') model = tintModel(makeCrab2(), 0x3ad8ff, 0.7);
+    else if (type === 'druida_esporas') model = HUM({ shirt: 0x4a2a6a, robe: 0x4a2a6a, hat: 'hood', hatColor: 0xb04ad8, halo: 0x7af0ff, skin: 0xc8a8e8, beard: 0x7a4aa8, eyeGlow: 0x7af0ff, spear: true, blade: 0x7af0ff });
+    else if (type === 'micelio_rey') model = tintModel(makeGolem('obs'), 0xb04ad8, 0.6);
+    else if (type === 'marinero_fantasma') model = HUM({ bone: 0xbfe8e8, hat: 'bandana', capColor: 0x2a4a50, sword: true, blade: 0x7af0e0, eyeGlow: 0x7af0e0 });
+    else if (type === 'cangrejo_coloso') model = tintModel(makeCrab2(), 0x8a4a2a, 0.6);
+    else if (type === 'kraken_joven') model = makeJellyModel();
+    else if (type === 'almirante_muerto') model = HUM({ ...EQUIP.peto_abisal.look, ...EQUIP.casco_abisal.look, ...EQUIP.arma_abisal.look, bone: 0xbfe8e8, eyeGlow: 0x7af0e0 });
+    else if (type === 'centinela_vacio') model = tintModel(makeGolem('obs'), 0x2a0a4a, 0.7);
+    else if (type === 'devorador_estelar') model = tintModel(makeBat(), 0x6a2aaa, 0.7);
+    else if (type === 'caballero_vacio') model = HUM({ ...EQUIP.peto_vacio.look, ...EQUIP.casco_vacio.look, ...EQUIP.arma_vacio.look, skin: 0x4a3a5a, eyeGlow: 0xd88aff });
+    else if (type === 'nihil') model = HUM({ ...EQUIP.peto_vacio.look, ...EQUIP.casco_vacio.look, ...EQUIP.arma_vacio.look, skin: 0x1a0a2a, eyeGlow: 0xd88aff });
+    else if (type === 'grifo') model = tintModel(makeBeast2('tiger'), 0xe8c060, 0.65);
     else if (type === 'caballero_celeste') model = HUM({ ...EQUIP.peto_templario.look, cape: 0xf4f4f8, tabard: 0x5a8ad8, hat: 'helmet', hatColor: 0xf4f4f8, plume: 0xffffff, sword: true, blade: 0xfff4c0, shield: { type: 'kite', color: 0xf4f4f8, rim: 0xffd040, boss: 0x5a8ad8 }, wings: 0xffffff, skin: 0xf0d8c0 });
     else if (type === 'golem_nube') model = tintModel(makeGolem('stone'), 0xf4f8ff, 0.85);
     else if (type === 'rey_celeste') model = HUM({ ...EQUIP.peto_celestial.look, ...EQUIP.casco_celestial.look, ...EQUIP.arma_celestial.look, skin: 0xf0d8c0, anime: true, eyeColor: 3 });
@@ -792,6 +825,16 @@ class Enemy extends Actor {
     if (type === 'bestia_lobo' || type === 'bestia_tigre') model_scale(model, 2.0);
     if (type === 'bestia_golem' || type === 'guardian_errante') model_scale(model, 2.1);
     if (type === 'grifo' || type === 'lobo_ancestral') model_scale(model, 1.6);
+    if (type === 'sapo_gigante') model_scale(model, 1.9);
+    if (type === 'hidra_pantano' || type === 'escarabajo_luz') model_scale(model, 2.3);
+    if (type === 'hongo_andante' || type === 'centinela_vacio') model_scale(model, 1.7);
+    if (type === 'cangrejo_coloso') model_scale(model, 2.8);
+    if (type === 'kraken_joven') model_scale(model, 2.0);
+    if (type === 'devorador_estelar') model_scale(model, 2.6);
+    if (type === 'micelio_rey') model_scale(model, 2.7);
+    if (type === 'reina_cienaga' || type === 'almirante_muerto') model_scale(model, 2.3);
+    if (type === 'nihil') model_scale(model, 2.2);
+    if (type === 'marinero_fantasma' || type === 'almirante_muerto') { for (const m of model.mats) { m.transparent = true; m.opacity = 0.7; } }
     if (type === 'golem_nube' || type === 'wyrm_antiguo') model_scale(model, 1.7);
     if (type === 'demonio_alado') model_scale(model, 2.2);
     if (type === 'dragon_menor') model_scale(model, 1.5);
@@ -1042,7 +1085,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets()];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets(), ...makeFarIslets()];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -3093,6 +3136,7 @@ class Game {
       this.updateMore11(dt);
       this.updateMore12(dt);
       this.updateMore13(dt);
+      this.updateMore14(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3329,6 +3373,12 @@ installMore10(Game, { sfx, NPC });
 installMore11(Game, { sfx });
 installMore12(Game, { sfx, NPC });
 installMore13(Game, { sfx, NPC, crewGear });
+installMore14(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'nivel500', name: 'Dios de la Bruma', title: 'Dios de la Bruma', desc: 'Llega al nivel 500', ok: (g) => g.player.level >= 500 },
+  { id: 'nihil', name: 'Devorador vencido', title: 'Salvador de los mundos', desc: 'Derrota a Nihil, el Devorador de Mundos', ok: (g) => (g.stats.k_nihil || 0) >= 1 },
+  { id: 'arsenal', name: 'Arsenal legendario', title: 'Maestro de armas', desc: 'Ten 20 armas distintas de la expansión', ok: (g) => Object.keys(g.player.inv).filter((k) => g.player.inv[k] > 0 && EQUIP[k] && EQUIP[k].set && EQUIP[k].slot === 'weapon').length >= 20 },
+);
 LOGROS.push(
   { id: 'nivel200', name: 'Semidiós', title: 'Semidiós', desc: 'Llega al nivel 200', ok: (g) => g.player.level >= 200 },
   { id: 'nivel350', name: 'Inmortal', title: 'Inmortal de la Bruma', desc: 'Llega al nivel 350', ok: (g) => g.player.level >= 350 },

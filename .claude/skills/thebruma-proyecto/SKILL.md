@@ -126,6 +126,13 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Rival Kael (`nem`, duelo cada 15-25 min), tienda propia en el puerto nivel 3 (`myShop`), siete y media (Rosa/Coral/Berta/Mara), arpón de Marga y monstruos marinos (`smon`, kraken/ballena), mascotas evolucionan (niveles 15/35, `PET_EVO`), negocio de la pareja (`soc.biz`).
 - El usuario mandó imágenes de referencia de armaduras: quiere que TODAS sean distintas entre sí y algunas colosales.
 
+## v5.1 mares lejanos (more14.js)
+- **Nivel máximo 500.** 4 conjuntos más (`NEW_SETS` 13-16, tiers 21-24): Señor de la Ciénaga 370, Micelio Luminoso 400 (plano), Almirante Abisal 440, Vacío Eterno 480 (plano, colosal 1,35). Curva de poder más empinada desde el tier 21 (×1,25 por tier).
+- **Armas**: cada conjunto tiene su arma única (`arma_<set>`) + 5 tipos (`WEAPON_TYPES`: espada ×1, mandoble ×1,15, katana ×0,97, hacha ×1,08, lanza ×1,04) → 96 armas. La forja solo muestra recetas hasta nivel+40.
+- **4 islas** (portal, añadidas a `ZONES` de more13 → misiones/forja/viaje reutilizados): Pantano Maldito 350 (x3700, bioma `swamp`, T.MOSS), Bosque de Hongos Gigantes 380 (x3950, `fungi`, T.FUNGI, setas luminosas), Cementerio de Barcos 410 (x4200, `wreck`, barcos naufragados), Ciudadela del Vacío 450 (x4450, `void`, T.VOID, estrellas y rocas flotantes). Jefes: reina_cienaga, micelio_rey, almirante_muerto, nihil (500). Minerales: musgo_maldito, espora_luz, madera_espectral, fragmento_vacio, nucleo_estelar. NPC 'oraculo' en la plaza de Villarroca viaja a todas las tierras lejanas.
+- Enemigos de los mares lejanos con ataque ×3 (la defensa a nivel 500 ronda 1200 y si no no hacían daño).
+- El usuario quiere seguir ampliando mucho la escala de poder, con islas nuevas que no repitan temas.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

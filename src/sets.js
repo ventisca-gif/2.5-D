@@ -9,6 +9,11 @@ export const NEW_MATS = {
   escama_wyrm: { name: 'Escama de wyrm', icon: '🐉', type: 'mat', value: 260, desc: 'La sueltan los wyrms antiguos del pasado.' },
   piedra_infernal: { name: 'Piedra infernal', icon: '🔥', type: 'mat', value: 340, desc: 'Se pica en las rocas del Abismo Ardiente.' },
   sangre_dragon: { name: 'Sangre de dragón', icon: '🩸', type: 'mat', value: 400, desc: 'La sueltan dragones y demonios del Abismo.' },
+  musgo_maldito: { name: 'Musgo maldito', icon: '🌿', type: 'mat', value: 500, desc: 'Se recoge al picar rocas en el Pantano Maldito.' },
+  espora_luz: { name: 'Espora de luz', icon: '🍄', type: 'mat', value: 600, desc: 'La sueltan los seres del Bosque de Hongos Gigantes y sus rocas.' },
+  madera_espectral: { name: 'Madera espectral', icon: '🪵', type: 'mat', value: 700, desc: 'Restos de barcos fantasma del Cementerio de Barcos.' },
+  fragmento_vacio: { name: 'Fragmento del vacío', icon: '🌑', type: 'mat', value: 900, desc: 'Se pica en la Ciudadela del Vacío y lo sueltan sus criaturas.' },
+  nucleo_estelar: { name: 'Núcleo estelar', icon: '🌟', type: 'mat', value: 2000, desc: 'Lo sueltan los cuatro grandes jefes de los mares lejanos.' },
   esencia_titan: { name: 'Esencia de titán', icon: '💠', type: 'mat', value: 800, desc: 'La sueltan los jefes de la expansión y los titanes de magma.' },
 };
 // [id, nombre corto, tier, nivel, colosal, piezas: arma, escudo, casco, pecho, guantes, botas, receta base]
@@ -97,21 +102,59 @@ const S = [
     ch: ['Armadura Celestial Suprema', { armor: true, armorColor: 0xf4f4f8, trim: 0xffd040, gem: 0x8ad8ff, emblem: 0xffd040, pauldron: 0xffffff, wings: 0xf8f8ff, wingTrim: 0xffd040, cape: 0xf4ecd8 }],
     gl: ['Guanteletes celestiales', { gloves: 0xf4f4f8, bracers: true, bracerColor: 0xffd040 }],
     bt: ['Grebas celestiales', { boots: 0xe8e8f0, legArmor: 0xffd040 }] },
+  { id: 'cienaga', name: 'del Señor de la Ciénaga', lvl: 370, mats: { musgo_maldito: 8, esencia_titan: 2 },
+    w: ['Guadaña de la ciénaga', { axe: true, blade: 0x7a9a4a, guard: 0x3a2a1a }],
+    sh: ['Escudo de raíces', { type: 'round', color: 0x4a3a1a, rim: 0x5a7a3a, boss: 0x9ad84a }],
+    hd: ['Yelmo de astas del pantano', { hat: 'horned', hatColor: 0x3a4a2a, hornColor: 0x6a5a3a, visorGlow: 0x9aff4a }],
+    ch: ['Armadura del Señor de la Ciénaga', { armor: true, armorColor: 0x3a4a2a, trim: 0x6a5a3a, pauldron: 0x4a3a1a, spikes: true, robe: 0x2a3a1a, emblem: 0x9ad84a }],
+    gl: ['Garras de raíz', { gloves: 0x3a2a1a, bracers: true, bracerColor: 0x5a7a3a }],
+    bt: ['Botas de musgo', { boots: 0x2a3a1a, legArmor: 0x4a5a2a }] },
+  { id: 'micelio', name: 'del Micelio Luminoso', lvl: 400, mats: { espora_luz: 8, esencia_titan: 2 }, plan: true,
+    w: ['Bastón espada de esporas', { sword: true, blade: 0x7af0ff, guard: 0xb04ad8, bladeLen: 0.74, bladeGlow: 0x3ad8ff }],
+    sh: ['Escudo seta', { type: 'round', color: 0xb04ad8, rim: 0x7af0ff, boss: 0xffffff }],
+    hd: ['Sombrero de hongo luminoso', { hat: 'hood', hatColor: 0xb04ad8, halo: 0x7af0ff }],
+    ch: ['Armadura del Micelio Luminoso', { armor: true, armorColor: 0x4a2a6a, trim: 0x7af0ff, gem: 0x7af0ff, emblem: 0xb04ad8, pauldron: 0xb04ad8, cape: 0x3a1a5a }],
+    gl: ['Guantes de esporas', { gloves: 0x4a2a6a, bracers: true, bracerColor: 0x7af0ff }],
+    bt: ['Botas de micelio', { boots: 0x3a1a5a, legArmor: 0x7a4aa8 }] },
+  { id: 'abisal', name: 'del Almirante Abisal', lvl: 440, mats: { madera_espectral: 8, esencia_titan: 3 },
+    w: ['Tridente del almirante', { spear: true, trident: true, blade: 0x7af0e0, guard: 0x1a3a4a }],
+    sh: ['Escudo ancla', { type: 'kite', color: 0x1a3a4a, rim: 0x7af0e0, boss: 0xd8a838 }],
+    hd: ['Bicornio blindado abisal', { hat: 'tricorn', hatColor: 0x1a2a3a, capColor: 0x1a2a3a, feather: 0x7af0e0, visorGlow: 0x7af0e0 }],
+    ch: ['Coraza del Almirante Abisal', { armor: true, armorColor: 0x1a3a4a, trim: 0xd8a838, emblem: 0x7af0e0, pauldron: 0x2a4a5a, cape: 0x0a1a2a, coat: true }],
+    gl: ['Guanteletes de coral', { gloves: 0x1a3a4a, bracers: true, bracerColor: 0xd8a838 }],
+    bt: ['Botas de las profundidades', { boots: 0x0a1a2a, legArmor: 0x2a4a5a }] },
+  { id: 'vacio', name: 'del Vacío Eterno', lvl: 480, mats: { fragmento_vacio: 10, nucleo_estelar: 2 }, plan: true, bulk: 1.35,
+    w: ['Hoja del fin del mundo', { sword: true, blade: 0x1a0a2a, guard: 0xb03aff, bladeLen: 0.95, bladeW: 0.1, bladeGlow: 0xb03aff }],
+    sh: ['Pavés del vacío', { type: 'tower', color: 0x0a0612, rim: 0xb03aff, boss: 0xffffff }],
+    hd: ['Corona del vacío', { hat: 'horned', hatColor: 0x0a0612, hornColor: 0xb03aff, halo: 0xb03aff, visorGlow: 0xd88aff }],
+    ch: ['Armadura del Vacío Eterno', { armor: true, armorColor: 0x0a0612, trim: 0xb03aff, gem: 0xd88aff, emblem: 0xb03aff, pauldron: 0x1a0a2a, spikes: true, wings: 0x1a0a2a, wingTrim: 0xb03aff, cape: 0x0a0612 }],
+    gl: ['Guanteletes del vacío', { gloves: 0x0a0612, bracers: true, bracerColor: 0xb03aff }],
+    bt: ['Grebas del vacío', { boots: 0x0a0612, legArmor: 0x1a0a2a }] },
 ];
 export const NEW_SETS = S;
-export const NEW_TIER_NAMES = ['Sol Radiante', 'Torre de Plata', 'Templario', 'Wyrm', 'Bárbaro', 'Guardia Negra', 'Draconiano', 'Garra Nocturna', 'Tirano', 'Infernal', 'Titánico', 'Celestial'];
+export const NEW_TIER_NAMES = ['Sol Radiante', 'Torre de Plata', 'Templario', 'Wyrm', 'Bárbaro', 'Guardia Negra', 'Draconiano', 'Garra Nocturna', 'Tirano', 'Infernal', 'Titánico', 'Celestial', 'Ciénaga', 'Micelio', 'Abisal', 'Vacío'];
+// cinco tipos de arma extra para cada conjunto (además de su arma única)
+const WEAPON_TYPES = [
+  { id: 'espada', name: 'Espada', icon: '🗡️', k: 1.0, look: (b) => ({ sword: true, blade: b.blade ?? 0xe8e8f0, guard: b.guard ?? 0xd8a838, bladeLen: 0.55, bladeGlow: b.bladeGlow }) },
+  { id: 'mandoble', name: 'Mandoble', icon: '⚔️', k: 1.15, look: (b) => ({ sword: true, blade: b.blade ?? 0xe8e8f0, guard: b.guard ?? 0xd8a838, bladeLen: 0.92, bladeW: 0.095, bladeGlow: b.bladeGlow }) },
+  { id: 'katana', name: 'Katana', icon: '🗡️', k: 0.97, look: (b) => ({ sword: true, blade: b.blade ?? 0xe8e8f0, guard: b.guard ?? 0x2a2a2a, bladeLen: 0.72, bladeW: 0.035, bladeGlow: b.bladeGlow }) },
+  { id: 'hacha', name: 'Hacha', icon: '🪓', k: 1.08, look: (b) => ({ axe: true, blade: b.blade ?? 0xb8bcc4, guard: b.guard ?? 0x5a3a20 }) },
+  { id: 'lanza', name: 'Lanza', icon: '🔱', k: 1.04, look: (b) => ({ spear: true, trident: !!b.trident, blade: b.blade ?? 0xd8dce4, guard: b.guard ?? 0x5a3a20 }) },
+];
+export const WEAPON_KINDS = WEAPON_TYPES.map((w) => w.id);
 export function addExpansion(EQUIP, ITEMS, RECIPES) {
   Object.assign(ITEMS, NEW_MATS);
   S.forEach((s, i) => {
-    const t = 9 + i, k = t - 8;
+    const t = 9 + i, k = t - 8, pw = k <= 12 ? 1 : Math.pow(1.25, k - 12), lin = (b, m) => (k <= 12 ? b + k * m : (b + 12 * m) * pw);
     const wIcon = s.w[1].axe ? '🪓' : s.w[1].spear ? '🔱' : '⚔️';
     const parts = [
-      ['arma', 'weapon', s.w, { atk: Math.round(84 + k * 16) }, wIcon],
-      ['escudo', 'shield', s.sh, { def: Math.round(40 + k * 7) }, '🛡️'],
-      ['casco', 'head', s.hd, { def: Math.round(27 + k * 5) }, '⛑️'],
-      ['peto', 'chest', s.ch, { def: Math.round(52 + k * 9), hp: Math.round(k * 45 * (s.bulk || 1)) }, '🛡️'],
-      ['guantes', 'hands', s.gl, { def: Math.round(19 + k * 3.5) }, '🧤'],
-      ['botas', 'feet', s.bt, { def: Math.round(19 + k * 3.5) }, '👢'],
+      ['arma', 'weapon', s.w, { atk: Math.round(lin(84, 16) * 1.05) }, wIcon],
+      ['escudo', 'shield', s.sh, { def: Math.round(lin(40, 7)) }, '🛡️'],
+      ['casco', 'head', s.hd, { def: Math.round(lin(27, 5)) }, '⛑️'],
+      ['peto', 'chest', s.ch, { def: Math.round(lin(52, 9)), hp: Math.round(k * 45 * pw * (s.bulk || 1)) }, '🛡️'],
+      ['guantes', 'hands', s.gl, { def: Math.round(lin(19, 3.5)) }, '🧤'],
+      ['botas', 'feet', s.bt, { def: Math.round(lin(19, 3.5)) }, '👢'],
+      ...WEAPON_TYPES.map((W) => [W.id, 'weapon', [`${W.name} ${s.name}`, W.look(s.w[1])], { atk: Math.round(lin(84, 16) * W.k) }, W.icon]),
     ];
     parts.forEach(([kind, slot, [name, look], stats, icon]) => {
       const id = `${kind}_${s.id}`;
