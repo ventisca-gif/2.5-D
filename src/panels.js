@@ -81,6 +81,8 @@ export class Panels {
     if (act === 'cjob') { g.cycleCrewJob(b.dataset.id); return this.openBitacora('crew'); }
     if (act === 'title') { g.title = b.dataset.t || null; g.applyTitle(); return this.openBitacora('logros'); }
     if (act === 'stash') { g.stashMove(b.dataset.id, Number(b.dataset.n), b.dataset.d); return; }
+    if (act === 'crewgive') { const id = this.sel; this.close(); return g.giveCrewItemMenu(id); }
+    if (act === 'diary') { this.close(); return g.crewDiary(g.npcById(b.dataset.id)); }
     if (act === 'explore') { this.close(); return g.exploreMenu(g.npcById(b.dataset.id)); }
     if (act === 'crewrole') {
       const r = b.dataset.role;
@@ -122,7 +124,7 @@ export class Panels {
     if (this.sel && ITEMS[this.sel]) {
       const it = ITEMS[this.sel];
       let btn = '';
-      if (it.type === 'equip') btn = `<button class="pbtn" data-p="equip">Equipar</button>`;
+      if (it.type === 'equip') btn = `<button class="pbtn" data-p="equip">Equipar</button>${!it.cos && g.crew().length + (g.partner() ? 1 : 0) ? ' <button class="pbtn" data-p="crewgive">🎽 Dar a tripulante</button>' : ''}`;
       if (it.type === 'spell') btn = `<button class="pbtn" data-p="cast">✨ Lanzar</button>`;
       if (it.type === 'food' || it.type === 'heal') btn = `<button class="pbtn" data-p="eat">${it.type === 'heal' ? 'Beber' : 'Comer'}</button>`;
       const cmp = it.type === 'equip' && p.equip[it.slot] ? ` <span class="muted">(llevas: ${esc(ITEMS[p.equip[it.slot]].name)})</span>` : '';
@@ -280,7 +282,7 @@ export class Panels {
         const y = s.role === 'farm' ? g.farmYield(n) : null;
         const btn = (r, label) => `<button class="pbtn small" data-p="crewrole" data-id="${n.id}" data-role="${r}">${label}</button>`;
         const job = s.cjob ? CREW_JOBS[s.cjob] : null;
-        const btns = [`<button class="pbtn small" data-p="cjob" data-id="${n.id}">${job ? job.icon + ' ' + job.name : '🎓 Sin puesto'}</button>`, s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : '', (!s.role || s.role === 'ship') ? `<button class="pbtn small" data-p="explore" data-id="${n.id}">🧭 Explorar</button>` : ''].join('');
+        const btns = [`<button class="pbtn small" data-p="cjob" data-id="${n.id}">${job ? job.icon + ' ' + job.name : '🎓 Sin puesto'}</button>`, s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : '', (!s.role || s.role === 'ship') ? `<button class="pbtn small" data-p="explore" data-id="${n.id}">🧭 Explorar</button>` : '', `<button class="pbtn small" data-p="diary" data-id="${n.id}">📖 Diario</button>`].join('');
         g.compStats(n);
         const hpTxt = n.ko > 0 ? '💫 Desmayado' : `❤ ${Math.round(n.chp)}/${n.cmax} · 🍶 ${s.pots ?? 2}`;
         return `<div class="frow crewrow"><b>${esc(n.name)}${s.partner ? ' 💗' : ''}</b><span class="lv">Nv. ${n.level}</span>
@@ -492,6 +494,11 @@ export class Panels {
       ['💢 Celos, rivales y familia', 'Si tienes pareja y te haces muy amigo de otros, se pondrá celosa. A veces aparece un rival que te reta a duelo. Tras casaros llegará un hijo o una hija que crece cada día y a nivel 10 puede unirse a tu tripulación.'],
       ['🌙 Mercado negro y carreras', 'De noche aparece el Contrabandista Sombra en Isla Tortuga: objetos raros y trabajos de contrabando (lleva la caja a otro puerto). Lucía, Zaid y Helga organizan carreras de monturas con apuestas.'],
       ['🗼 Faros', 'Junto a cada muelle hay un faro. Enciéndelo con 10 de madera y 2 de hierro y podrás viajar allí desde ⚡ Atajos › Viajar (50 oro).'],
+      ['✨ Habilidades y equipo de la tripulación', 'Cada tripulante usa su técnica según su arma: corte veloz, remolino o estocada; las sanadoras (Ixa, Naira, Tomasa, Coral, Rosa) curan a quien más lo necesita. Suben de nivel al usarlas. En la Mochila puedes darles armas y armaduras con «Dar a tripulante».'],
+      ['🎖 Rangos y diario', 'Habla con un tripulante › Diario y rango: verás lo que piensa de ti, sus victorias y recuerdos, y podrás ascenderle (Marinero, Contramaestre, Primer oficial) para que pegue más y mejore el barco.'],
+      ['🏰 Asedio al Bastión', 'El Rebelde Lucas (Villa Grillete) te propone tomar la fortaleza: tres oleadas de marines y el comodoro. Gran botín, pero sube tu recompensa.'],
+      ['🐾 Mascotas guerreras', 'Tu mascota lucha, sube hasta nivel 50 y tiene vida: los enemigos también la atacan. Si cae, se esconde 40 s para recuperarse.'],
+      ['🌊 Peligros del mar', 'Cuidado con los icebergs alrededor de Isla Escarcha, los remolinos de las aguas profundas (te arrastran) y los rayos de las tormentas.'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],

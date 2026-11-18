@@ -34,6 +34,7 @@ import { installMore4, makeIslands4, makeGrotto } from './more4.js';
 import { installMore5, makeNewbornIslet } from './more5.js';
 import { installMore6 } from './more6.js';
 import { installMore7 } from './more7.js';
+import { installMore8 } from './more8.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -574,7 +575,7 @@ class NPC extends Actor {
             this.attackCd = 1.1;
             this.st.attackT = 0.32;
             g.slash(this, 0xbfe6ff);
-            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3) * g.crewScale() * (s.loyal ? 1.25 : 1));
+            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3) * g.crewScale() * (s.loyal ? 1.25 : 1) * (g.crewDmgMul ? g.crewDmgMul(this) : 1));
             setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.hitEnemy(foe, dmg, false, this); }, 150);
           }
         } else {
@@ -2801,7 +2802,7 @@ class Game {
     if (tier === n.tier) return;
     n.tier = tier;
     const look = { ...n.look0, noAutoLegs: true };
-    for (const id of Object.values(crewGear(gl))) Object.assign(look, EQUIP[id].look);
+    for (const id of Object.values(this.crewEquip ? this.crewEquip(n) : crewGear(gl))) if (EQUIP[id]) Object.assign(look, EQUIP[id].look);
     n.rebuild(look);
   }
   crewGainXp(xp) {
@@ -2983,6 +2984,7 @@ class Game {
       this.updateNewborn(dt);
       this.updateRescue();
       this.updateMore7(dt);
+      this.updateMore8(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3198,6 +3200,7 @@ installMore4(Game, { sfx, EQUIP, ITEMS, OUTLINE });
 installMore5(Game, { sfx });
 installMore6(Game, { sfx });
 installMore7(Game, { sfx, NPC });
+LOGROS.push({ id: 'asedio', name: 'Conquistador', title: 'Conquistador', desc: 'Toma el Bastión de la Marina', ok: (g) => (g.stats.sieges || 0) >= 1 });
 LOGROS.push({ id: 'jinete', name: 'Jinete veloz', title: 'Jinete veloz', desc: 'Gana una carrera de monturas', ok: (g) => (g.stats.mraces || 0) >= 1 });
 LOGROS.push(
   { id: 'islas', name: 'Señor de las islas', title: 'Señor de las islas', desc: 'Derrota a Glacia, Ferrum y Bizcochón', ok: (g) => (g.stats.k_reina_hielo || 0) >= 1 && (g.stats.k_gran_automata || 0) >= 1 && (g.stats.k_rey_pastel || 0) >= 1 },
@@ -3212,6 +3215,7 @@ LOGROS.push(
 );
 for (const d of PREMIUM_DECOR) DECOR.push({ ...d, premium: true });
 installMore(Game, { sfx, mountModel, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
+installMore8(Game, { sfx });
 
 window.addEventListener('load', () => {
   setTimeout(() => {

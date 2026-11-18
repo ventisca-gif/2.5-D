@@ -39,6 +39,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **v3.3**: el Armamento Espiritual a nivel 30 cubre de negro todo el torso, los hombros y el busto.
 - **v3.4**: romper con la pareja o divorciarse, la tripulación camina en formación sin amontonarse, los enemigos se defienden según su tipo (bloqueo y contraataque, esquiva, caparazón, piel de piedra) y los NPCs bloquean, esquivan y usan técnicas en los duelos.
 - **v3.5**: tripulación y pareja con vida propia (los enemigos les atacan, se desmayan, beben pociones), expediciones que dan armadura, órdenes, celos y rivales, hijo o hija, enemigos que huyen y traen refuerzos, mercado negro nocturno, carreras de monturas y faros con viaje rápido.
+- **v3.6**: habilidades y equipo propio para cada tripulante, rangos, diario de la tripulación, asedio al Bastión, fiesta de boda, mascotas guerreras con vida y peligros en el mar (icebergs, remolinos y rayos).
 - **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.

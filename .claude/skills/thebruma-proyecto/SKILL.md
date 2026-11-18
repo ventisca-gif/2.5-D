@@ -91,6 +91,12 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Enemigos huyen a <20% (30%) y vuelven con 2 refuerzos (`updateFlee`, estado 'flee'). Mercado negro nocturno (NPC 'sombra' en Tortuga 20-5h, contrabando `smuggle` → envuelve `dock`). Carreras de monturas (Lucía/Zaid/Helga, `mrace`, apuesta ×3). Faros en cada muelle (`faros`, 10 madera + 2 hierro, `travelMenu`/`fastTravel` 50 oro, `btnTravel`).
 - El usuario NO quiere motín.
 
+## v3.6 (more8.js; se instala DESPUÉS de installMore porque envuelve wedding/petLevel/updatePet de more.js)
+- Habilidades de tripulantes (`crewClass`: sword/axe/spear/heal; sanadoras `HEALERS`), `crewSkillTick`, nivel `soc.sk` sube con usos.
+- Equipo a mano: `soc.eq` por ranura (Mochila › «Dar a tripulante», `giveCrewItem`), `crewEquip` = crewGear + eq; `compStats` reescrito (cmax/cdef/catk), `crewDmgMul` (arma + rango).
+- Rangos `RANKS` (Grumete→Primer oficial, `soc.rank`, `promote`), Primer oficial: cañón ×1,15 y velocidad ×1,08 (envuelve shipStats).
+- Diario (`crewDiary`, `soc.mem` recuerdos, `kills/kos/exps`). Asedio al Bastión (Lucas, `siege`, 3 oleadas + comodoro, `flags.siegeDay`). Fiesta de boda (`party`). Mascotas con vida y nivel 50 (`petTarget` como objetivo de enemigos, `hurtPet`, ko 40 s). Peligros del mar (`updateSeaHazards`: icebergs en Escarcha, remolinos en aguas profundas con colisión, rayos en tormenta).
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 
