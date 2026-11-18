@@ -24,6 +24,7 @@ import { installNaval, makeArenaRegion } from './naval.js';
 import { installLife, FAMOUS } from './life.js';
 import { installSkills } from './skills.js';
 import { installBuild } from './build.js';
+import { installExtra } from './extra.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -82,6 +83,10 @@ const ENEMY_DEF = {
   marine: { name: 'Marina', hp: (L) => 44 + 13 * L, atk: (L) => 5 + 2.2 * L, speed: 2.8, xp: (L) => 16 + 7 * L, gold: (L) => 6 + Math.floor(Math.random() * (5 + L)), aggro: 6, cd: 1.3, neutral: true, bounty: 60 },
   pirate: { name: 'Pirata rival', hp: (L) => 40 + 12 * L, atk: (L) => 5 + 2.1 * L, speed: 2.8, xp: (L) => 14 + 6 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 5, cd: 1.3 },
   marine_boss: { name: 'Comodoro Vidal', hp: () => 3200, atk: () => 95, speed: 2.8, xp: () => 3000, gold: () => 900, aggro: 7, cd: 1.4, boss: true, neutral: true, bounty: 2500 },
+  serafin: { name: 'Azrael, el Serafín Caído', hp: () => 26000, atk: () => 270, speed: 3.0, xp: () => 30000, gold: () => 6000, aggro: 7, cd: 1.3, boss: true, super: 'serafin', bounty: 5000 },
+  dragon: { name: 'Ignaros, el Dragón Rey', hp: () => 32000, atk: () => 300, speed: 2.4, xp: () => 36000, gold: () => 7000, aggro: 7, cd: 1.6, boss: true, super: 'dragon', bounty: 6000 },
+  leviathan: { name: 'Leviatán Abisal', hp: (L) => 7000 + L * 90, atk: (L) => 40 + L * 2.6, speed: 0, xp: () => 0, gold: () => 0, aggro: 12, cd: 2.2, boss: true, super: 'leviathan' },
+  tentacle: { name: 'Tentáculo', hp: (L) => 900 + L * 18, atk: (L) => 20 + L * 2, speed: 0, xp: (L) => 200 + L * 10, gold: (L) => 30 + L, aggro: 12, cd: 1.8 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -200,10 +205,11 @@ class Player extends Actor {
     this.maxSt = 100 + (this.level - 1) * 2;
     if (this.hp > this.maxHp) this.hp = this.maxHp;
   }
-  get atk() { return (5 + (this.level - 1) * 2 + gearStats(this.equip).atk) * (this.g.buffMul ? this.g.buffMul('atk') : 1); }
+  get atk() { return (5 + (this.level - 1) * 2 + gearStats(this.equip).atk) * (this.g.buffMul ? this.g.buffMul('atk') : 1) * (this.g.jobDmg ? this.g.jobDmg() : 1); }
   get def() { return Math.round(gearStats(this.equip).def * (this.g.buffMul ? this.g.buffMul('def') : 1)); }
   xpNext() { const l = this.level - 1; return Math.round(25 + l * 18 + l * l * 2.2); }
   gainXp(n) {
+    n = Math.round(n * (this.g.xpMul ? this.g.xpMul() : 1));
     if (this.level >= MAX_LEVEL) { this.xp = 0; return; }
     this.xp += n;
     while (this.level < MAX_LEVEL && this.xp >= this.xpNext()) {
@@ -497,7 +503,7 @@ class NPC extends Actor {
   update(dt) {
     const g = this.g, p = g.player, s = g.soc(this.id);
     this.st.holdHand = null;
-    if (s.role && (s.crew || s.partner)) {
+    if (s.role && (s.crew || s.partner) && !g.boarding) {
       // en el barco o recolectando: no se ve por la isla
       if (this.model.root.visible) { this.model.root.visible = false; this.label.el.style.display = 'none'; this.label._vis = false; }
       this.st.moving = false;
@@ -536,7 +542,7 @@ class NPC extends Actor {
             this.attackCd = 1.1;
             this.st.attackT = 0.32;
             g.slash(this, 0xbfe6ff);
-            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3));
+            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3) * g.crewScale());
             setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.hitEnemy(foe, dmg, false, this); }, 150);
           }
         } else {
@@ -601,6 +607,29 @@ class NPC extends Actor {
   }
 }
 
+// tentáculo / cabeza del Leviatán (modelo sencillo de primitivas)
+function makeTentacleModel(head) {
+  const root = new THREE.Group();
+  const mats = [];
+  const M = (c) => { const m = new THREE.MeshPhongMaterial({ color: c, shininess: 40 }); m.userData.baseEmissive = new THREE.Color(0); mats.push(m); return m; };
+  const skin = M(0x3a2a5a), belly = M(0x8a6aa8), eye = new THREE.MeshBasicMaterial({ color: 0xffe040 });
+  if (head) {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(1.1, 18, 14), skin); h.scale.set(1, 1.25, 1); h.position.y = 1.0; root.add(h);
+    for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), eye); e.position.set(s * 0.5, 1.2, 0.85); root.add(e); const pu = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0x111111 })); pu.position.set(s * 0.5, 1.2, 1.02); root.add(pu); }
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; const t = new THREE.Mesh(new THREE.ConeGeometry(0.18, 1.4, 6), i % 2 ? skin : belly); t.position.set(Math.cos(a) * 0.7, 0.1, Math.sin(a) * 0.7 + 0.3); t.rotation.set(Math.sin(a) * 0.8, 0, -Math.cos(a) * 0.8 + Math.PI); root.add(t); }
+    root.position.y = -0.5;
+    return { root, parts: {}, mats, kind: 'tentacle', height: 2.4 };
+  }
+  for (let i = 0; i < 7; i++) {
+    const r = 0.26 - i * 0.03;
+    const seg = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.85, r, 0.36, 10), i % 2 ? skin : belly);
+    seg.position.set(Math.sin(i * 0.5) * 0.08 * i, 0.18 + i * 0.32, 0);
+    root.add(seg);
+    if (i % 2 === 0) { const su = new THREE.Mesh(new THREE.SphereGeometry(r * 0.35, 6, 4), belly); su.position.set(seg.position.x, seg.position.y, r * 0.85); root.add(su); }
+  }
+  return { root, parts: {}, mats, kind: 'tentacle', height: 2.4 };
+}
+
 function model_scale(model, s) {
   model.root.scale.setScalar(s);
   model.height *= s;
@@ -617,6 +646,9 @@ class Enemy extends Actor {
     else if (type === 'golem') model = makeGolem('stone');
     else if (type === 'golem_obs' || type === 'golem_boss') model = makeGolem('obs');
     else if (type === 'skull') model = makeFlameSkull();
+    else if (type === 'serafin') model = HUM({ ...EQUIP.c_serafin.look, ...EQUIP.c_alas_serafin.look, sword: true, blade: 0xfff4c0, bladeLen: 0.7, guard: 0xffd040, skin: 0xf0d8c0, anime: true, female: false, eyeColor: 3 });
+    else if (type === 'dragon') model = HUM({ ...EQUIP.c_dragon.look, axe: true, skin: 0x8a3a2a, anime: true, eyeColor: 1 });
+    else if (type === 'tentacle' || type === 'leviathan') model = makeTentacleModel(type === 'leviathan');
     else if (type.startsWith('famous_')) { const f = FAMOUS.find((k) => 'famous_' + k.id === type); model = HUM(animeLook({ id: f.id, look: f.look })); }
     else if (type === 'marine' || type === 'marine_boss') model = HUM(MARINE_LOOK(type === 'marine_boss' ? 2 : seed % 5 === 0 ? 1 : 0, seed));
     else if (type === 'pirate') {
@@ -631,6 +663,8 @@ class Enemy extends Actor {
     if (type === 'golem_boss') model_scale(model, 1.7);
     if (type === 'marine_boss') model_scale(model, 1.3);
     if (type.startsWith('famous_')) model_scale(model, 1.18);
+    if (type === 'serafin') model_scale(model, 1.6);
+    if (type === 'dragon') model_scale(model, 1.75);
     this.type = type;
     this.def = ENEMY_DEF[type];
     this.spawnDef = spawn;
@@ -745,6 +779,8 @@ class Enemy extends Actor {
     const g = this.g;
     if (g.net.isClient && g.net.active) { this.netUpdate(dt); return; }
     if (this.stunT > 0 && !this.dead) { this.stunT -= dt; this.st.moving = false; return; }
+    if (this.def.super) this.superTick(dt);
+    if (this.model.kind === 'tentacle' && !this.dead) { this.model.root.rotation.z = Math.sin(this.g.time * 1.7 + this.idx) * 0.12; if (this.st.attackT > 0) this.model.root.rotation.x = Math.sin(this.st.attackT * 10) * 0.5; else this.model.root.rotation.x = 0; }
     if (this.def.famous && !this.dead) { this.famousUpdate(dt); return; }
     const p = g.enemyTarget(this);
     if (this.dead) {
@@ -1652,7 +1688,10 @@ class Game {
       const nv = this.navalAction();
       if (nv) return nv;
       const d = this.nearDock();
-      return d && !this.deck ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
+      if (d && !this.deck) return { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) };
+      const ls = !this.deck && Math.abs(this.boat.speed) < 1.5 ? this.landSpot() : null;
+      if (ls) return { icon: '🏝', label: 'Desembarcar', fn: () => this.disembark(ls) };
+      return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     const inRoom = this.roomAt(p.x, p.z);
     if (inRoom && Math.hypot(p.x - inRoom.exit.x, p.z - inRoom.exit.z) < 2.3) return { icon: '🚪', label: 'Salir', fn: () => this.exitRoom(inRoom) };
@@ -1664,6 +1703,13 @@ class Game {
       if (!this.flags[c.id] && Math.max(Math.abs(c.x - p.tx), Math.abs(c.z - p.tz)) <= 1) return { icon: '🎁', label: 'Abrir', fn: () => p.setTarget({ kind: 'chest', ref: c }) };
     }
     for (const ps of this.posters) if (Math.hypot(ps.x - p.x, ps.z - p.z) < 1.7) return { icon: '📜', label: 'Se busca', fn: () => this.panels.openPosters() };
+    const hold = this.inHold();
+    if (hold) {
+      const dn = this.decorNear();
+      if (dn) return { icon: '🪑', label: 'Mueble', fn: () => this.ui.openDialog('🪑 Mueble', '¿Guardar este mueble? Recuperas la mitad de su precio.', [{ label: '♻️ Guardar', action: () => this.removeDecor(dn) }, { label: 'Dejarlo', action: null }]) };
+      if (!(Math.hypot(p.x - hold.exit.x, p.z - hold.exit.z) < 2.3)) return { icon: '🪑', label: 'Decorar', fn: () => this.panels.openDecor() };
+    }
+    if (this.canCallShip()) return { icon: '📯', label: 'Llamar barco', fn: () => this.callShip() };
     const sb = this.structNear(1.9);
     if (sb) return { icon: '🔨', label: 'Estructura', fn: () => this.structMenu(sb) };
     const fam = this.famousAt(2.4);
@@ -1682,6 +1728,7 @@ class Game {
     for (const n of this.npcs) { const d = n.dist(p); if (d < nnd) { nnd = d; nn = n; } }
     if (nn && (!ne || nnd < 1.8)) return { icon: '💬', label: 'Hablar', fn: () => p.setTarget({ kind: 'npc', ref: nn }) };
     if (ne) return { icon: '⚔️', label: 'Atacar', fn: () => this.attackPress() };
+    if (this.nearWater() && !this.fishing) return { icon: '🎣', label: 'Pescar', fn: () => this.startFishing() };
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
       const k = this.W.key(p.tx + dx, p.tz + dz);
       const t = this.treeMap.get(k);
@@ -1735,6 +1782,7 @@ class Game {
 
   buy(cost, fn) {
     const p = this.player;
+    if (this.priceMul && this.priceMul() < 1 && cost.gold) cost = { ...cost, gold: Math.round(cost.gold * this.priceMul()) };
     if ((cost.gold || 0) > p.gold) return this.ui.toast('No tienes suficiente oro');
     for (const [k, v] of Object.entries(cost)) if (k !== 'gold' && (p.inv[k] || 0) < v) return this.ui.toast(`Te falta ${ITEMS[k] ? ITEMS[k].name.toLowerCase() : k}`);
     p.gold -= cost.gold || 0;
@@ -1749,13 +1797,16 @@ class Game {
     o.hp--;
     if (kind === 'tree') {
       p.inv.wood++;
+      this.jobXp('lenador', 3);
+      if (Math.random() < this.jobLevel('lenador') * 0.02) { p.inv.wood++; this.ui.float('+1 🪵 extra', 'info', o.x, 1.7, o.z); }
       this.ui.float('+1 🪵', 'info', o.x, 1.4, o.z);
       if ((o.type === 'oak' || o.type === 'autumn') && Math.random() < 0.18) this.give('apple', 1, o.x, o.z);
     } else {
       p.inv.stone++;
       this.ui.float('+1 🪨', 'info', o.x, 0.9, o.z);
-      const ore = oreDrop(this.W.areaName(o.x, o.z));
+      const ore = oreDrop(this.W.areaName(o.x, o.z)) || (Math.random() < this.jobLevel('minero') * 0.01 ? oreDrop(this.W.areaName(o.x, o.z)) : null);
       if (ore) this.give(ore, 1, o.x, o.z);
+      this.jobXp('minero', ore ? 5 : 3);
     }
     if (Math.random() < 0.15) { p.gold += 1; this.ui.float('+1 oro', 'gold', o.x, 1.1, o.z); }
     p.gainXp(2);
@@ -1829,7 +1880,10 @@ class Game {
       sfx('coin');
       if (Math.random() < (type === 'boss' ? 1 : 0.08)) { p.inv.potion++; this.ui.toast('🍶 ¡Encontraste ron curativo!'); }
       let k = 0;
-      for (const [id, ch] of DROPS[type] || []) if (Math.random() < ch) setTimeout(() => this.give(id, 1, x, z), 350 + 250 * k++);
+      this.jobXp('cazador', 2 + Math.floor(level / 10));
+      this.contractTick('kill', type);
+      const dropK = 1 + this.jobLevel('cazador') * 0.02;
+      for (const [id, ch] of DROPS[type] || []) if (Math.random() < ch * dropK) setTimeout(() => this.give(id, 1, x, z), 350 + 250 * k++);
       this.stats.kills = (this.stats.kills || 0) + 1;
       this.stats['k_' + type] = (this.stats['k_' + type] || 0) + 1;
       this.ui.float(`+${xp} XP`, 'info', x, 1.2, z);
@@ -1901,7 +1955,8 @@ class Game {
 
   respawnPlayer() {
     const p = this.player;
-    if (this.boarding) { const B = this.boarding; this.boarding = null; for (const e of B.temps) e.remove(); this.purgeTemps(); this.clearSea(); this.sailing = false; }
+    if (this.boarding) { const B = this.boarding; this.boarding = null; for (const e of B.temps) e.remove(); this.purgeTemps(); this.clearSea(); this.sailing = false; this.arenaRestore(); }
+    this.fishing = null;
     if (this.raid) { for (const e of this.raid.temps) e.remove(); this.raid = null; this.purgeTemps(); }
     const sp = this.W.landmarks.spawn;
     p.dead = false;
@@ -2057,7 +2112,8 @@ class Game {
       v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
       inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
       playtime: Math.round(this.playtime), day: this.day, area: this.boarding ? 'Mar de Bruma' : this.W.areaName(p.tx, p.tz), ...pos,
-      famous: this.famous, weather: this.weather, builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow })) : [], townDef: this.townDef || {},
+      famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
+      shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow })) : [], townDef: this.townDef || {},
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
   }
@@ -2253,6 +2309,11 @@ class Game {
     this.honor = data.honor || 0;
     if (data.famous) { this.famousInit(); for (const [k, v] of Object.entries(data.famous)) if (this.famous[k]) Object.assign(this.famous[k], v); }
     if (data.weather) this.weather = data.weather;
+    this.jobs = data.jobs || {};
+    this.jobBoard = data.jobBoard || null;
+    this.wardrobe = data.wardrobe || [];
+    this.migrateCos();
+    this.loadDecor(data.shipDecor || []);
     this.townDef = data.townDef || {};
     if (this.loadBuilds) this.loadBuilds(data.builds || []);
     this.side = data.side || {};
@@ -2260,6 +2321,7 @@ class Game {
     this.boat.hp = undefined;
     this.applyShipUpgrades();
     if (data.shipHp) this.boat.hp = Math.min(this.boat.maxHp, data.shipHp);
+    this.applyShipDecor();
     const bd = this.docks.find((k) => k.id === data.boatDock) || this.docks[0];
     Object.assign(this.boat, { x: bd.shipX, z: bd.shipZ, heading: bd.heading, speed: 0, docked: bd.id });
     if (data.tod) this.tod = data.tod;
@@ -2288,6 +2350,7 @@ class Game {
   // ------------------------------------------------------------- objetos
   give(id, n = 1, x, z) {
     const p = this.player;
+    if (EQUIP[id] && EQUIP[id].cos) { this.addCos(id); return; }
     p.inv[id] = (p.inv[id] || 0) + n;
     const it = ITEMS[id];
     if (x !== undefined && it) this.ui.float(`+${n} ${it.icon}`, 'info', x, 1.2, z);
@@ -2307,7 +2370,7 @@ class Game {
     const p = this.player, id = p.equip[slot];
     if (!id) return;
     delete p.equip[slot];
-    p.inv[id] = (p.inv[id] || 0) + 1;
+    if (!(EQUIP[id] && EQUIP[id].cos)) p.inv[id] = (p.inv[id] || 0) + 1;
     p.recalc();
     p.refreshLook();
     sfx('click');
@@ -2331,8 +2394,8 @@ class Game {
     p.gold -= r.gold;
     for (const [id, n] of Object.entries(r.need)) p.inv[id] -= n;
     this.give(r.out, 1);
-    if (r.station === 'fuego') this.stats.cooked = (this.stats.cooked || 0) + 1;
-    else this.stats.crafted = (this.stats.crafted || 0) + 1;
+    if (r.station === 'fuego') { this.stats.cooked = (this.stats.cooked || 0) + 1; this.jobXp('cocinero', 10); this.contractTick('cook', 'cook'); if (Math.random() < this.jobLevel('cocinero') * 0.015) { this.give(r.out, 1); this.toast('🍳 ¡Te salió una ración de más!'); } }
+    else { this.stats.crafted = (this.stats.crafted || 0) + 1; this.jobXp('herrero', 15 + (ITEMS[r.out].tier || 0) * 6); p.gold += Math.round(r.gold * this.jobLevel('herrero') * 0.01); }
     this.ui.toast(`✨ ${ITEMS[r.out].icon} ${ITEMS[r.out].name}`);
     sfx('level');
   }
@@ -2706,6 +2769,8 @@ class Game {
       this.updateBoarding(dt);
       this.updateRaids(dt);
       this.updateFamous(dt);
+      this.updateFishing(dt);
+      this.updateEvents(dt);
       this.updateSkills && this.updateSkills(dt);
       this.updateBuild && this.updateBuild(dt);
       this.player.st.holdHand = null;
@@ -2902,6 +2967,7 @@ installNaval(Game, { sfx, Enemy });
 installLife(Game, { sfx, Enemy, buildLook, animeLook });
 installSkills(Game, { sfx, EQUIP });
 installBuild(Game, { sfx, T });
+installExtra(Game, { sfx, Enemy, NPC, ITEMS, EQUIP, T });
 
 window.addEventListener('load', () => {
   setTimeout(() => {

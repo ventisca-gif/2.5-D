@@ -45,6 +45,10 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - `skills.js`: clase según arma (espada/hacha/lanza), 5 habilidades cada una (niveles 2/6/12/20/30), meditar (buff Concentración), buffs.
 - `build.js`: estructuras 2×2 (empalizada, muro, torre, cañón, fogata, tienda, huerto) que disparan, se reparan/refuerzan y los asaltantes destruyen; defensas de pueblo vía líderes (`townDef`).
 
+## v2.6
+- `extra.js`: oficios (`JOBS`, máx. 30, +0,5% daño por nivel vía `jobDmg`, ventajas propias), tablón diario `contracts()` (guardado en `jobBoard`; ¡no usar `this.board`, es el método de embarcar!), fichas de gremio (`ficha`), pesca (`startFishing`), armario de cosméticos (`wardrobe`, `addCos`, `equipCos`; `give()` manda los cosméticos al armario), superjefes nivel 101 (`serafin` en Isla Calavera, `dragon` en Isla Ceniza; `superTick`: área anunciada, refuerzos, furia; vida escalada con `superScale`) y Leviatán Abisal (`leviathanAttack`: la arena sin barco B, cabeza + tentáculos, toda la tripulación lucha; `crewScale` reparte el daño si hay más de 3), barcos comprables (`SHIP_TYPES`) y decorables (`applyShipDecor`, nombre), llamar al barco (`callShip`) y desembarcar en cualquier costa (`disembark`), camarote decorable en la bodega (`shipDecor`, `furniture` exportado de interiors.js) y eventos (`EVENTS`: festival, estrellas, mercader Zuri, invasión, tesoro).
+- 42 cosméticos nuevos `c_*` en items.js (campo `src`: tienda, gremio, evento, dragon, serafin, leviatan); chars2 admite `wings`, `tail`, `halo`, `dragonHorns`, `visorGlow`.
+
 ## Multijugador local
 `src/net.js` + `android/.../NetHub.java`: relé WebSocket en el móvil anfitrión (puerto 47800, UDP 47801 para buscar partidas). Anfitrión = autoridad de enemigos (`enemyTarget`, `hurtRemote`); clientes mandan su estado a 10 Hz y los golpes (`hitEnemy` → `hit`). Equipos y XP compartida (`killRecipients` → `grantKill`), PvP opcional del anfitrión. Para probar en PC: `node tools/hub.mjs` y `game.net.host('ws://127.0.0.1:47800/host')` / `game.net.join('127.0.0.1')` en varios contextos de Playwright.
 

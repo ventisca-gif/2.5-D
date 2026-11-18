@@ -209,6 +209,10 @@ export function dialogFor(id, G) {
   } else if (id === 'selim') {
     text = text || NPC_LINES.selim[1];
     sell('bandana_roja', 80); sell('gorra_marinera', 120); sell('camisa_marinera', 150); sell('chaqueta_pirata', 380); sell('sombrero_capitan', 450);
+    for (const id of ['c_sombrero_paja', 'c_turbante_azul', 'c_gorra_capitan', 'c_bandana_negra', 'c_chaleco_cuero', 'c_camisa_rayas', 'c_vestido_azul', 'c_capa_roja', 'c_capa_azul', 'c_mochila']) if (!G.ownCos(id)) sell(id, G.cosPrice(id).gold);
+  } else if (id === 'zuri') {
+    text = '¡Telas de los siete mares! Solo hoy, solo para ti.';
+    for (const cid of G.zuriStock()) if (!G.ownCos(cid)) sell(cid, G.cosPrice(cid).gold);
   } else if (id === 'zaid' || id === 'naira') {
     if (id === 'zaid') { sell('ambar', 40); sell('potion', 14); }
   } else if (id === 'berta') {
@@ -227,7 +231,7 @@ export function dialogFor(id, G) {
     text = text || NPC_LINES.ilyas[0];
     sell('cloth', 6);
     sell('leather', 10);
-    const mats = Object.entries(P.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].type === 'mat');
+    const mats = Object.entries(P.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].type === 'mat' && ITEMS[k].value > 0);
     const total = mats.reduce((a, [k, n]) => a + n * ITEMS[k].value, 0);
     opts.push({ label: `💰 Vender materiales (${total} oro)`, action: () => { if (!total) return G.toast('No tienes materiales'); for (const [k] of mats) P.inv[k] = 0; P.gold += total; G.sfx('coin'); G.toast(`+${total} oro`); } });
   }

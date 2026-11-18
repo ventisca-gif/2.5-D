@@ -182,6 +182,8 @@ export function makeIslets() {
   }
   populate(cal, 0.8);
   cal.spawns.push({ type: 'skeleton', count: 6, area: [cc.x - 7, cc.z - 7, cc.x + 7, cc.z + 7], lvl: [9, 12] });
+  // superjefe: el Serafín Caído vigila la cima de la isla
+  cal.spawns.push({ type: 'serafin', count: 1, area: [cc.x - 1, cc.z + 8, cc.x + 1, cc.z + 10], lvl: [101, 101] });
 
   return [tor, cal];
 }

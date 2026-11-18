@@ -86,12 +86,13 @@ export function installNaval(Game, D) {
   // ------------------------------------------------------------ barco: vida y mejoras
   P.shipStats = function () {
     const u = this.shipUp || (this.shipUp = { hull: 0, cannons: 0, sails: 0, size: 0 });
+    const T = this.shipType ? this.shipType() : { hp: 1, guns: 0, speed: 1 };
     return {
-      maxHp: 300 + u.hull * 250 + u.size * 150,
-      dmg: 18 + u.cannons * 14 + this.player.level * 2,
+      maxHp: Math.round((300 + u.hull * 250 + u.size * 150) * T.hp),
+      dmg: (18 + u.cannons * 14 + this.player.level * 2) * (1 + (this.jobLevel ? this.jobLevel('marinero') : 0) * 0.01),
       reload: 1.9 - u.cannons * 0.3,
-      guns: 2 + u.size,
-      speed: 1 + u.sails * 0.12,
+      guns: Math.max(1, 2 + u.size + T.guns),
+      speed: (1 + u.sails * 0.12) * T.speed,
       crew: u.size * 2,
     };
   };
@@ -100,7 +101,7 @@ export function installNaval(Game, D) {
     const b = this.boat;
     b.maxHp = st.maxHp;
     if (b.hp === undefined || b.hp > b.maxHp) b.hp = b.maxHp;
-    this.ship.scale.setScalar(1 + (this.shipUp.size || 0) * 0.12);
+    this.ship.scale.setScalar((1 + (this.shipUp.size || 0) * 0.12) * (this.shipType ? this.shipType().scale : 1));
   };
   P.damageBoat = function (dmg, x, z) {
     const b = this.boat;
@@ -263,6 +264,8 @@ export function installNaval(Game, D) {
     this.give('polvora', 2 + Math.floor(Math.random() * 3), s.x, s.z);
     if (Math.random() < 0.4) this.give(s.type === 'marine' ? 'silver' : 'goldore', 1);
     this.stats['s_' + s.type] = (this.stats['s_' + s.type] || 0) + 1;
+    this.jobXp && this.jobXp('marinero', 25);
+    this.contractTick && this.contractTick('ship', 'ship');
     this.addBounty(s.type === 'marine' ? 150 : 40, 'ship_' + s.type);
     this.toast(s.type === 'marine' ? '💥 ¡Fragata de la Marina hundida!' : '💥 ¡Barco pirata hundido!', 'area');
     this.puff(s.x, 1, s.z, 0x8a8a8a, true);
@@ -293,6 +296,7 @@ export function installNaval(Game, D) {
         if (alive < 2) {
           if (!this.isMarine() && (this.bounty || 0) >= 100 && r < 0.3 + Math.min(0.4, (this.bounty || 0) / 8000)) this.spawnEnemyShip('marine');
           else if (r < (deep ? 0.75 : 0.5)) this.spawnEnemyShip('pirate');
+          else if (deep && p.level >= 35 && Math.random() < 0.3 && this.playtime - (this.levT || -9999) > 600) { this.levT = this.playtime; this.leviathanAttack(); }
           else if (deep && !N.serpents.some((s) => !s.dead) && p.level >= 15) this.spawnSerpent();
         }
       }
@@ -549,6 +553,7 @@ export function installNaval(Game, D) {
   P.startBoarding = function (ship, theyBoard) {
     if (this.boarding) return;
     this.buildArena();
+    this.arenaRestore();
     const p = this.player, b = this.boat;
     this.arenaShipB.traverse((o) => {
       if (o.userData.sail) o.material = new THREE.MeshLambertMaterial({ color: ship.type === 'marine' ? 0xf4f4f0 : 0x3a2a2a, side: THREE.DoubleSide });
@@ -605,6 +610,13 @@ export function installNaval(Game, D) {
     for (const e of B.temps) if (!e.removed) e.remove();
     this.purgeTemps();
     const p = this.player, b = this.boat;
+    if (B.leviathan) {
+      this.arenaRestore();
+      if (won) this.leviathanWin();
+      p.x = b.x; p.z = b.z;
+      this.board(true);
+      return;
+    }
     if (won) {
       const s = B.ship;
       const gold = Math.round(80 + s.level * 14);
@@ -707,9 +719,11 @@ export function installNaval(Game, D) {
       const txt = Object.entries(cost).map(([id, v]) => (id === 'gold' ? `${v} oro` : `${v} ${ITEMS[id] ? ITEMS[id].icon : id}`)).join(', ');
       opts.push({ label: `${def.icon} ${def.name} ${lv + 1}/${def.max} (${txt})`, action: () => this.buy(cost, () => { u[k] = lv + 1; this.applyShipUpgrades(); b.hp = b.maxHp; this.toast(`⚒️ ${def.name}: nivel ${lv + 1}`); sfx('quest'); }) });
     }
+    opts.push(...this.shipyardExtra());
+    opts.push({ label: '🎨 Decorar el barco y ponerle nombre', action: () => this.decorShip() });
     opts.push({ label: '🧨 Comprar 3 pólvora (30 oro)', action: () => this.buy({ gold: 30 }, () => this.give('polvora', 3)) });
     opts.push({ label: 'Adiós', action: null });
-    this.ui.openDialog('⚓ Astillera Marga',
+    this.ui.openDialog(`⚓ Astillera Marga · «${this.shipName()}» (${this.shipType().name})`,
       `Tu barco: vida ${Math.round(b.hp)}/${b.maxHp} · ${st.guns} cañones por banda · daño ${Math.round(st.dmg)} · velocidad ×${st.speed.toFixed(2)}. Casco ${u.hull}/3 · Cañones ${u.cannons}/3 · Velas ${u.sails}/3 · Tamaño ${u.size}/2.`,
       opts);
   };

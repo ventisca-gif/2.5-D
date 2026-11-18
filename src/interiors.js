@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { box, cyl, mat, makeProp } from './props.js';
 
-function furniture(type, fw, fd, M, room, dyn) {
+export function furniture(type, fw, fd, M, room, dyn) {
   const g = new THREE.Group();
   const wood = mat(room.wood);
   const woodL = mat(new THREE.Color(room.wood).multiplyScalar(1.5).getHex());

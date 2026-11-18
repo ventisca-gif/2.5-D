@@ -427,3 +427,13 @@ body.sailing #skillBar { display: none; }
 .wanted .wm { font-size: 8px; text-align: right; letter-spacing: 2px; }
 .wanted.me { border-color: #c83a2a; box-shadow: 0 0 10px rgba(200,58,42,0.7); }
 .wanted.down { filter: grayscale(0.8) brightness(0.8); }
+
+#eventBanner { position: absolute; top: calc(8px + var(--sat, 0px)); left: 50%; transform: translateX(-50%); background: rgba(40,20,60,0.85); border: 1px solid #e0b040; color: #ffe8a0; border-radius: 20px; padding: 4px 14px; font-size: 12px; pointer-events: none; white-space: nowrap; }
+#eventBanner.hidden { display: none; }
+.cosgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.cosbtn { padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,0.3); color: #f1ead8; font-size: 11px; text-align: left; }
+.cosbtn.on { border-color: var(--gold); box-shadow: 0 0 6px rgba(227,187,85,0.6); }
+.cosbtn.no { opacity: 0.45; }
+.jobrow { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+.jobbar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.jobbar i { display: block; height: 100%; background: linear-gradient(90deg, #e0b040, #ffe080); }

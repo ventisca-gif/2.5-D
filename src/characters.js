@@ -349,6 +349,10 @@ export function animateModel(model, st, dt) {
     p.body.rotation.y = 0;
     p.body.position.z = 0;
     p.torso.rotation.set(0, 0, 0);
+    p.legL.rotation.set(0, 0, 0);
+    p.legR.rotation.set(0, 0, 0);
+    p.head.rotation.set(0, 0, 0);
+    if (p.wings) { const f = Math.sin(st.phase * (moving ? 1.6 : 0.8)) * 0.18; p.wings[0].rotation.y = 0.35 + f; p.wings[1].rotation.y = -0.35 - f; }
     p.armL.rotation.set(0, 0, 0);
     p.armR.rotation.set(0, 0, 0);
     if (st.swim) {

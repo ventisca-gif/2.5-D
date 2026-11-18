@@ -331,6 +331,8 @@ export class UI {
     if (!g.sailing) dot(g.boat.x, g.boat.z, '#6a3a1a', this.mmBig ? 4 : 5);
     for (const e of g.enemies) if (!e.dead) dot(e.x, e.z, e.type === 'boss' ? '#ff00aa' : '#e8302a', this.mmBig ? 2.5 : 3);
     for (const n of g.npcs) dot(n.x, n.z, '#ffe04a', this.mmBig ? 2.5 : 3);
+    const em = g.eventMarker && g.eventMarker();
+    if (em) dot(em.x, em.z, '#ffd23a', 6);
     const qm = g.questMarker();
     if (qm) {
       const pulse = 4 + Math.sin(performance.now() / 200) * 1.5;

@@ -5,6 +5,7 @@ import { makeHumanoid2, OUTLINE } from './chars2.js';
 import { animateModel } from './characters.js';
 import { QUESTS, SIDE_QUESTS } from './quests.js';
 import { STRUCTS } from './build.js';
+import { JOBS, JOB_MAX, DECOR } from './extra.js';
 import { friendLevel, heartsText, MAX_CREW } from './social.js';
 
 const $ = (id) => document.getElementById(id);
@@ -49,6 +50,13 @@ export class Panels {
     if (act === 'close') return this.close();
     if (act === 'tab') { this.tab = b.dataset.tab; return this.openBitacora(this.tab); }
     if (act === 'item') { this.sel = b.dataset.id; return this.renderInv(); }
+    if (act === 'slot' && b.dataset.slot.startsWith('cos')) return this.openWardrobe(b.dataset.slot);
+    if (act === 'cos') { g.equipCos(b.dataset.id); return this.openWardrobe(this.wslot); }
+    if (act === 'cosoff') { g.unequip(this.wslot); return this.openWardrobe(this.wslot); }
+    if (act === 'cosslot') return this.openWardrobe(b.dataset.slot);
+    if (act === 'claim') { g.claimContract(Number(b.dataset.i)); return this.openBitacora('oficios'); }
+    if (act === 'guild') { const c = g.cosPrice(b.dataset.id); if ((p.inv.ficha || 0) < c.tok) { g.toast('Te faltan fichas de gremio'); return; } p.inv.ficha -= c.tok; g.addCos(b.dataset.id); return this.openBitacora('oficios'); }
+    if (act === 'decor') { this.close(); g.placeDecor(b.dataset.id); return; }
     if (act === 'slot') {
       const id = p.equip[b.dataset.slot];
       if (id) { this.sel = null; g.unequip(b.dataset.slot); }
@@ -117,7 +125,7 @@ export class Panels {
             <div class="slotCol">${right}</div>
           </div>
           <div class="slotRow">${bottom}</div>
-          <div class="cosTitle">👕 Aspecto (cosméticos: no cambian tus estadísticas)</div>
+          <div class="cosTitle">👕 Aspecto · toca una ranura para abrir tu armario (${(g.wardrobe || []).length} prendas)</div>
           <div class="slotRow cos">${cos}</div>
         </div>
         <div class="bagArea">
@@ -211,7 +219,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['oficios', '🛠 Oficios'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -221,6 +229,8 @@ export class Panels {
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
         <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'oficios') {
+      body = this.oficiosHtml();
     } else if (tab === 'wanted') {
       return this.openPosters();
     } else if (tab === 'bestia') {
@@ -265,6 +275,45 @@ export class Panels {
     this.show('bit', '📖 Bitácora de viaje', `<div class="tabs">${tabs}</div><div class="tabbody">${body}</div>`, true);
   }
 
+  // ------------------------------------------------------------------ armario de cosméticos
+  openWardrobe(slot = 'cosBody') {
+    const g = this.g, p = g.player;
+    this.wslot = slot;
+    const tabs = COS_SLOTS.map((c) => `<button class="tab ${slot === c.id ? 'on' : ''}" data-p="cosslot" data-slot="${c.id}">${c.icon} ${c.name}</button>`).join('');
+    const all = Object.entries(EQUIP).filter(([, e]) => e.cos && e.slot === slot);
+    const own = all.filter(([id]) => g.ownCos(id));
+    const SRC = { gremio: '🎟 Gremio (Oficios)', tienda: '🪙 Sastre Selim', evento: '🎉 Eventos y pesca', dragon: '🐉 Ignaros (Isla Ceniza)', serafin: '😇 Azrael (Isla Calavera)', leviatan: '🐙 Leviatán Abisal' };
+    const cards = all.map(([id, e]) => {
+      const it = ITEMS[id], has = g.ownCos(id);
+      return `<button class="cosbtn ${p.equip[slot] === id ? 'on' : ''} ${has ? '' : 'no'}" ${has ? `data-p="cos" data-id="${id}"` : ''}><span class="t${e.tier}">${it.icon} ${esc(it.name)}</span><br><small class="muted">${has ? (p.equip[slot] === id ? '✔ Puesto' : 'Tocar para ponerlo') : SRC[e.src] || 'Botín'}</small></button>`;
+    }).join('');
+    this.show('ward', `👕 Armario (${(g.wardrobe || []).length} prendas)`, `<div class="tabs">${tabs}</div><p class="muted small">Los cosméticos se guardan aquí para siempre y se ven encima de tu armadura sin cambiar tus estadísticas. Tienes ${own.length}/${all.length} de esta ranura.</p>
+      <button class="pbtn" data-p="cosoff">Quitar ${esc(COS_SLOTS.find((c) => c.id === slot).name.toLowerCase())}</button><div class="cosgrid">${cards}</div>`, true);
+  }
+  // ------------------------------------------------------------------ camarote del barco
+  openDecor() {
+    const g = this.g, p = g.player;
+    const rows = DECOR.map((d) => `<div class="rec"><span class="rname">${esc(d.name)}</span><span class="small">${d.price} oro</span><button class="pbtn" data-p="decor" data-id="${d.t}" ${p.gold >= d.price ? '' : 'disabled'}>Colocar</button></div>`).join('');
+    this.show('decor', `🪑 Decorar «${esc(g.shipName())}»`, `<p class="muted small">El mueble se coloca en la casilla a la que miras. Es tu casa en el mar: amplía el barco con Marga para tener un camarote más grande. Acércate a un mueble y pulsa 🪑 para guardarlo.</p>${rows}`, true);
+  }
+  oficiosHtml() {
+    const g = this.g, p = g.player;
+    const jobs = Object.entries(JOBS).map(([id, j]) => {
+      const J = g.job(id), need = 20 + J.l * 18;
+      return `<div class="jobrow"><b style="width:120px">${j.icon} ${j.name}</b><span style="width:52px">Nv. ${J.l}/${JOB_MAX}</span><div class="jobbar"><i style="width:${J.l >= JOB_MAX ? 100 : Math.round((J.xp / need) * 100)}%"></i></div><span class="muted small" style="width:150px">${j.perk}</span></div>`;
+    }).join('');
+    const cons = g.contracts().map((c, i) => {
+      const prog = c.k === 'gather' ? `${Math.min(p.inv[c.target] || 0, c.n)}/${c.n}` : `${c.p}/${c.n}`;
+      return `<div class="rec"><span class="rname">${c.done ? '✔ ' : ''}${esc(c.txt)}</span><span class="small">${prog} · ${c.gold} oro · ${c.tok} 🎟</span>${c.done ? '<span class="muted small">Hecho</span>' : `<button class="pbtn" data-p="claim" data-i="${i}" ${g.contractReady(c) ? '' : 'disabled'}>Entregar</button>`}</div>`;
+    }).join('');
+    const shop = Object.entries(EQUIP).filter(([, e]) => e.cos && e.src === 'gremio').map(([id, e]) => {
+      const c = g.cosPrice(id), has = g.ownCos(id);
+      return `<div class="rec"><span class="rname t${e.tier}">${ITEMS[id].icon} ${esc(ITEMS[id].name)}</span><span class="small">${c.tok} 🎟</span>${has ? '<span class="muted small">✔ Tuyo</span>' : `<button class="pbtn" data-p="guild" data-id="${id}" ${(p.inv.ficha || 0) >= c.tok ? '' : 'disabled'}>Cambiar</button>`}</div>`;
+    }).join('');
+    return `<p>Bonus de daño por oficios: <b>+${((g.jobDmg() - 1) * 100).toFixed(1)}%</b> (0,5% por cada nivel de cada oficio). Fichas de gremio: <b>${p.inv.ficha || 0} 🎟</b></p>${jobs}
+      <div class="sub">🛠 Tablón de trabajos de hoy (día ${g.day + 1})</div>${cons}
+      <div class="sub">🎟 Tienda del gremio</div>${shop}`;
+  }
   // ------------------------------------------------------------------ construcción
   openBuild() {
     const g = this.g, p = g.player;
@@ -304,7 +353,7 @@ export class Panels {
   }
   bestiaryHtml() {
     const g = this.g, D = g.ENEMY_DEF, st = g.stats;
-    const ICON = { wolf: '🐺', boar: '🐗', crab: '🦀', skeleton: '💀', boss: '☠️', scorpion: '🦂', tiger: '🐅', bat: '🦇', golem: '🗿', golem_obs: '🌋', skull: '🔥', marine: '⚓', pirate: '🏴‍☠️', marine_boss: '🎖️', golem_boss: '👹' };
+    const ICON = { serafin: '😇', dragon: '🐉', wolf: '🐺', boar: '🐗', crab: '🦀', skeleton: '💀', boss: '☠️', scorpion: '🦂', tiger: '🐅', bat: '🦇', golem: '🗿', golem_obs: '🌋', skull: '🔥', marine: '⚓', pirate: '🏴‍☠️', marine_boss: '🎖️', golem_boss: '👹' };
     const where = {};
     for (const e of g.enemies.slice(0, g.baseEnemies)) {
       const w = where[e.type] || (where[e.type] = { min: 999, max: 0, zones: new Set() });
@@ -320,6 +369,7 @@ export class Panels {
       const info = (w ? `Nv. ${w.min}${w.max !== w.min ? '–' + w.max : ''} · ${[...w.zones].join(', ')}` : '') + (D[t].boss ? ' · JEFE' : '') + (D[t].neutral ? ' · neutral si no te buscan' : '');
       return card(ICON[t], D[t].name, info, 'Botín: ' + drops, kills);
     });
+    list.push(card('🐙', 'Leviatán Abisal', 'SUPERJEFE · Aguas profundas (nivel 35+) · atrapa tu barco y lucha toda la tripulación', 'Botín: Escamas del Abismo, Corona del Abismo, perlas', st.k_leviathan || 0));
     list.push(card('🐍', 'Serpiente marina', 'Aguas profundas, lejos de las islas · se combate con cañones', 'Botín: 🐚 Escamas, ⚪ Perlas', st.k_serpent || 0));
     list.push(card('⛵', 'Fragata de la Marina', 'Mar abierto · aparece si tienes recompensa', 'Botín: 🧨 Pólvora, 🥈 Plata', st.s_marine || 0));
     list.push(card('🏴‍☠️', 'Barco pirata rival', 'Mar abierto · te aborda si se acerca', 'Botín: 🧨 Pólvora, 🥇 Oro', st.s_pirate || 0));
@@ -350,6 +400,12 @@ export class Panels {
       ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
       ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
       ['⚔️ Combate', 'Solo atacas cuando pulsas el botón ⚔️ (mantenlo pulsado para seguir atacando). Funciona andando o corriendo con el joystick: golpea al enemigo más cercano a tu alcance o da un tajo al aire. Tocar a un enemigo lo selecciona. Sin estamina pegas la mitad.'],
+      ['🛠 Oficios y trabajos', 'Leñador, minero, pescador, cocinero, herrero, cazador, marinero y constructor suben al hacer su trabajo (máx. 30). Cada nivel de cada oficio da +0,5% de daño y una ventaja propia. En Bitácora › Oficios hay 3 trabajos nuevos cada día que dan oro y fichas de gremio para comprar ropa.'],
+      ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
+      ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],
+      ['👹 Superjefes', 'Azrael, el Serafín Caído (Isla Calavera) e Ignaros, el Dragón Rey (Isla Ceniza), son de nivel 101 y sueltan sus armaduras cosméticas. En aguas profundas, el Leviatán Abisal puede atrapar tu barco: toda la tripulación lucha en cubierta. Los jefes ganan vida según cuántos aliados luchan, y con muchos tripulantes cada uno pega algo menos, para que 3 o 10 sea justo.'],
+      ['🚢 Barcos', 'Marga vende balandra (rápida), bergantín y galeón (enorme). Decora velas, casco, bandera y mascarón, y ponle nombre. Junto al mar pulsa 📯 para llamar a tu barco, y navegando puedes desembarcar en cualquier costa. En la bodega pulsa 🪑 Decorar para amueblar tu camarote.'],
+      ['🎉 Eventos', 'De vez en cuando: festival en Villarroca (rebajas y baile), lluvia de estrellas (+50% XP), mercader errante con ropa rara, invasión de esqueletos de noche y tesoros a la deriva en el mar.'],
       ['🎯 Botones', 'El botón grande ⚔️ siempre ataca (navegando dispara los cañones). El botón azul de al lado sirve para hablar, abrir, talar, entrar, mirar carteles, retar a piratas... Así puedes pelear aunque tu pareja o tu tripulación estén pegados a ti.'],
       ['✨ Clases y habilidades', 'Tu clase depende del arma: espada = Espadachín, hacha = Bárbaro, lanza o tridente = Lancero. Cada clase tiene 5 habilidades (barra encima del botón de ataque) que se desbloquean en los niveles 2, 6, 12, 20 y 30. Gastan estamina y tienen recarga.'],
       ['🧘 Meditar', 'Pulsa 🧘 fuera de combate y quédate quieto 3 segundos: ganas Concentración (más daño, más defensa y regeneración) durante 90 s. Se recarga en 2 minutos.'],

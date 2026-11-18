@@ -396,6 +396,30 @@ export function makeHumanoid2(look = {}) {
     cape.add(cyl(0.03, 0.03, 0.02, 8), trim, -0.13, 0.0, 0.06, Math.PI / 2, 0, 0);
   }
 
+  // ---------------- alas y cola (cosméticos de superjefe)
+  let wingL = null, wingR = null;
+  if (look.wings) {
+    const [cl, cr] = Array.isArray(look.wings) ? look.wings : [look.wings, look.wings];
+    for (const [sd, c] of [[-1, cl], [1, cr]]) {
+      const w = P(torso.g, sd * 0.08, 0.3, -0.12);
+      for (let i = 0; i < 6; i++) {
+        const len = 0.5 - i * 0.05;
+        w.add(rbox(len, 0.08, 0.02, 0.02), i % 2 ? shade(c, 0.88) : c, sd * (0.18 + len / 2 - 0.05), 0.12 - i * 0.07, -0.04 - i * 0.004, 0, 0, sd * (0.55 - i * 0.2));
+      }
+      w.add(rbox(0.36, 0.05, 0.03, 0.02), look.wingTrim ?? trim, sd * 0.2, 0.18, -0.03, 0, 0, sd * 0.6);
+      if (sd < 0) wingL = w; else wingR = w;
+    }
+  }
+  if (look.tail) {
+    const t = P(torso.g, 0, -0.04, -0.14);
+    for (let i = 0; i < 6; i++) {
+      const r = 0.06 - i * 0.008;
+      t.add(cap(r, 0.12), i % 2 ? look.tail : shade(look.tail, 0.8), 0, -0.04 - i * 0.07, -0.06 - i * 0.07, -0.9 - i * 0.08, 0, 0);
+      t.add(cone(0.02, 0.06, 4), look.tailSpike ?? trim, 0, -0.01 - i * 0.07, -0.04 - i * 0.07, -0.3, 0, 0);
+    }
+    t.add(cone(0.05, 0.12, 4), look.tailSpike ?? trim, 0, -0.45, -0.5, -2.2, 0, 0);
+  }
+
   // ---------------- brazos (pivote en el hombro)
   const arms = [];
   for (const s of [-1, 1]) {
@@ -645,6 +669,14 @@ export function makeHumanoid2(look = {}) {
     }
   }
 
+  if (look.halo) H.add(torus(0.13, 0.014), look.halo, 0, 0.5, -0.02, Math.PI / 2 - 0.2, 0, 0);
+  if (look.dragonHorns) {
+    for (const sd of [-1, 1]) {
+      H.add(cone(0.035, 0.22, 5), look.dragonHorns, sd * 0.11, 0.38, -0.05, -0.5, 0, sd * -0.5);
+      H.add(cone(0.025, 0.14, 5), look.dragonHorns, sd * 0.15, 0.3, -0.1, -0.9, 0, sd * -0.9);
+    }
+  }
+  if (look.visorGlow) H.add(rbox(0.16, 0.025, 0.02, 0.008), look.visorGlow, 0, 0.17, 0.165);
   // hornear todas las partes
   for (const p of parts) p.bake(p === cape ? capeMat : mat);
   const allMats = [mat, capeMat, ...extraMats];
@@ -656,7 +688,7 @@ export function makeHumanoid2(look = {}) {
 
   return {
     root,
-    parts: { body, torso: torso.g, head: head.g, legL: legs[0].g, legR: legs[1].g, armL: arms[0].g, armR: arms[1].g, weapon: weapon && weapon.g, cape: cape && cape.g },
+    parts: { body, torso: torso.g, head: head.g, legL: legs[0].g, legR: legs[1].g, armL: arms[0].g, armR: arms[1].g, weapon: weapon && weapon.g, cape: cape && cape.g, wings: wingL ? [wingL.g, wingR.g] : null },
     mats: allMats,
     kind: 'humanoid',
     height: 1.18,

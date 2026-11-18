@@ -162,6 +162,7 @@ export function makeNewIslets() {
     const px = Math.round(cx + 0.2 * N), pz = cz;
     R.spawns.push({ type: 'skull', count: 6, area: [ox + 6, oz + 6, ox + N - 7, cz - 7], lvl: [32, 42] });
     R.spawns.push({ type: 'golem_obs', count: 5, area: [ox + 6, cz + 7, ox + N - 7, oz + N - 7], lvl: [36, 48] });
+    R.spawns.push({ type: 'dragon', count: 1, area: [px - 1, pz + 6, px + 1, pz + 8], lvl: [101, 101] });
     R.spawns.push({ type: 'golem_boss', count: 1, area: [px - 1, pz - 9, px + 1, pz - 7], lvl: [60, 60] });
     out.push(R);
   }

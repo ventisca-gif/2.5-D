@@ -122,7 +122,11 @@ export function installBuild(Game, D) {
     }
     if (!spot) return this.toast('No hay sitio libre (2×2 casillas) delante de ti');
     this.buy(def.cost, () => {
-      this.addStruct(t, spot.x, spot.z);
+      const b = this.addStruct(t, spot.x, spot.z);
+      const k = 1 + this.jobLevel('constructor') * 0.02;
+      b.maxHp = Math.round(b.maxHp * k); b.hp = b.maxHp;
+      this.jobXp('constructor', 12);
+      this.contractTick('build', 'build');
       this.toast(`🔨 Construyes: ${def.name}`);
       this.ring(spot.x + 0.5, spot.z + 0.5, 1.5, 0xffe0a0);
       this.stats.built = (this.stats.built || 0) + 1;

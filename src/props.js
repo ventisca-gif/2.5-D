@@ -701,6 +701,7 @@ export function makeShip(M, tx) {
   const len = 7, wid = 2.4;
   const dark = mat(0x3a2414);
   const hullMat = mat(0x6a4024, { map: tx.plank });
+  ship.userData.hullMat = hullMat;
   ship.add(hullLayer(len * 0.82, wid * 0.62, 0.5, dark, -0.7));
   ship.add(hullLayer(len * 0.92, wid * 0.85, 0.4, hullMat, -0.2));
   ship.add(hullLayer(len, wid, 0.55, hullMat, 0.2));
