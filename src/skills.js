@@ -37,6 +37,7 @@ export const BUFFS = {
   furia: { name: '📣 Furia', atk: 1.4 },
   descanso: { name: '😴 Descansado', xp: 1.1 },
   juntos: { name: '💞 Juntos', atk: 1.1, def: 1.1 },
+  vudu: { name: '🛡 Escudo vudú', def: 1.8 },
 };
 
 export function installSkills(Game, D) {

@@ -384,7 +384,7 @@ body:not(.playing) #labels { display: none; }
 body.sailing #btnRun { display: none; }
 #btnAction.cool { opacity: 0.6; }
 #bountyBox { color: #ff9a7a; }
-span.t4 { color: #ffb040; } span.t5 { color: #3ad89a; } span.t6 { color: #b88aff; } span.t3 { color: #f2c860; } span.t2 { color: #dfe8ff; } span.t1 { color: #b8c0cc; } span.t0 { color: #c8a07a; }
+span.t7 { color: #bfe8ff; } span.t8 { color: #c8b8ff; } span.t4 { color: #ffb040; } span.t5 { color: #3ad89a; } span.t6 { color: #b88aff; } span.t3 { color: #f2c860; } span.t2 { color: #dfe8ff; } span.t1 { color: #b8c0cc; } span.t0 { color: #c8a07a; }
 
 .cosTitle { font-size: 11px; color: var(--muted); margin: 8px 0 4px; text-align: center; }
 .slotRow.cos .slot { opacity: 0.95; border-style: dashed; }
@@ -473,3 +473,22 @@ body.photo #photoFrame { display: block; }
 .mkrow { display: grid; grid-template-columns: 1.4fr 0.8fr 0.8fr auto; gap: 6px; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
 .mkform { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
 .mkform select, .mkform input { background: #1a120c; color: #f1ead8; border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.t7 { border-color: #bfe8ff !important; box-shadow: 0 0 10px rgba(191,232,255,0.7); } .t8 { border-color: #a890ff !important; box-shadow: 0 0 12px rgba(168,144,255,0.8); }
+
+/* ---------- v3.0: atajos y pesca ---------- */
+#shortcuts { position: absolute; right: calc(66px + var(--sar)); top: calc(160px + var(--sat)); z-index: 30; padding: 8px; }
+#shortcuts.hidden { display: none; }
+#shortcuts .shTitle { font-weight: 800; font-size: 13px; color: #f6e6c0; margin: 0 0 6px 2px; }
+#shortcuts .shGrid { display: grid; grid-template-columns: repeat(4, 52px); gap: 6px; }
+#btnShort { background: linear-gradient(180deg, #9a6a2a, #5a3410); }
+@media (orientation: portrait) { #shortcuts { top: calc(204px + var(--sat)); right: calc(58px + var(--sar)); } #shortcuts .shGrid { grid-template-columns: repeat(3, 52px); } }
+@media (orientation: landscape) and (max-height: 500px) { #shortcuts { top: calc(126px + var(--sat)); } }
+#shortcuts .sbtn { width: 52px; height: 52px; font-size: 22px; }
+#fishGame { position: absolute; right: calc(110px + var(--sar)); top: 50%; transform: translateY(-50%); z-index: 32; display: flex; gap: 6px; align-items: flex-end; padding: 8px; touch-action: none; user-select: none; }
+#fishGame.hidden { display: none; }
+#fishGame .ftrack { position: relative; width: 36px; height: 200px; background: linear-gradient(#1a4a6a, #0a2030); border-radius: 8px; border: 2px solid #2a180c; overflow: hidden; }
+#fishGame .fz { position: absolute; left: 2px; right: 2px; background: rgba(120,255,140,0.45); border: 1px solid #9aff9a; border-radius: 6px; }
+#fishGame .ff { position: absolute; left: 50%; transform: translate(-50%, 50%); font-size: 18px; }
+#fishGame .fp { width: 10px; height: 200px; background: #2a1a10; border-radius: 5px; position: relative; overflow: hidden; }
+#fishGame .fp i { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(#ffe06a, #d8a020); }
+#fishGame small { position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; color: #f6e6c0; font-size: 10px; font-weight: 700; }

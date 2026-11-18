@@ -25,6 +25,17 @@ export const ITEMS = {
   mapa_tesoro: { name: 'Mapa del tesoro', icon: '🗺️', type: 'mat', value: 0, desc: 'Míralo en la Bitácora (Mapas). Busca la X y cava.' },
   anillo_boda: { name: 'Anillo de compromiso', icon: '💍', type: 'mat', value: 0, desc: 'Para pedir matrimonio a tu pareja (o a otro jugador).' },
   huevo_dragon: { name: 'Huevo de dragón', icon: '🥚', type: 'mat', value: 0, desc: 'Úsalo en Bitácora › Vida para que nazca tu cría de dragón.' },
+  cristal: { name: 'Cristal de escarcha', icon: '❄️', type: 'mat', value: 45, desc: 'Se pica en las rocas de la Isla Escarcha.' },
+  meteorito: { name: 'Fragmento de meteorito', icon: '☄️', type: 'mat', value: 70, desc: 'Rocas de la Isla Engranaje.' },
+  azucar: { name: 'Azúcar cristalizado', icon: '🍬', type: 'ingr', value: 10, desc: 'Rocas dulces de la Isla Merengue.' },
+  atun: { name: 'Atún', icon: '🐟', type: 'ingr', value: 15, desc: 'Pez de mar abierto.' },
+  pez_espada: { name: 'Pez espada', icon: '🗡️', type: 'ingr', value: 40, desc: 'Pez raro y luchador.' },
+  pez_luna: { name: 'Pez luna', icon: '🌕', type: 'ingr', value: 80, desc: 'Pez rarísimo que brilla de noche.' },
+  pez_dorado: { name: 'Pez dorado legendario', icon: '✨', type: 'ingr', value: 400, desc: '¡Una leyenda entre los pescadores!' },
+  hechizo_fuego: { name: 'Hechizo: lluvia de fuego', icon: '🔥', type: 'spell', value: 60, desc: 'Daño de fuego a todos los enemigos cercanos.' },
+  hechizo_escudo: { name: 'Hechizo: piel de espíritus', icon: '🛡️', type: 'spell', value: 60, desc: 'Reduce mucho el daño recibido durante 30 s.' },
+  hechizo_niebla: { name: 'Hechizo: niebla vudú', icon: '🌫️', type: 'spell', value: 50, desc: 'Los enemigos cercanos dejan de perseguirte.' },
+  muneco_vudu: { name: 'Muñeco vudú', icon: '🪆', type: 'spell', value: 150, desc: 'Maldice al enemigo más cercano: pierde un 15% de su vida máxima.' },
   ficha: { name: 'Ficha de gremio', icon: '🎟️', type: 'mat', value: 0, desc: 'Se gana con los trabajos del tablón. Se cambia por ropa en la Bitácora (Oficios).' },
   polvora: { name: 'Pólvora', icon: '🧨', type: 'mat', value: 12, desc: 'Para los cañones del barco. Se compra en los puertos.' },
   potion: { name: 'Ron curativo', icon: '🍶', type: 'heal', heal: 0.45, value: 12, desc: 'Cura casi la mitad de tu vida.' },
@@ -106,6 +117,22 @@ export const EQUIP = {
   // ---- ámbar (tier 4), jade (5), obsidiana (6)
   alfanje_ambar: { name: 'Alfanje de ámbar', slot: 'weapon', tier: 4, atk: 30, icon: '🗡️', look: { sword: true, blade: 0xffc060, guard: AMBAR, bladeLen: 0.54, bladeW: 0.065 } },
   katana_jade: { name: 'Katana de jade', slot: 'weapon', tier: 5, atk: 40, icon: '⚔️', look: { sword: true, blade: 0xbff0d8, guard: JADE, bladeLen: 0.62, bladeW: 0.04 } },
+  espada_escarcha: { name: 'Espada de escarcha', slot: 'weapon', tier: 7, atk: 66, icon: '🗡️', look: { sword: true, blade: 0xcff0ff, guard: 0x5a9ad8, bladeLen: 0.6, bladeGlow: 0x3a8ad8 } },
+  hacha_escarcha: { name: 'Hacha de escarcha', slot: 'weapon', tier: 7, atk: 70, icon: '🪓', look: { axe: true, blade: 0xcff0ff, guard: 0x5a9ad8 } },
+  lanza_escarcha: { name: 'Lanza de escarcha', slot: 'weapon', tier: 7, atk: 64, icon: '🔱', look: { spear: true, trident: true } },
+  escudo_escarcha: { name: 'Escudo de escarcha', slot: 'shield', tier: 7, def: 33, icon: '🛡️', look: { shield: { type: 'kite', color: 0xcfe8f8, rim: 0x5a9ad8, boss: 0xffffff } } },
+  casco_escarcha: { name: 'Yelmo de escarcha', slot: 'head', tier: 7, def: 22, icon: '⛑️', look: { hat: 'helmet', hatColor: 0xcfe8f8, plume: 0x5a9ad8 } },
+  peto_escarcha: { name: 'Armadura de escarcha', slot: 'chest', tier: 7, def: 42, icon: '🛡️', look: { armor: true, armorColor: 0xcfe8f8, trim: 0x5a9ad8, emblem: 0x3a7ab8, pauldron: 0xa8d0f0, gem: 0x7ad8ff } },
+  guantes_escarcha: { name: 'Guanteletes de escarcha', slot: 'hands', tier: 7, def: 15, icon: '🧤', look: { gloves: 0xa8d0f0, bracers: true, bracerColor: 0xcfe8f8 } },
+  botas_escarcha: { name: 'Grebas de escarcha', slot: 'feet', tier: 7, def: 15, icon: '👢', look: { boots: 0x5a7a9a, legArmor: 0xcfe8f8 } },
+  espada_estelar: { name: 'Espada estelar', slot: 'weapon', tier: 8, atk: 84, icon: '⚔️', look: { sword: true, blade: 0xb8a8ff, guard: 0xffd040, bladeLen: 0.66, bladeGlow: 0x7a5aff } },
+  hacha_estelar: { name: 'Hacha estelar', slot: 'weapon', tier: 8, atk: 88, icon: '🪓', look: { axe: true, blade: 0x8a7aff, guard: 0xffd040 } },
+  lanza_estelar: { name: 'Lanza estelar', slot: 'weapon', tier: 8, atk: 82, icon: '🔱', look: { spear: true, trident: true } },
+  escudo_estelar: { name: 'Escudo estelar', slot: 'shield', tier: 8, def: 40, icon: '🛡️', look: { shield: { type: 'round', color: 0x2a1a5a, rim: 0xffd040, boss: 0xb8a8ff } } },
+  casco_estelar: { name: 'Yelmo estelar', slot: 'head', tier: 8, def: 27, icon: '⛑️', look: { hat: 'horned', hatColor: 0x2a1a5a, hornColor: 0xffd040, gem: 0xb8a8ff } },
+  peto_estelar: { name: 'Armadura estelar', slot: 'chest', tier: 8, def: 52, icon: '🛡️', look: { armor: true, armorColor: 0x2a1a5a, trim: 0xffd040, emblem: 0xb8a8ff, pauldron: 0x3a2a7a, gem: 0xffffff, spikes: true } },
+  guantes_estelar: { name: 'Guanteletes estelares', slot: 'hands', tier: 8, def: 19, icon: '🧤', look: { gloves: 0x2a1a5a, bracers: true, bracerColor: 0xffd040 } },
+  botas_estelar: { name: 'Grebas estelares', slot: 'feet', tier: 8, def: 19, icon: '👢', look: { boots: 0x1a1030, legArmor: 0x3a2a7a } },
   hacha_obsidiana: { name: 'Hacha de obsidiana', slot: 'weapon', tier: 6, atk: 54, icon: '🪓', look: { axe: true, blade: 0x4a2a5a, guard: 0xc0304a } },
   hacha_golem: { name: 'Hacha de gólem', slot: 'weapon', tier: 4, atk: 34, icon: '🪓', look: { axe: true, blade: 0x8a8a90, guard: 0x5ab8e8 } },
   tridente: { name: 'Tridente de las mareas', slot: 'weapon', tier: 5, atk: 44, icon: '🔱', look: { spear: true, trident: true } },
@@ -191,6 +218,13 @@ export const EQUIP = {
   c_capa_espectral: { name: 'Capa de niebla', slot: 'cosCape', tier: 5, cos: true, icon: '🌫️', src: 'espectral', look: { cape: 0x9ad8d8 } },
   c_corona_coral: { name: 'Corona de coral', slot: 'cosHead', tier: 4, cos: true, icon: '🪸', src: 'coralia', look: { hat: 'circlet', halo: 0xff7a6a } },
   c_traje_sirena: { name: 'Escamas de sirena', slot: 'cosBody', tier: 4, cos: true, icon: '🧜', src: 'coralia', look: { armor: true, armorColor: 0x2ab0b0, trim: 0xffd060, pauldron: 0x1a8a9a, gem: 0xff7a6a } },
+  c_gorro_nieve: { name: 'Gorro de lana', slot: 'cosHead', tier: 1, cos: true, icon: '🧶', src: 'tienda', look: { hat: 'hood', hatColor: 0xc83a3a } },
+  c_abrigo_piel: { name: 'Abrigo de piel', slot: 'cosBody', tier: 2, cos: true, icon: '🧥', src: 'tienda', look: { coat: true, shirt: 0x6a4a3a, vest: 0xf0e8e0, sleeve: 0xf0e8e0, trim: 0xf0e8e0 } },
+  c_traje_pastelero: { name: 'Traje de pastelero', slot: 'cosBody', tier: 1, cos: true, icon: '🧁', src: 'tienda', look: { shirt: 0xfaf6f0, apron: 0xf4a8c8, sleeve: 0xfaf6f0 } },
+  c_gorro_pastelero: { name: 'Gorro de cocinero', slot: 'cosHead', tier: 1, cos: true, icon: '👨‍🍳', src: 'tienda', look: { hat: 'hood', hatColor: 0xfaf8f4 } },
+  c_gafas_inventor: { name: 'Gafas de inventor', slot: 'cosHead', tier: 2, cos: true, icon: '🥽', src: 'tienda', look: { hat: 'cap', capColor: 0x6a4a2a, visorGlow: 0xffd040 } },
+  c_mono_mecanico: { name: 'Mono de mecánico', slot: 'cosBody', tier: 1, cos: true, icon: '🔧', src: 'tienda', look: { shirt: 0x3a5a7a, pants: 0x3a5a7a, sash: 0x6a4a2a, bracers: true, bracerColor: 0x8a8c94 } },
+  c_capa_burbuja: { name: 'Capa de pompas', slot: 'cosCape', tier: 3, cos: true, icon: '🫧', src: 'tienda', look: { cape: 0x9ae0f8 } },
   // ---- armaduras de superjefe (cosméticas)
   c_dragon: { name: 'Armadura del Dragón Carmesí', slot: 'cosBody', tier: 6, cos: true, icon: '🐉', src: 'dragon', look: { armor: true, armorColor: 0x1a1418, trim: 0xd8a838, pauldron: 0x8a1010, tabard: 0x8a1010, gem: 0xff6020, emblem: 0xff6020, gloves: 0x1a1418, legArmor: 0x8a1010, boots: 0x1a1418, hat: 'horned', hatColor: 0x1a1418, hornColor: 0xd8a838, gem2: 0xff6020, dragonHorns: 0xd8a838, tail: 0x2a2026, tailSpike: 0xd8a838, visorGlow: 0xff8030, hair: 0x8a1010 } },
   c_serafin: { name: 'Armadura del Serafín', slot: 'cosBody', tier: 6, cos: true, icon: '😇', src: 'serafin', look: { armor: true, armorColor: 0xf0f0f4, trim: 0xe8c050, pauldron: 0xf4f4f8, tabard: 0xf0e8d0, gem: 0xffe080, emblem: 0xffe080, gloves: 0xf0f0f4, legArmor: 0xf0f0f4, boots: 0xe8e8ee, hat: 'helmet', hatColor: 0xf4f4f8, plume: 0xffe080, halo: 0xffd040, visorGlow: 0xffe080, cape: 0xf4ecd8 } },
@@ -251,6 +285,22 @@ export const RECIPES = [
   { out: 'capa_real', station: 'forja', need: { goldore: 2, cloth: 4 }, gold: 120 },
   { out: 'anillo_oro', station: 'forja', need: { goldore: 2 }, gold: 60 },
   // forja: ámbar, jade, obsidiana y especiales
+  { out: 'espada_escarcha', station: 'forja', need: { cristal: 5, silver: 2 }, gold: 900 },
+  { out: 'hacha_escarcha', station: 'forja', need: { cristal: 5, iron: 3 }, gold: 900 },
+  { out: 'lanza_escarcha', station: 'forja', need: { cristal: 5, wood: 3 }, gold: 900 },
+  { out: 'escudo_escarcha', station: 'forja', need: { cristal: 4 }, gold: 700 },
+  { out: 'casco_escarcha', station: 'forja', need: { cristal: 3 }, gold: 600 },
+  { out: 'peto_escarcha', station: 'forja', need: { cristal: 6, leather: 2 }, gold: 1000 },
+  { out: 'guantes_escarcha', station: 'forja', need: { cristal: 2 }, gold: 450 },
+  { out: 'botas_escarcha', station: 'forja', need: { cristal: 2 }, gold: 450 },
+  { out: 'espada_estelar', station: 'forja', need: { meteorito: 5, cristal: 2 }, gold: 1600 },
+  { out: 'hacha_estelar', station: 'forja', need: { meteorito: 5, obsidiana: 2 }, gold: 1600 },
+  { out: 'lanza_estelar', station: 'forja', need: { meteorito: 5, jade: 2 }, gold: 1600 },
+  { out: 'escudo_estelar', station: 'forja', need: { meteorito: 4 }, gold: 1300 },
+  { out: 'casco_estelar', station: 'forja', need: { meteorito: 3 }, gold: 1100 },
+  { out: 'peto_estelar', station: 'forja', need: { meteorito: 6, cristal: 2 }, gold: 1800 },
+  { out: 'guantes_estelar', station: 'forja', need: { meteorito: 2 }, gold: 800 },
+  { out: 'botas_estelar', station: 'forja', need: { meteorito: 2 }, gold: 800 },
   { out: 'anillo_boda', station: 'forja', need: { goldore: 2, perla: 1 }, gold: 100 },
   { out: 'alfanje_ambar', station: 'forja', need: { ambar: 4, goldore: 1 }, gold: 220 },
   { out: 'escudo_ambar', station: 'forja', need: { ambar: 4 }, gold: 200 },
@@ -298,6 +348,11 @@ export const RECIPES = [
 // ----------------------------------------------------------------- botines
 export const DROPS = {
   wolf: [['meat', 0.6], ['leather', 0.5]],
+  lobo_nieve: [['meat', 0.6], ['leather', 0.7], ['cristal', 0.25]],
+  yeti: [['leather', 1], ['cristal', 0.6], ['c_gorro_nieve', 0.02]],
+  galleta: [['azucar', 0.8], ['f_bread', 0.4]],
+  cangrejo_burbuja: [['crab', 0.75], ['perla', 0.12]],
+  automata: [['iron', 0.8], ['meteorito', 0.35], ['silver', 0.3]],
   boar: [['meat', 0.85], ['leather', 0.6], ['leather', 0.3]],
   crab: [['crab', 0.75]],
   skeleton: [['bone', 0.6], ['silver', 0.15], ['goldore', 0.05]],
@@ -328,6 +383,10 @@ export function oreDrop(area) {
   const r = Math.random();
   if (area === 'Isla Duna' || area === 'Oasis de Sal') return r < 0.22 ? 'ambar' : r < 0.45 ? 'iron' : null;
   if (area === 'Isla Selva' || area === 'Aldea Liana') return r < 0.2 ? 'jade' : r < 0.35 ? 'silver' : null;
+  if (area === 'Isla Escarcha' || area === 'Monasterio del Pico') return r < 0.22 ? 'cristal' : r < 0.4 ? 'silver' : null;
+  if (area === 'Isla Engranaje' || area === 'Ciudad Engranaje') return r < 0.18 ? 'meteorito' : r < 0.45 ? 'iron' : null;
+  if (area === 'Isla Merengue' || area === 'Villa Merengue') return r < 0.35 ? 'azucar' : null;
+  if (area === 'Archipiélago Burbuja') return r < 0.08 ? 'perla' : r < 0.3 ? 'silver' : null;
   if (area === 'Isla Ceniza') return r < 0.25 ? 'obsidiana' : r < 0.45 ? 'goldore' : null;
   if (area === 'Isla Calavera') return r < 0.3 ? 'goldore' : r < 0.5 ? 'silver' : r < 0.7 ? 'iron' : null;
   if (area === 'Isla Tortuga') return r < 0.25 ? 'silver' : r < 0.55 ? 'iron' : null;
@@ -402,6 +461,8 @@ export function gearStats(equip = {}) {
 
 // equipo automático de la tripulación según su nivel (todo visible)
 export function crewGear(level) {
+  if (level >= 98) return { weapon: 'espada_estelar', shield: 'escudo_estelar', head: 'casco_estelar', chest: 'peto_estelar', hands: 'guantes_estelar', feet: 'botas_estelar' };
+  if (level >= 90) return { weapon: 'espada_escarcha', shield: 'escudo_escarcha', head: 'casco_escarcha', chest: 'peto_escarcha', hands: 'guantes_escarcha', feet: 'botas_escarcha' };
   if (level >= 80) return { weapon: 'hacha_obsidiana', shield: 'escudo_obsidiana', head: 'yelmo_obsidiana', chest: 'peto_obsidiana', hands: 'guantes_obsidiana', feet: 'botas_obsidiana' };
   if (level >= 65) return { weapon: 'katana_jade', shield: 'escudo_jade', head: 'casco_jade', chest: 'peto_jade', hands: 'guantes_jade', feet: 'botas_jade' };
   if (level >= 50) return { weapon: 'alfanje_ambar', shield: 'escudo_ambar', head: 'casco_ambar', chest: 'peto_ambar', hands: 'guantes_ambar', feet: 'botas_ambar' };
@@ -410,5 +471,5 @@ export function crewGear(level) {
   if (level >= 10) return { weapon: 'espada_hierro', shield: 'escudo_hierro', chest: 'peto_hierro', feet: 'botas_hierro' };
   return { weapon: 'espada_madera', chest: 'peto_cuero', feet: 'botas_cuero' };
 }
-export const TIER_NAMES = ['Cuero', 'Hierro', 'Plata', 'Oro', 'Ámbar', 'Jade', 'Obsidiana'];
-export function crewTier(level) { return level >= 80 ? 6 : level >= 65 ? 5 : level >= 50 ? 4 : level >= 35 ? 3 : level >= 20 ? 2 : level >= 10 ? 1 : 0; }
+export const TIER_NAMES = ['Cuero', 'Hierro', 'Plata', 'Oro', 'Ámbar', 'Jade', 'Obsidiana', 'Escarcha', 'Estelar'];
+export function crewTier(level) { return level >= 98 ? 8 : level >= 90 ? 7 : level >= 80 ? 6 : level >= 65 ? 5 : level >= 50 ? 4 : level >= 35 ? 3 : level >= 20 ? 2 : level >= 10 ? 1 : 0; }

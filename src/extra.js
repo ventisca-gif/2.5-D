@@ -52,12 +52,14 @@ export function installExtra(Game, D) {
     j.xp += n;
     while (j.l < JOB_MAX && j.xp >= jobNeed(j.l)) {
       j.xp -= jobNeed(j.l); j.l++;
-      this.toast(`${JOBS[id].icon} ${JOBS[id].name} nivel ${j.l} · +0,5% de daño`, 'area');
+      this.toast(`${JOBS[id].icon} ${JOBS[id].name} nivel ${j.l} · +1% de daño y +0,3% de vida`, 'area');
       sfx('level');
+      if (this.jobMilestone) this.jobMilestone(id, j.l);
+      this.player.recalc();
     }
   };
   P.jobLevel = function (id) { return (this.jobs && Object.prototype.hasOwnProperty.call(this.jobs, id) && this.jobs[id].l) || 0; };
-  P.jobDmg = function () { let t = 0; for (const id of Object.keys(JOBS)) t += this.jobLevel(id); return 1 + t * 0.005; };
+  P.jobDmg = function () { let t = 0; for (const id of Object.keys(JOBS)) t += this.jobLevel(id); return 1 + t * 0.01; };
 
   // ---- tablón de trabajos (3 por día)
   P.contracts = function () {
@@ -69,11 +71,11 @@ export function installExtra(Game, D) {
     const kinds = ['gather', 'kill', 'cook', 'ship', 'kill', 'gather', 'build'];
     const list = [];
     const used = new Set();
-    while (list.length < 3) {
+    while (list.length < 4) {
       const k = kinds[Math.floor(rnd() * kinds.length)];
       if (used.has(k) && k !== 'gather') continue;
       used.add(k);
-      const pay = Math.round((40 + L * 6) * (0.8 + rnd() * 0.5));
+      const pay = Math.round((40 + L * 6) * (0.8 + rnd() * 0.5) * 2);
       if (k === 'gather') { const g = gather[Math.floor(rnd() * gather.length)]; list.push({ k, target: g[0], n: g[1], job: g[2], p: 0, gold: pay, tok: 1, txt: `Entrega ${g[1]} ${D.ITEMS[g[0]].name.toLowerCase()}` }); }
       else if (k === 'kill') { const t = killPool[Math.floor(rnd() * killPool.length)]; const n = 5 + Math.floor(rnd() * 4); list.push({ k, target: t, n, job: 'cazador', p: 0, gold: pay, tok: 2, txt: `Derrota ${n} × ${this.ENEMY_DEF[t].name}` }); }
       else if (k === 'cook') list.push({ k, target: 'cook', n: 3, job: 'cocinero', p: 0, gold: pay, tok: 1, txt: 'Cocina 3 platos' });
@@ -97,7 +99,7 @@ export function installExtra(Game, D) {
     c.done = true;
     p.gold += c.gold;
     this.give('ficha', c.tok);
-    this.jobXp(c.job, 40);
+    this.jobXp(c.job, 90);
     p.gainXp(30 + p.level * 8);
     this.toast(`🛠 ¡Trabajo cumplido! +${c.gold} oro, +${c.tok} 🎟`);
     sfx('coin');
@@ -131,6 +133,7 @@ export function installExtra(Game, D) {
     if (r < 0.006 + L * 0.0005) { this.give(EVENT_COS[Math.floor(Math.random() * EVENT_COS.length)], 1, p.x, p.z); this.toast('🎣 ¡Has pescado un baúl con ropa!'); }
     else if (r < 0.04 + L * 0.003) { this.give('perla', 1, p.x, p.z); this.toast('🎣 ¡Una perla!'); }
     else if (r < 0.08 + L * 0.002) { const g = 20 + Math.floor(Math.random() * 40) + L * 3; p.gold += g; this.toast(`🎣 Una bolsa vieja: +${g} oro`); }
+    else if (this.startFishGame) { this.startFishGame(); return; }
     else { this.give('fish', 1 + (Math.random() < L * 0.02 ? 1 : 0), p.x, p.z); }
     this.jobXp('pescador', 8);
     this.contractTick('fish', 'fish');
@@ -414,6 +417,7 @@ export function installExtra(Game, D) {
     mercader: { name: '🧳 Mercader errante en Puerto Salitre', dur: 300, desc: 'Vende ropa rara solo por hoy.' },
     invasion: { name: '💀 Invasión de esqueletos', dur: 240, night: true, desc: 'Los muertos atacan Villarroca. ¡Defiéndela!' },
     tesoro: { name: '💰 Tesoro a la deriva', dur: 300, desc: 'Un cofre flota en el mar (marcado en el mapa).' },
+    erupcion: { name: '🌋 Erupción en Isla Ceniza', dur: 200, desc: 'Llueve fuego en Isla Ceniza: esquiva las marcas rojas y recoge obsidiana.' },
   };
   P.xpMul = function () { return (this.event && this.event.id === 'estrellas' ? 1.5 : 1) * (this.buffMul ? this.buffMul('xp') : 1); };
   P.priceMul = function () { return this.event && this.event.id === 'festival' ? 0.75 : 1; };

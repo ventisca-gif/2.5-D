@@ -507,6 +507,50 @@ export function makeProp(p, M) {
       box(g, 0.5, 0.35, 0.05, mat(0xe0d0b0), 0, 2.0, 0.47);
       break;
     }
+    case 'cake': {
+      // torre de pastel gigante (Isla Merengue)
+      const cols = [0xf4c8d8, 0xfff0e0, 0xc87a4a, 0xf8a8c8];
+      for (let i = 0; i < 3; i++) {
+        cyl(g, 0.95 - i * 0.25, 0.95 - i * 0.25, 0.6, mat(cols[i]), 0, 0.3 + i * 0.6, 0, 16);
+        cyl(g, 1.0 - i * 0.25, 1.0 - i * 0.25, 0.1, mat(0xffffff), 0, 0.6 + i * 0.6, 0, 16);
+        for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; box(g, 0.1, 0.12, 0.1, mat(0xe03a4a), Math.cos(a) * (0.9 - i * 0.25), 0.62 + i * 0.6, Math.sin(a) * (0.9 - i * 0.25)); }
+      }
+      cyl(g, 0.04, 0.04, 0.3, mat(0xfff0a0), 0, 2.0, 0, 6); cyl(g, 0.01, 0.06, 0.12, M.fire, 0, 2.2, 0, 6);
+      break;
+    }
+    case 'icecastle': {
+      // castillo de hielo en la cima (Isla Escarcha)
+      const ice = mat(0xcfe8f8, { emissive: 0x1a2a3a });
+      box(g, 2.6, 1.6, 2.0, ice, 0, 0.8, 0);
+      for (const [x, z] of [[-1.3, -1], [1.3, -1], [-1.3, 1], [1.3, 1]]) { cyl(g, 0.38, 0.42, 2.6, ice, x, 1.3, z, 10); const r = new THREE.Mesh(new THREE.ConeGeometry(0.48, 0.9, 10), mat(0x5a8ab8)); r.position.set(x, 3.05, z); g.add(r); }
+      cyl(g, 0.5, 0.55, 3.4, ice, 0, 1.7, 0, 10); { const r = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.2, 10), mat(0x5a8ab8)); r.position.set(0, 4.0, 0); g.add(r); }
+      box(g, 0.6, 0.9, 0.05, mat(0x3a4a5a), 0, 0.45, 1.01);
+      break;
+    }
+    case 'geartower': {
+      // torre de engranajes humeante (Isla Engranaje)
+      const met = mat(0x8a8c94), brass = mat(0xd8a838);
+      cyl(g, 0.6, 0.75, 2.4, met, 0, 1.2, 0, 10);
+      for (const y of [0.6, 1.4, 2.1]) { const gr = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.08, 6, 12), brass); gr.position.y = y; gr.rotation.x = Math.PI / 2; g.add(gr); }
+      const gear = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.12, 12), brass); gear.rotation.x = Math.PI / 2; gear.position.set(0, 1.6, 0.78); g.add(gear); gear.userData.spin = true; dyn.push(gear);
+      cyl(g, 0.15, 0.2, 1.0, mat(0x3a3a3a), 0.3, 2.9, 0, 8);
+      break;
+    }
+    case 'bubblepost': {
+      // pompa gigante de jabón sobre una raíz (Archipiélago Burbuja)
+      cyl(g, 0.08, 0.15, 0.8, mat(0x6a5a3a), 0, 0.4, 0, 6);
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.45, 14, 10), new THREE.MeshLambertMaterial({ color: 0xbfefff, transparent: true, opacity: 0.35 }));
+      b.position.y = 1.4; b.userData.noCast = true; b.userData.bubble = true; dyn.push(b);
+      break;
+    }
+    case 'monastery': {
+      const wd = mat(0x6a2a1a), roof = mat(0x2a3a4a);
+      box(g, 2.2, 1.2, 1.6, mat(0xe8e0d0), 0, 0.6, 0);
+      for (const y of [1.3, 2.0]) { const r = new THREE.Mesh(new THREE.ConeGeometry(1.7 - (y - 1.3), 0.6, 4), roof); r.rotation.y = Math.PI / 4; r.position.y = y; g.add(r); }
+      box(g, 0.5, 0.8, 0.05, wd, 0, 0.4, 0.81);
+      box(g, 0.08, 1.4, 0.08, wd, -1.0, 0.7, 0.9); box(g, 0.08, 1.4, 0.08, wd, 1.0, 0.7, 0.9); box(g, 2.3, 0.1, 0.12, wd, 0, 1.4, 0.9);
+      break;
+    }
     case 'poster': {
       // tablón de Se busca
       for (const x of [-0.42, 0.42]) cyl(g, 0.05, 0.06, 1.6, M.darkWood, x, 0.8, 0, 5);
@@ -878,6 +922,29 @@ export function treeGeometries() {
     colored(at(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 7), -0.29, 0.86, 0), 0x52963f),
     colored(at(new THREE.IcosahedronGeometry(0.05, 0), 0, 1.2, 0), 0xe85a8a),
   ]);
+  // pino nevado
+  G.snowpine = mergeGeometries([
+    colored(at(new THREE.CylinderGeometry(0.07, 0.1, 0.5, 6), 0, 0.25, 0), trunk),
+    colored(at(new THREE.ConeGeometry(0.55, 0.8, 7), 0, 0.75, 0), 0x2a6a4a), colored(at(new THREE.ConeGeometry(0.5, 0.25, 7), 0, 0.98, 0), 0xf4f8fc),
+    colored(at(new THREE.ConeGeometry(0.42, 0.7, 7), 0, 1.15, 0), 0x2f7a52), colored(at(new THREE.ConeGeometry(0.38, 0.22, 7), 0, 1.36, 0), 0xf4f8fc),
+    colored(at(new THREE.ConeGeometry(0.28, 0.55, 7), 0, 1.55, 0), 0xf4f8fc),
+  ]);
+  // bastón de caramelo y piruleta gigante
+  G.candy = mergeGeometries([
+    colored(at(new THREE.CylinderGeometry(0.07, 0.07, 1.2, 8), 0, 0.6, 0), 0xf4f0f0),
+    colored(at(new THREE.TorusGeometry(0.2, 0.07, 6, 12, Math.PI), 0.2, 1.2, 0), 0xe03a4a),
+    colored(at(new THREE.CylinderGeometry(0.075, 0.075, 0.12, 8), 0, 0.3, 0), 0xe03a4a), colored(at(new THREE.CylinderGeometry(0.075, 0.075, 0.12, 8), 0, 0.7, 0), 0xe03a4a),
+  ]);
+  G.lollipop = mergeGeometries([
+    colored(at(new THREE.CylinderGeometry(0.04, 0.04, 1.1, 6), 0, 0.55, 0), 0xf4f0e8),
+    colored(at(new THREE.CylinderGeometry(0.38, 0.38, 0.1, 16), 0, 1.3, 0, 1, 1, 1, Math.PI / 2, 0, 0), 0xf060b0),
+    colored(at(new THREE.TorusGeometry(0.25, 0.04, 6, 16), 0, 1.3, 0.06), 0xffe060),
+  ]);
+  // manglar gigante con raíces
+  const mg = [colored(at(new THREE.CylinderGeometry(0.12, 0.18, 1.4, 7), 0, 0.9, 0), 0x7a6a4a)];
+  for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; mg.push(colored(at(new THREE.CylinderGeometry(0.04, 0.05, 0.8, 5), Math.cos(a) * 0.3, 0.3, Math.sin(a) * 0.3, 1, 1, 1, Math.sin(a) * 0.6, 0, -Math.cos(a) * 0.6), 0x6a5a3a)); }
+  mg.push(blob(0.62, 0, 1.75, 0, 0x4aa86a), blob(0.45, 0.35, 1.65, 0.2, 0x5ab878), blob(0.42, -0.3, 1.9, -0.15, 0x6ac888));
+  G.mangrove = mergeGeometries(mg);
   // árbol muerto (desierto y volcán)
   G.dead = mergeGeometries([
     colored(at(new THREE.CylinderGeometry(0.05, 0.1, 0.9, 6), 0, 0.45, 0, 1, 1, 1, 0, 0, 0.08), 0x5a4a3e),

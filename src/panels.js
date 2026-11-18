@@ -69,6 +69,9 @@ export class Panels {
       return this.renderInv();
     }
     if (act === 'equip') { g.equip(this.sel); this.sel = null; return this.renderInv(); }
+    if (act === 'cast') { const id = this.sel; this.close(); g.castSpell(id); return; }
+    if (act === 'huntday') { g.startHuntDay(); return this.openBitacora('mundo'); }
+    if (act === 'huntlist') { this.close(); return g.huntMenu(); }
     if (act === 'eat') { g.eat(this.sel); if (!p.inv[this.sel]) this.sel = null; return this.renderInv(); }
     if (act === 'craft') { g.craft(Number(b.dataset.i)); return this.openCraft(this.station); }
     if (act === 'gift') { const n = this.giftTo; this.close(); g.giveGift(n, b.dataset.id); return; }
@@ -119,6 +122,7 @@ export class Panels {
       const it = ITEMS[this.sel];
       let btn = '';
       if (it.type === 'equip') btn = `<button class="pbtn" data-p="equip">Equipar</button>`;
+      if (it.type === 'spell') btn = `<button class="pbtn" data-p="cast">✨ Lanzar</button>`;
       if (it.type === 'food' || it.type === 'heal') btn = `<button class="pbtn" data-p="eat">${it.type === 'heal' ? 'Beber' : 'Comer'}</button>`;
       const cmp = it.type === 'equip' && p.equip[it.slot] ? ` <span class="muted">(llevas: ${esc(ITEMS[p.equip[it.slot]].name)})</span>` : '';
       detail = `<div class="idet"><div class="iname">${it.icon} ${esc(it.name)}${cmp}</div><div class="idesc">${esc(it.desc || '')}</div>${btn}</div>`;
@@ -230,7 +234,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['logros', '🏆 Logros'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['mundo', '🌍 Novedades'], ['logros', '🏆 Logros'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -240,6 +244,8 @@ export class Panels {
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
         <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'mundo') {
+      body = g.mundoHtml();
     } else if (tab === 'logros') {
       const lg = g.logros || {};
       const n = LOGROS.filter((L) => lg[L.id]).length;
@@ -459,7 +465,15 @@ export class Panels {
       ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
       ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
       ['⚔️ Combate', 'Solo atacas cuando pulsas el botón ⚔️ (mantenlo pulsado para seguir atacando). Funciona andando o corriendo con el joystick: golpea al enemigo más cercano a tu alcance o da un tajo al aire. Tocar a un enemigo lo selecciona. Sin estamina pegas la mitad.'],
-      ['🛠 Oficios y trabajos', 'Leñador, minero, pescador, cocinero, herrero, cazador, marinero y constructor suben al hacer su trabajo (máx. 30). Cada nivel de cada oficio da +0,5% de daño y una ventaja propia. En Bitácora › Oficios hay 3 trabajos nuevos cada día que dan oro y fichas de gremio para comprar ropa.'],
+      ['🛠 Oficios y trabajos', 'Leñador, minero, pescador, cocinero, herrero, cazador, marinero, constructor y granjero suben al hacer su trabajo (máx. 30). Cada nivel de cada oficio da +1% de daño, +0,3% de vida y una ventaja propia. En los niveles 10, 20 y 30 hay hitos con oro, fichas y ropa. En Bitácora › Oficios hay 4 trabajos nuevos cada día que pagan el doble que antes.'],
+      ['⚡ Atajos', 'El botón ⚡ Atajos de la derecha abre la Mochila, la Bitácora, Online, Construir, la Guía, Meditar y el modo Foto. Así la pantalla queda despejada.'],
+      ['🌍 Novedades', 'Todo lo nuevo está en Bitácora › Novedades: islas, Armamento Espiritual, gruta, Velaria, acuario, contratos y ranking.'],
+      ['🖤 Armamento Espiritual', 'Al nivel 100, el Maestro Ishvar (Monasterio del Pico, Isla Escarcha) despierta tu Armamento Espiritual por 20000 oro: +20% de daño y +5% de resistencia. Mejora al golpear (hasta nivel 50). Al atacar, tus manos y tu arma se cubren de energía negra; al nivel 30 también el torso.'],
+      ['🏝 Islas nuevas', 'Isla Escarcha (nieve, noreste lejano), Isla Engranaje (inventores, este lejano), Isla Merengue (dulces, suroeste) y Archipiélago Burbuja (manglares, noroeste). Cada una cambia el cielo y el ambiente. Cristal de escarcha → equipo Escarcha; meteorito → equipo Estelar, el mejor del juego.'],
+      ['🚣 Gruta y Velaria', 'Navega cerca de los puntos azules del minimapa y pulsa «Gruta» para entrar remando a la Gruta de los Cristales. El punto morado es Velaria, la ciudad flotante de mercaderes: cambia de lugar cada semana.'],
+      ['🎣 Pesca con minijuego', 'Cuando pica un pez, mantén pulsada la barra (o Espacio) para que la zona verde siga al pez hasta llenar el medidor. Hay atunes, peces espada, peces luna y el legendario pez dorado. Tu colección está en Novedades.'],
+      ['🧙 Vudú y capturas', 'La Bruja Mambé (Aldea Liana) vende hechizos: se lanzan desde la Mochila. Ferro y Mara dan contratos para capturar vivos a piratas famosos: déjalos por debajo del 15% de vida y pulsa «Capturar».'],
+      ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],
       ['👹 Superjefes', 'Azrael, el Serafín Caído (Isla Calavera) e Ignaros, el Dragón Rey (Isla Ceniza), son de nivel 101 y sueltan sus armaduras cosméticas. En aguas profundas, el Leviatán Abisal puede atrapar tu barco: toda la tripulación lucha en cubierta. Los jefes ganan vida según cuántos aliados luchan, y con muchos tripulantes cada uno pega algo menos, para que 3 o 10 sea justo.'],

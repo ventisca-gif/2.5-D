@@ -635,6 +635,7 @@ export function installMore(Game, D) {
   P.onNetX = function (from, m) {
     if (this.onNetX2 && this.onNetX2(from, m)) return;
     if (this.onNetX3 && this.onNetX3(from, m)) return;
+    if (this.onNetX4 && this.onNetX4(from, m)) return;
     const r = this.net.remotes.get(from);
     const name = r ? r.name : '?';
     if (m.k === 'toast') this.toast(m.msg);
@@ -656,7 +657,7 @@ export function installMore(Game, D) {
     this.toast(`💍 Le pides matrimonio a ${r.name}...`);
   };
   // datos extra que ven los demás jugadores
-  P.netExtraInfo = function () { return { title: this.title || null, clan: this.clan ? this.clan.name : null, pet: this.petType || null, flag: (this.clan && this.clan.flag) || this.flagCfg || null, spouse: this.spouseP || (this.partner() && this.soc(this.partner().id).married ? this.partner().name : null) }; };
+  P.netExtraInfo = function () { return { bounty: this.isMarine() ? 0 : this.bounty || 0, title: this.title || null, clan: this.clan ? this.clan.name : null, pet: this.petType || null, flag: (this.clan && this.clan.flag) || this.flagCfg || null, spouse: this.spouseP || (this.partner() && this.soc(this.partner().id).married ? this.partner().name : null) }; };
   P.updateRemoteExtras = function (dt) {
     for (const r of this.net.remotes.values()) {
       if (r.petType !== r.pet) {

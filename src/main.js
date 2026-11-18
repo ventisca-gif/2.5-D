@@ -30,6 +30,7 @@ import { installMore2, makeGhostIslet, HOUSES, MOUNTS, PREMIUM_DECOR, mountModel
 import { DECOR } from './extra.js';
 import { installMore3, makeCoralia, makeJellyModel } from './more3.js';
 import { LOGROS } from './more2.js';
+import { installMore4, makeIslands4, makeGrotto } from './more4.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -41,7 +42,7 @@ const SETTINGS_KEY = 'islabruma_settings_v1';
 const SLOT_KEY = (i) => 'thebruma_slot_' + i;
 const DEFAULT_AP = { gender: 'm', hair: 0, hairColor: 1, skin: 1, clothes: 0, beard: false, body: 0, faceShape: 0, face: 0, eye: 0, bust: 2, nose: true, mouth: true, blush: true };
 // NPCs con cara anime: género, peinado, ojos, expresión, forma de cara y cuerpo deterministas por id
-const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara', 'naira', 'tika', 'berta', 'ixa', 'brasa', 'marga', 'escarlata', 'ceniza', 'ondina', 'plata', 'medusa', 'garfio']);
+const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara', 'naira', 'tika', 'berta', 'ixa', 'brasa', 'marga', 'escarlata', 'ceniza', 'ondina', 'plata', 'medusa', 'garfio', 'helga', 'dulcinea', 'volta', 'mambe']);
 function hashId(id) { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 function animeLook(def) {
   const L = def.look;
@@ -97,6 +98,11 @@ const ENEMY_DEF = {
   ghost_captain: { name: 'Capitán Espectro Valdrak', hp: () => 14000, atk: () => 210, speed: 2.8, xp: () => 16000, gold: () => 4000, aggro: 8, cd: 1.3, boss: true, super: 'ghost', bounty: 3000 },
   crypt_king: { name: 'Rey de la Cripta', hp: (L) => 1800 + L * 90, atk: (L) => 12 + L * 2.6, speed: 2.4, xp: (L) => 400 + L * 40, gold: (L) => 100 + L * 8, aggro: 9, cd: 1.5, boss: true, super: 'crypt' },
   tentacle: { name: 'Tentáculo', hp: (L) => 900 + L * 18, atk: (L) => 20 + L * 2, speed: 0, xp: (L) => 200 + L * 10, gold: (L) => 30 + L, aggro: 12, cd: 1.8 },
+  lobo_nieve: { name: 'Lobo de las nieves', hp: (L) => 30 + 11 * L, atk: (L) => 5 + 2.2 * L, speed: 3.2, xp: (L) => 12 + 6 * L, gold: (L) => 4 + Math.floor(Math.random() * (4 + L)), aggro: 5, cd: 1.2 },
+  yeti: { name: 'Yeti', hp: (L) => 80 + 19 * L, atk: (L) => 8 + 2.7 * L, speed: 2.2, xp: (L) => 24 + 9 * L, gold: (L) => 10 + Math.floor(Math.random() * (6 + L)), aggro: 5, cd: 1.8 },
+  galleta: { name: 'Soldado galleta', hp: (L) => 34 + 11 * L, atk: (L) => 5 + 2.1 * L, speed: 2.9, xp: (L) => 14 + 6 * L, gold: (L) => 6 + Math.floor(Math.random() * (4 + L)), aggro: 5, cd: 1.2 },
+  cangrejo_burbuja: { name: 'Cangrejo burbuja', hp: (L) => 36 + 11 * L, atk: (L) => 4 + 2 * L, speed: 2.2, xp: (L) => 12 + 6 * L, gold: (L) => 5 + Math.floor(Math.random() * (4 + L)), aggro: 4, cd: 1.4 },
+  automata: { name: 'Autómata de engranajes', hp: (L) => 75 + 18 * L, atk: (L) => 8 + 2.6 * L, speed: 2.0, xp: (L) => 24 + 9 * L, gold: (L) => 12 + Math.floor(Math.random() * (6 + L)), aggro: 5, cd: 1.6 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -211,7 +217,7 @@ class Player extends Actor {
   }
   recalc() {
     const gs = gearStats(this.equip);
-    this.maxHp = 60 + (this.level - 1) * 12 + gs.hp;
+    this.maxHp = Math.round((60 + (this.level - 1) * 12 + gs.hp) * (this.g.jobHp ? this.g.jobHp() : 1));
     this.maxSt = 100 + (this.level - 1) * 2;
     if (this.hp > this.maxHp) this.hp = this.maxHp;
   }
@@ -263,7 +269,8 @@ class Player extends Actor {
         this.pendingHit = null;
         if (!e.dead && this.dist(e) < 2.2) {
           const crit = Math.random() < 0.12 + (g.petCrit ? g.petCrit() : 0);
-          const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1) * g.comboMul()));
+          const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1) * g.comboMul() * (g.espMul ? g.espMul() : 1)));
+          if (g.espHit) g.espHit();
           if (e.isRemote) { if (g.net.pvpHit(e, dmg)) g.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, 1.4, e.z); }
           else if (e.isNPC) g.damageNPC(e, dmg, crit); else g.hitEnemy(e, dmg, crit);
         }
@@ -640,6 +647,21 @@ function makeTentacleModel(head) {
   return { root, parts: {}, mats, kind: 'tentacle', height: 2.4 };
 }
 
+function tintModel(model, color, k) {
+  const c = new THREE.Color(color);
+  const tmp = new THREE.Color();
+  model.root.traverse((o) => {
+    if (!o.isMesh || !o.material || o.material.isShaderMaterial) return;
+    const col = o.geometry && o.geometry.attributes.color;
+    if (col) {
+      o.geometry = o.geometry.clone();
+      const a = o.geometry.attributes.color;
+      for (let i = 0; i < a.count; i++) { tmp.setRGB(a.getX(i), a.getY(i), a.getZ(i)); const l = (tmp.r + tmp.g + tmp.b) / 3; if (l > 0.85 || (tmp.b > 0.8 && tmp.r < 0.5)) continue; tmp.lerp(c, k); a.setXYZ(i, tmp.r, tmp.g, tmp.b); }
+      a.needsUpdate = true;
+    } else if (o.material.color) { o.material = o.material.clone(); o.material.color.lerp(c, k); }
+  });
+  return model;
+}
 function model_scale(model, s) {
   model.root.scale.setScalar(s);
   model.height *= s;
@@ -649,7 +671,12 @@ class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
     const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
-    if (type === 'wolf' || type === 'boar' || type === 'tiger') model = makeBeast2(type);
+    if (type === 'lobo_nieve') model = tintModel(makeBeast2('wolf'), 0xf4f8fc, 0.75);
+    else if (type === 'yeti') { model = tintModel(makeGolem('stone'), 0xeef4fa, 0.8); }
+    else if (type === 'automata') model = tintModel(makeGolem('stone'), 0xc8903a, 0.7);
+    else if (type === 'cangrejo_burbuja') model = tintModel(makeCrab2(), 0x5ad0f0, 0.6);
+    else if (type === 'galleta') model = HUM({ skin: 0xb8743a, shirt: 0xb8743a, pants: 0xb8743a, trim: 0xffffff, scarf: 0xf060b0, bootCuff: true, sword: true, blade: 0xf8f0e0, guard: 0xf060b0, hat: 'cap', capColor: 0xf060b0 });
+    else if (type === 'wolf' || type === 'boar' || type === 'tiger') model = makeBeast2(type);
     else if (type === 'crab') model = makeCrab2();
     else if (type === 'scorpion') model = makeScorpion();
     else if (type === 'bat') model = makeBat();
@@ -676,6 +703,7 @@ class Enemy extends Actor {
     super(game, model, 0, 0);
     if (type === 'boss') model_scale(model, 1.5);
     if (type === 'golem_boss') model_scale(model, 1.7);
+    if (type === 'yeti') model_scale(model, 1.3);
     if (type === 'marine_boss') model_scale(model, 1.3);
     if (type.startsWith('famous_')) model_scale(model, 1.18);
     if (type === 'serafin') model_scale(model, 1.6);
@@ -913,7 +941,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), this.ghostIsle];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -921,7 +949,8 @@ class Game {
     this.addMarga();
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia]);
+    this.grotto = makeGrotto();
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1203,7 +1232,7 @@ class Game {
       n.baseLevel = npcLevel(n.id, area);
       n.setStats(n.baseLevel);
     }
-    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns]) {
+    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns, ...this.grotto.spawns]) {
       for (let i = 0; i < s.count; i++) { const e = new Enemy(this, s.type, s, s.lvl); e.idx = this.enemies.length; this.enemies.push(e); }
     }
     this.baseEnemies = this.enemies.length;
@@ -1346,6 +1375,7 @@ class Game {
     $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
     $('btnGuide').addEventListener('click', () => this.panels.openGuide());
     $('btnNet').addEventListener('click', () => { if (this.started) this.panels.openNet(); });
+    if (this.setupHud4) this.setupHud4();
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1669,6 +1699,7 @@ class Game {
     const p = this.player;
     if (this.flags[c.id]) return this.ui.toast('El cofre está vacío');
     this.flags[c.id] = true;
+    if (c.id.startsWith('gruta_')) { this.flags[c.id + '_day'] = this.day; this.give('cristal', 2, c.x, c.z); }
     if (c.id.startsWith('coralia_')) { this.flags[c.id + '_day'] = this.day; this.give('coral', 2, c.x, c.z); }
     if (Math.random() < 0.5) setTimeout(() => this.addTreasureMap(), 1200);
     const gold = c.loot.gold || 0, pot = c.loot.potion || 0;
@@ -1739,12 +1770,16 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      if (!this.deck && this.grottoNear && this.grottoNear()) return { icon: '🚣', label: 'Gruta', fn: () => this.enterGrotto() };
+      if (!this.deck && this.velariaNear && this.velariaNear()) return { icon: '🏙', label: 'Velaria', fn: () => this.velariaShop() };
       const d = this.nearDock();
       if (d && !this.deck) return { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) };
       const ls = !this.deck && Math.abs(this.boat.speed) < 1.5 ? this.landSpot() : null;
       if (ls) return { icon: '🏝', label: 'Desembarcar', fn: () => this.disembark(ls) };
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
+    const cap = this.canCapture && this.canCapture();
+    if (cap) return { icon: '⛓️', label: 'Capturar', fn: () => this.capture(cap) };
     const inRoom = this.roomAt(p.x, p.z);
     if (inRoom && Math.hypot(p.x - inRoom.exit.x, p.z - inRoom.exit.z) < 2.3) return { icon: '🚪', label: 'Salir', fn: () => this.exitRoom(inRoom) };
     if (!inRoom) {
@@ -1759,9 +1794,14 @@ class Game {
     if (this.inCoralia()) {
       if (Math.hypot(p.x - this.coralia.exit.x, p.z - this.coralia.exit.z) < 1.8) return { icon: '🔔', label: 'Subir', fn: () => this.surface() };
     }
+    if (this.inGrotto && this.inGrotto()) {
+      if (Math.hypot(p.x - this.grotto.exit.x, p.z - this.grotto.exit.z) < 1.8) return { icon: '🚣', label: 'Salir', fn: () => this.surface() };
+      const cr = this.crystalNear();
+      if (cr) return { icon: '💎', label: 'Cristal', fn: () => this.mineCrystal(cr) };
+    }
     const clam = this.clamNear();
     if (clam) return { icon: '🐚', label: 'Almeja', fn: () => this.pickClam(clam) };
-    if (this.inDungeon() && !this.inCoralia()) {
+    if (this.inDungeon() && !this.inCoralia() && !this.inGrotto()) {
       if (Math.hypot(p.x - this.dungeon.exit.x, p.z - this.dungeon.exit.z) < 1.8) return { icon: '🚪', label: 'Salir', fn: () => this.leaveDungeon() };
     }
     for (const c of this.caves) if (Math.hypot(c.x - p.x, c.z - p.z) < 1.9) return { icon: '🕯️', label: 'Cripta', fn: () => this.enterDungeon(c) };
@@ -2019,7 +2059,7 @@ class Game {
   damagePlayer(e, atk) {
     const p = this.player;
     if (p.dead) return;
-    let dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def))));
+    let dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def)) * (this.espRes ? this.espRes() : 1)));
     if (p.blocking) { dmg = this.blockDamage(e, dmg); if (dmg <= 0) return; }
     if (e.isNPC && p.hp - dmg <= p.maxHp * 0.15) { this.endFight(e, 'lose'); return; }
     p.hp -= dmg;
@@ -2035,6 +2075,7 @@ class Game {
       p.target = null;
       this.selection.visible = false;
       sfx('die');
+      if (e.isRemote && this.huntDeath) this.huntDeath(e.id);
       this.ui.toast('💀 Has caído… despertarás en Villarroca');
     }
   }
@@ -2206,6 +2247,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
+      esp: this.esp || null, hunts: this.hunts || null, fishDex: this.fishDex || {},
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
   }
@@ -2402,6 +2444,7 @@ class Game {
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
+    this.esp = data.esp || null; this.hunts = data.hunts || null; this.fishDex = data.fishDex || {};
     if (data.famous) { this.famousInit(); for (const [k, v] of Object.entries(data.famous)) if (this.famous[k]) Object.assign(this.famous[k], v); }
     if (data.weather) this.weather = data.weather;
     this.jobs = data.jobs || {};
@@ -2865,6 +2908,7 @@ class Game {
     }
     this.updateWeather(dt);
     this.updateLighting();
+    if (this.started) this.updateAmbience();
     this.updateRings(dt);
     const p = this.player;
     if (this.started) {
@@ -2889,6 +2933,12 @@ class Game {
       this.updateRace(dt);
       this.updateTournament(dt);
       this.updateDungeon(dt);
+      this.updateGrotto();
+      this.updateEsp(dt);
+      this.updateEruption(dt);
+      this.updateVelaria();
+      this.updateFishGame(dt);
+      this.updateHunt(dt);
       this.updateRemoteExtras(dt);
       this.mapT = (this.mapT || 0) - dt; if (this.mapT <= 0) { this.mapT = 1; this.updateMaps(); this.updateStories(); }
       this.updateEvents(dt);
@@ -3002,6 +3052,8 @@ class Game {
       }
     });
     for (const d of this.dyn) {
+      if (d.userData.spin) d.rotation.y += 0.02;
+      if (d.userData.bubble) d.position.y = 1.4 + Math.sin(t * 1.2 + d.parent.position.x) * 0.25;
       const k = d.userData.dynamic;
       if (k === 'fountain') {
         const pos = d.geometry.attributes.position;
@@ -3091,6 +3143,7 @@ installBuild(Game, { sfx, T });
 installExtra(Game, { sfx, Enemy, NPC, ITEMS, EQUIP, T });
 installMore2(Game, { sfx, audio });
 installMore3(Game, { sfx });
+installMore4(Game, { sfx, EQUIP, ITEMS, OUTLINE });
 LOGROS.push(
   { id: 'coralia', name: 'Reina del abismo', title: 'Señor de las mareas', desc: 'Derrota a la Reina Abisal en Coralia', ok: (g) => (g.stats.k_abyss_queen || 0) >= 1 },
   { id: 'parada', name: 'Maestro esgrimista', title: 'Maestro esgrimista', desc: 'Haz 25 paradas perfectas', ok: (g) => (g.stats.parries || 0) >= 25 },

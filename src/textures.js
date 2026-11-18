@@ -30,6 +30,9 @@ const PALETTE = {
   [T.WATER]: [205, 186, 136],
   [T.ROCK]: [92, 80, 78],
   [T.LAVA]: [236, 96, 24],
+  [T.SNOW]: [236, 242, 248],
+  [T.CANDY]: [246, 170, 200],
+  [T.METAL]: [130, 132, 140],
 };
 
 export function makeGroundTexture(W, pxPerTile = 24) {

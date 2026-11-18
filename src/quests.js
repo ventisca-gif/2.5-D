@@ -105,6 +105,14 @@ export const NPC_LINES = {
   marga: ['Un barco es tan fuerte como su casco.', 'Tráeme madera, hierro y pólvora y tu barco será la envidia del puerto.'],
   ramon: ['En mis tiempos los jabalíes eran más grandes.', 'Lucía es mi nieta. Trabaja más que nadie.'],
   mara: ['En Tortuga no hacemos preguntas.', 'Si buscas tesoros, la Isla Calavera está al sur de aquí... llena de huesos andantes.'],
+  maestro: ['El Armamento Espiritual no es magia: es voluntad hecha armadura.', 'Solo los que han llegado a lo más alto (nivel 100) pueden despertarlo.'],
+  helga: ['El cristal de escarcha corta como el viento del pico.', 'Con cristal y oro forjo el equipo de Escarcha.'],
+  dulcinea: ['¡Todo en esta isla es comestible! Bueno, casi todo.', 'Las galletas soldado se escaparon del horno... cuidado.'],
+  bombon: ['¡Me he comido una casa entera!', '¿Me das un caramelo?'],
+  odo: ['Las pompas del archipiélago duran años si nadie las pincha.', 'Hay una gruta de cristales en el mar: se entra con el bote de remos.'],
+  volta: ['Un meteorito cayó aquí hace cien años. Así empezó todo.', 'Mis autómatas se volvieron locos con la última tormenta.'],
+  tornillo: ['Engrasa tus bisagras y tus rodillas, pirata.', 'Con meteorito se forja el equipo Estelar, el mejor que existe.'],
+  mambe: ['Los espíritus de la selva me susurran recetas...', 'Un muñeco vudú bien hecho duele de verdad.'],
   pepe: ['¡Algún día seré capitán!', 'Mara dice que limpie la cubierta. ¡Pero si no tenemos barco!'],
 };
 
@@ -246,6 +254,7 @@ export function dialogFor(id, G) {
     const total = mats.reduce((a, [k, n]) => a + n * ITEMS[k].value, 0);
     opts.push({ label: `💰 Vender materiales (${total} oro)`, action: () => { if (!total) return G.toast('No tienes materiales'); for (const [k] of mats) P.inv[k] = 0; P.gold += total; G.sfx('coin'); G.toast(`+${total} oro`); } });
   }
+  if (G.npcDialog4) { const t4 = G.npcDialog4(id, opts, sell); if (t4 && !text) text = t4; }
   for (const [mid, m] of Object.entries(MOUNTS)) if (m.seller === id) opts.push({ label: (G.ownMounts || []).includes(mid) ? `${m.icon} Montar en tu ${m.name.toLowerCase()}` : `${m.icon} Comprar ${m.name} (${m.price} oro)`, action: () => G.buyMount(mid) });
   if (id === 'nerea') opts.push({ label: `🏁 Regata alrededor de Isla Bruma (50 oro)${G.stats.raceBest ? ' · récord ' + G.stats.raceBest + 's' : ''}`, action: () => G.buy({ gold: 50 }, () => G.startRace()) });
   if (id === 'marisol') opts.push({ label: '⚔️ Torneo de duelos de Villarroca (1 al día)', action: () => G.startTournament() });

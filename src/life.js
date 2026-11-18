@@ -360,7 +360,7 @@ export function installLife(Game, D) {
     const w = this.weather;
     const c = this.camTarget;
     const rainOn = !indoor && (w === 'rain' || w === 'storm');
-    const snowOn = !indoor && w === 'snow';
+    const snowOn = !indoor && (w === 'snow' || !!this.forceSnow);
     W.rain.visible = rainOn; W.snow.visible = snowOn;
     if (rainOn) {
       const pos = W.rain.geometry.attributes.position;

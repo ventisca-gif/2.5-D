@@ -34,18 +34,25 @@
     </div>
     <div id="minimapWrap" class="panel"><canvas id="minimap" width="200" height="200"></canvas><div id="mapHint">Mapa</div></div>
     <div id="sideBtns">
-      <button id="btnBag" class="sbtn" aria-label="Mochila">🎒<small>Mochila</small></button>
-      <button id="btnLog" class="sbtn" aria-label="Bitácora">📖<small>Bitácora</small></button>
-      <button id="btnNet" class="sbtn" aria-label="Multijugador">👥<small>Online</small></button>
-      <button id="btnBuild" class="sbtn" aria-label="Construir">🔨<small>Construir</small></button>
-      <button id="btnGuide" class="sbtn" aria-label="Guía">❓<small>Guía</small></button>
+      <button id="btnShort" class="sbtn" aria-label="Atajos">⚡<small>Atajos</small></button>
+    </div>
+    <div id="shortcuts" class="panel hidden">
+      <div class="shTitle">⚡ Atajos</div>
+      <div class="shGrid">
+        <button id="btnBag" class="sbtn" aria-label="Mochila">🎒<small>Mochila</small></button>
+        <button id="btnLog" class="sbtn" aria-label="Bitácora">📖<small>Bitácora</small></button>
+        <button id="btnNet" class="sbtn" aria-label="Multijugador">👥<small>Online</small></button>
+        <button id="btnBuild" class="sbtn" aria-label="Construir">🔨<small>Construir</small></button>
+        <button id="btnGuide" class="sbtn" aria-label="Guía">❓<small>Guía</small></button>
+        <button id="btnMed" class="sbtn" aria-label="Meditar">🧘<small>Meditar</small></button>
+        <button id="btnPhoto" class="sbtn" aria-label="Foto">📷<small>Foto</small></button>
+      </div>
     </div>
     <div id="joy"><div id="joyKnob"></div></div>
     <div id="actions">
       <button id="btnRun" class="abtn"><span>🏃</span><small>Correr</small></button>
       <button id="btnBlock" class="abtn"><span>🛡️</span><small>Parar</small></button>
       <button id="btnMount" class="abtn hidden"><span>🐴</span><small>Montar</small></button>
-      <button id="btnMed" class="abtn"><span>🧘</span><small>Meditar</small></button>
       <button id="btnPotion" class="abtn"><span>🍶</span><small id="potCount">0</small></button>
       <button id="btnUse" class="abtn use hidden"><span id="useIcon">💬</span><small id="useLabel">Hablar</small></button>
       <button id="btnAction" class="abtn big"><span id="actIcon">⚔️</span><small id="actLabel">Atacar</small></button>
@@ -57,6 +64,7 @@
     <div id="toasts"></div>
     <div id="eventBanner" class="hidden"></div>
     <div id="comboTxt"></div>
+    <div id="fishGame" class="panel hidden"><div class="ftrack"><div class="fz"></div><div class="ff">🐟</div></div><div class="fp"><i></i></div><small>Mantén pulsado</small></div>
     <div id="oxyBar" class="panel hidden"><span>🫧</span><div class="bar oxy"><div id="oxyFill"></div></div></div>
   </div>
 

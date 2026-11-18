@@ -86,6 +86,7 @@ export function makeNewIslets() {
     prop('chest', cx + 8, cz - 7, 0, true, { id: 'selva_cofre', loot: { gold: 200, potion: 2 } });
     npc({ id: 'ixa', name: 'Chamana Ixa', x: cx + 1, z: cz + 2, wander: 2, look: { shirt: 0x2a7a4a, pants: 0x4a3a2a, robe: 0x3a6a3a, hair: 0x1a1a1a, longHair: true, skin: 0xb07a4a, scarf: 0xe0b030, earring: true } });
     npc({ id: 'kuno', name: 'Cazador Kuno', x: cx - 2, z: cz + 2, wander: 2, look: { shirt: 0x8a5a2a, pants: 0x4a3a2a, vest: 0xe08a1a, hair: 0x2a1a10, skin: 0xa86a3a, spear: true, bracers: true, bracerColor: 0x5a3a20 } });
+    npc({ id: 'mambe', name: 'Bruja Mambé', x: cx + 1, z: cz + 5, wander: 1, look: { shirt: 0x4a2a5a, pants: 0x2a1a2a, dress: true, dressColor: 0x5a2a6a, hair: 0xe8e8e8, longHair: true, skin: 0x6a4a3a, hat: 'hood', hatColor: 0x2a1a3a, scarf: 0xb0e040, earring: true } });
     npc({ id: 'tika', name: 'Pequeña Tika', x: cx, z: cz + 4, wander: 3, small: true, look: { shirt: 0xe0b030, pants: 0x4a3a2a, hair: 0x1a1a1a, skin: 0xb07a4a } });
     // cueva de los murciélagos (ruinas oscuras al norte)
     const bx = cx, bz = cz - 17;
