@@ -19,10 +19,8 @@ export class Updater {
   async check(manual = false) {
     if (manual) this.modal('🔄 Buscando actualización…', '<p class="muted">Conectando con GitHub…</p>', []);
     try {
-      const r = await fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store' });
-      if (r.status === 404) { if (manual) this.modal('✔ Todo al día', `<p>Aún no hay versiones publicadas. Tienes la v${esc(this.current().name)}.</p>`, [['Vale', () => this.close()]]); return; }
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const rel = await r.json();
+      const rel = await this.fetchLatest();
+      if (!rel) { if (manual) this.modal('✔ Todo al día', `<p>Aún no hay versiones publicadas. Tienes la v${esc(this.current().name)}.</p>`, [['Vale', () => this.close()]]); return; }
       const m = /versionCode=(\d+)/.exec(rel.body || '');
       const code = m ? Number(m[1]) : 0;
       const asset = (rel.assets || []).find((a) => /\.apk$/i.test(a.name));
@@ -30,8 +28,29 @@ export class Updater {
       if (asset && code > cur.code) this.offer(rel, asset, cur);
       else if (manual) this.modal('✔ Todo al día', `<p>Tienes la última versión de TheBruma (v${esc(cur.name)}).</p>`, [['Vale', () => this.close()]]);
     } catch (e) {
-      if (manual) this.modal('⚠ Sin conexión', '<p>No se pudo comprobar si hay actualizaciones. Revisa tu conexión a internet e inténtalo de nuevo.</p>', [['Vale', () => this.close()]]);
+      if (manual) this.modal('⚠ Sin conexión', `<p>No se pudo comprobar si hay actualizaciones. Revisa tu conexión a internet e inténtalo de nuevo.</p><p class="muted small">Detalle: ${esc(e.message || e)}</p>`, [['Reintentar', () => this.check(true)], ['Vale', () => this.close()]]);
     }
+  }
+  // En la app: consulta nativa (Java). En navegador: fetch.
+  fetchLatest() {
+    const b = window.AndroidBridge;
+    if (b && b.checkUpdate) {
+      return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error('tiempo agotado')), 20000);
+        window.onUpdateJson = (body, err) => {
+          clearTimeout(t);
+          if (body) { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } }
+          else if (/HTTP 404/.test(err)) resolve(null);
+          else reject(new Error(err || 'sin respuesta'));
+        };
+        b.checkUpdate();
+      });
+    }
+    return fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { cache: 'no-store' }).then((r) => {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
   }
   offer(rel, asset, cur) {
     this.asset = asset;

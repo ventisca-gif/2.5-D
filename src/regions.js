@@ -10,8 +10,25 @@ const KEY = (x, z) => (z + 1024) * 4096 + (x + 1024);
 export { KEY };
 
 // ======================================================================= islas
-function makeIslet(def) {
-  const { id, name, ox, oz, N, seed, dockDir } = def;
+function biomeTile(biome, lx, lz, r, R, t, seed, def) {
+  const n = fbm(lx * 0.11, lz * 0.11, seed + 7, 3);
+  const shore = r > R - 2.4;
+  if (biome === 'desert') return shore ? T.SAND : n > 0.64 ? T.DIRT : T.SAND;
+  if (biome === 'jungle') return shore ? T.SAND : n > 0.62 ? T.GRASS : T.DARK;
+  if (biome === 'volcano') {
+    const c = (def.N - 1) / 2;
+    const px = c - def.dockDir[0] * def.N * 0.2, pz = c - def.dockDir[1] * def.N * 0.2;
+    const dp = Math.hypot(lx - px, lz - pz);
+    if (dp < 3.2) return T.LAVA;
+    if (r < R - 5 && dp > 6 && Math.abs(n - 0.5) < 0.022) return T.LAVA;
+    return shore ? (n > 0.5 ? T.ROCK : T.DIRT) : T.ROCK;
+  }
+  if (biome === 'fort') return shore ? T.SAND : t;
+  return t;
+}
+
+export function makeIslet(def) {
+  const { id, name, ox, oz, N, seed, dockDir, biome } = def;
   const rnd = mulberry32(seed);
   const tiles = new Uint8Array(N * N);
   const blocked = new Uint8Array(N * N);
@@ -24,19 +41,22 @@ function makeIslet(def) {
     const r = Math.hypot(dx, dz);
     const a = Math.atan2(dz, dx);
     const R = N / 2 - 10 + (fbm(Math.cos(a) * 1.6 + seed, Math.sin(a) * 1.6, seed, 3) - 0.5) * 6;
-    tiles[li(lx, lz)] = r < R ? (r > R - 2.4 ? T.SAND : T.GRASS) : T.WATER;
+    let t = r < R ? (r > R - 2.4 ? T.SAND : T.GRASS) : T.WATER;
+    if (t !== T.WATER && biome) t = biomeTile(biome, lx, lz, r, R, t, seed, def);
+    tiles[li(lx, lz)] = t;
   }
   const R = {
     id, name, ox, oz, N, tiles, blocked, kind: 'islet',
-    trees: [], rocks: [], decor: [], props: [], buildings: [], walls: [], npcs: [], spawns: [],
+    trees: [], rocks: [], decor: [], props: [], buildings: [], walls: [], npcs: [], spawns: [], biome, towns: def.towns || [],
   };
   const lt = (x, z) => { const lx = x - ox, lz = z - oz; return linb(lx, lz) ? tiles[li(lx, lz)] : T.WATER; };
   R.contains = (x, z) => x >= ox && z >= oz && x < ox + N && z < oz + N;
   R.tile = lt;
-  R.walkable = (x, z) => { const lx = x - ox, lz = z - oz; return linb(lx, lz) && !blocked[li(lx, lz)] && tiles[li(lx, lz)] !== T.WATER; };
+  R.walkable = (x, z) => { const lx = x - ox, lz = z - oz; if (!linb(lx, lz) || blocked[li(lx, lz)]) return false; const t = tiles[li(lx, lz)]; return t !== T.WATER && t !== T.LAVA; };
+  R.setTile = (x, z, t) => { const lx = x - ox, lz = z - oz; if (linb(lx, lz)) tiles[li(lx, lz)] = t; };
   R.setBlocked = (x, z, v) => { const lx = x - ox, lz = z - oz; if (linb(lx, lz)) blocked[li(lx, lz)] = v; };
   R.groundY = (x, z) => (lt(Math.round(x), Math.round(z)) === T.DOCK ? 0.14 : 0);
-  R.areaName = () => name;
+  R.areaName = (x, z) => { for (const t of R.towns) if (Math.abs(x - t.x) <= t.r && Math.abs(z - t.z) <= t.r) return t.name; return name; };
   const block = (x, z) => R.setBlocked(x, z, 1);
   const reserve = (x, z, r) => {
     for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
@@ -47,7 +67,10 @@ function makeIslet(def) {
   // muelle: del centro hacia dockDir hasta el agua, y 5 casillas mar adentro (2 de ancho)
   const cx = ox + Math.round(c), cz = oz + Math.round(c);
   let x = cx, z = cz;
-  while (lt(x + dockDir[0], z + dockDir[1]) !== T.WATER) { x += dockDir[0]; z += dockDir[1]; }
+  while (lt(x + dockDir[0], z + dockDir[1]) !== T.WATER || Math.hypot(x - cx, z - cz) < 6) {
+    x += dockDir[0]; z += dockDir[1];
+    if (lt(x, z) === T.WATER || lt(x, z) === T.LAVA) { const lx = x - ox, lz = z - oz; if (linb(lx, lz)) tiles[li(lx, lz)] = biome === 'volcano' ? T.ROCK : T.SAND; }
+  }
   const coast = { x, z };
   const perp = [-dockDir[1], dockDir[0]];
   for (let k = 1; k <= 6; k++) {
@@ -74,27 +97,45 @@ function makeIslet(def) {
   return R;
 }
 
-function populate(R, density = 1) {
+export function populate(R, density = 1) {
   const { rnd } = R;
+  const B = R.biome;
   let id = 0;
+  const tree = (type, x, z, s) => { R.trees.push({ id: id++, type, x, z, s, rot: rnd() * 6.28, hue: rnd() }); R.block(x, z); };
+  const rock = (x, z, dark) => { R.rocks.push({ id: id++, x, z, s: 0.45 + rnd() * 0.45, tint: dark ? 0.42 : B === 'desert' ? 1.12 : 0 }); R.block(x, z); };
   for (let z = R.oz; z < R.oz + R.N; z++) for (let x = R.ox; x < R.ox + R.N; x++) {
     const t = R.tile(x, z);
-    if (t === T.WATER || t === T.DOCK || !R.walkable(x, z) || R._reserved(x, z)) continue;
+    if (t === T.WATER || t === T.DOCK || t === T.LAVA || !R.walkable(x, z) || R._reserved(x, z)) continue;
     const r = rnd();
-    if (t === T.SAND && r < 0.09 * density) { R.trees.push({ id: id++, type: 'palm', x, z, s: 0.85 + rnd() * 0.45, rot: rnd() * 6.28 }); R.block(x, z); }
-    else if (t === T.GRASS && r < 0.14 * density) {
-      const k = rnd();
-      R.trees.push({ id: id++, type: k < 0.45 ? 'palm' : k < 0.75 ? 'oak' : 'pine', x, z, s: 0.8 + rnd() * 0.4, rot: rnd() * 6.28, hue: rnd() });
-      R.block(x, z);
-    } else if (r > 0.965) { R.rocks.push({ id: id++, x, z, s: 0.45 + rnd() * 0.4 }); R.block(x, z); }
+    if (B === 'desert') {
+      if (r < 0.035 * density) tree('cactus', x, z, 0.8 + rnd() * 0.5);
+      else if (r < 0.045 * density) tree('dead', x, z, 0.8 + rnd() * 0.4);
+      else if (r > 0.975) rock(x, z);
+      continue;
+    }
+    if (B === 'volcano') {
+      if (r < 0.03 * density) tree('dead', x, z, 0.7 + rnd() * 0.5);
+      else if (r > 0.95) rock(x, z, true);
+      continue;
+    }
+    if (B === 'jungle') {
+      if (t === T.SAND) { if (r < 0.08) tree('palm', x, z, 0.85 + rnd() * 0.45); }
+      else if (r < 0.2 * density) { const k = rnd(); tree(k < 0.55 ? 'jungle' : k < 0.8 ? 'palm' : 'oak', x, z, 0.85 + rnd() * 0.45); }
+      else if (r > 0.975) rock(x, z);
+      continue;
+    }
+    if (t === T.SAND && r < 0.09 * density) tree('palm', x, z, 0.85 + rnd() * 0.45);
+    else if (t === T.GRASS && r < 0.14 * density) { const k = rnd(); tree(k < 0.45 ? 'palm' : k < 0.75 ? 'oak' : 'pine', x, z, 0.8 + rnd() * 0.4); }
+    else if (r > 0.965) rock(x, z);
   }
   for (let z = R.oz; z < R.oz + R.N; z++) for (let x = R.ox; x < R.ox + R.N; x++) {
     const t = R.tile(x, z);
     if (!R.walkable(x, z)) continue;
     const r = rnd();
     const ox = (rnd() - 0.5) * 0.7, oz = (rnd() - 0.5) * 0.7;
-    if (t === T.GRASS && r < 0.25) R.decor.push({ type: r < 0.04 ? 'flower' : 'tuft', x: x + ox, z: z + oz, rot: rnd() * 6, s: 0.8 + rnd() * 0.5, c: Math.floor(rnd() * 4) });
-    else if (t === T.SAND && r < 0.07) R.decor.push({ type: r < 0.03 ? 'shell' : 'pebble', x: x + ox, z: z + oz, rot: rnd() * 6, s: 1 });
+    if ((t === T.GRASS || t === T.DARK) && r < (B === 'jungle' ? 0.35 : 0.25)) R.decor.push({ type: r < 0.04 ? 'flower' : B === 'jungle' && r < 0.07 ? 'mushroom' : 'tuft', x: x + ox, z: z + oz, rot: rnd() * 6, s: 0.8 + rnd() * 0.5, c: Math.floor(rnd() * 4) });
+    else if (t === T.SAND && r < 0.07) R.decor.push({ type: r < 0.03 && B !== 'desert' ? 'shell' : 'pebble', x: x + ox, z: z + oz, rot: rnd() * 6, s: 1 });
+    else if ((t === T.ROCK || t === T.DIRT) && r < 0.05) R.decor.push({ type: 'pebble', x: x + ox, z: z + oz, rot: rnd() * 6, s: 1.3 });
   }
 }
 
@@ -297,6 +338,6 @@ export function attachRegions(W, regions) {
   };
   W.setBlocked = (x, z, v) => { const r = at(x, z); if (r === null) W.blocked[W.idx(x, z)] = v; else if (r) r.setBlocked(x, z, v); };
   W.isInterior = (x) => x >= INTERIOR_X0 - 2;
-  W.isWater = (x, z) => x > -24 && z > -24 && x < 164 && z < 164 && W.tileAll(x, z) === T.WATER;
+  W.isWater = (x, z) => x > -106 && z > -106 && x < 246 && z < 246 && W.tileAll(x, z) === T.WATER;
   W.key = KEY;
 }

@@ -9,7 +9,7 @@ import {
 } from './props.js';
 import { animateModel, SKINS } from './characters.js';
 import { findPath } from './pathfinding.js';
-import { QUESTS, dialogFor } from './quests.js';
+import { QUESTS, SIDE_QUESTS, dialogFor } from './quests.js';
 import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
 import { makeIslets, makeInteriors, attachRegions } from './regions.js';
@@ -19,7 +19,9 @@ import { npcLevel, RECRUITABLE, ROMANCE, MAX_CREW, friendLevel, heartsText, CHAT
 import { Panels, fmtTime } from './panels.js';
 import { Updater } from './updater.js';
 import { Net } from './net.js';
-import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
+import { makeNewIslets, MARINE_LOOK, SEA_ZONES } from './isles2.js';
+import { installNaval, makeArenaRegion } from './naval.js';
+import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
 const OUTF = OUTFITS2;
@@ -30,7 +32,7 @@ const SETTINGS_KEY = 'islabruma_settings_v1';
 const SLOT_KEY = (i) => 'thebruma_slot_' + i;
 const DEFAULT_AP = { gender: 'm', hair: 0, hairColor: 1, skin: 1, clothes: 0, beard: false, body: 0, faceShape: 0, face: 0, eye: 0, bust: 2, nose: true, mouth: true, blush: true };
 // NPCs con cara anime: género, peinado, ojos, expresión, forma de cara y cuerpo deterministas por id
-const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara']);
+const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara', 'naira', 'tika', 'berta', 'ixa', 'brasa', 'marga']);
 function hashId(id) { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 function animeLook(def) {
   const L = def.look;
@@ -67,8 +69,21 @@ const ENEMY_DEF = {
   boar: { name: 'Jabalí', hp: (L) => 34 + 11 * L, atk: (L) => 4 + 1.9 * L, speed: 2.6, xp: (L) => 10 + 5 * L, gold: (L) => 2 + Math.floor(Math.random() * (3 + L)), aggro: 4, cd: 1.5 },
   crab: { name: 'Cangrejo', hp: (L) => 16 + 7 * L, atk: (L) => 2 + 1.3 * L, speed: 1.9, xp: (L) => 6 + 3 * L, gold: (L) => 1 + Math.floor(Math.random() * (2 + L)), aggro: 3, cd: 1.4 },
   skeleton: { name: 'Pirata esqueleto', hp: (L) => 40 + 12 * L, atk: (L) => 5 + 2.1 * L, speed: 2.6, xp: (L) => 14 + 6 * L, gold: (L) => 4 + Math.floor(Math.random() * (4 + L)), aggro: 5, cd: 1.4 },
-  boss: { name: 'Capitán Huesoamargo', hp: () => 650, atk: () => 30, speed: 2.4, xp: () => 400, gold: () => 150, aggro: 6, cd: 1.6 },
+  boss: { name: 'Capitán Huesoamargo', hp: () => 650, atk: () => 30, speed: 2.4, xp: () => 400, gold: () => 150, aggro: 6, cd: 1.6, boss: true },
+  scorpion: { name: 'Escorpión rojo', hp: (L) => 30 + 10 * L, atk: (L) => 4 + 1.9 * L, speed: 2.4, xp: (L) => 10 + 5 * L, gold: (L) => 3 + Math.floor(Math.random() * (3 + L)), aggro: 4, cd: 1.2 },
+  tiger: { name: 'Tigre de la selva', hp: (L) => 34 + 11 * L, atk: (L) => 5 + 2.1 * L, speed: 3.3, xp: (L) => 12 + 5 * L, gold: (L) => 3 + Math.floor(Math.random() * (3 + L)), aggro: 5, cd: 1.1 },
+  bat: { name: 'Murciélago vampiro', hp: (L) => 18 + 7 * L, atk: (L) => 3 + 1.6 * L, speed: 3.6, xp: (L) => 9 + 4 * L, gold: (L) => 2 + Math.floor(Math.random() * (2 + L)), aggro: 6, cd: 1.0, fly: true },
+  golem: { name: 'Gólem de piedra', hp: (L) => 60 + 16 * L, atk: (L) => 6 + 2.4 * L, speed: 1.7, xp: (L) => 18 + 7 * L, gold: (L) => 6 + Math.floor(Math.random() * (5 + L)), aggro: 4, cd: 2.0 },
+  golem_obs: { name: 'Gólem de obsidiana', hp: (L) => 70 + 18 * L, atk: (L) => 7 + 2.6 * L, speed: 1.8, xp: (L) => 20 + 8 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 4.5, cd: 1.9 },
+  skull: { name: 'Calavera llameante', hp: (L) => 26 + 9 * L, atk: (L) => 5 + 2.2 * L, speed: 3.0, xp: (L) => 14 + 6 * L, gold: (L) => 5 + Math.floor(Math.random() * (4 + L)), aggro: 6, cd: 1.3, fly: true },
+  marine: { name: 'Guardia Naval', hp: (L) => 44 + 13 * L, atk: (L) => 5 + 2.2 * L, speed: 2.8, xp: (L) => 16 + 7 * L, gold: (L) => 6 + Math.floor(Math.random() * (5 + L)), aggro: 6, cd: 1.3, neutral: true, bounty: 60 },
+  pirate: { name: 'Pirata rival', hp: (L) => 40 + 12 * L, atk: (L) => 5 + 2.1 * L, speed: 2.8, xp: (L) => 14 + 6 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 5, cd: 1.3 },
+  marine_boss: { name: 'Comodoro Vidal', hp: () => 3200, atk: () => 95, speed: 2.8, xp: () => 3000, gold: () => 900, aggro: 7, cd: 1.4, boss: true, neutral: true, bounty: 2500 },
+  golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
+export { ENEMY_DEF };
+// recompensa a partir de la cual la Guardia Naval te ataca nada más verte
+const WANTED = 300;
 
 // ======================================================================= Actores
 class Actor {
@@ -184,7 +199,7 @@ class Player extends Actor {
   }
   get atk() { return 5 + (this.level - 1) * 2 + gearStats(this.equip).atk; }
   get def() { return gearStats(this.equip).def; }
-  xpNext() { const l = this.level - 1; return 25 + l * 20 + l * l * 6; }
+  xpNext() { const l = this.level - 1; return Math.round(25 + l * 18 + l * l * 2.2); }
   gainXp(n) {
     if (this.level >= MAX_LEVEL) { this.xp = 0; return; }
     this.xp += n;
@@ -323,7 +338,7 @@ class Player extends Actor {
       if (d <= 1.7) {
         if (this.path.length > 1) this.path = [this.path[0]];
         this.faceTo(e.x - this.x, e.z - this.z, dt);
-        if (this.attackCd <= 0) this.attack(e);
+        // ya no ataca solo: se ataca pulsando el botón
       } else {
         this.repathT -= dt;
         if (this.repathT <= 0) {
@@ -583,15 +598,26 @@ function model_scale(model, s) {
 class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
-    if (type === 'wolf' || type === 'boar') model = makeBeast2(type);
+    const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
+    if (type === 'wolf' || type === 'boar' || type === 'tiger') model = makeBeast2(type);
     else if (type === 'crab') model = makeCrab2();
-    else if (type === 'boss') {
+    else if (type === 'scorpion') model = makeScorpion();
+    else if (type === 'bat') model = makeBat();
+    else if (type === 'golem') model = makeGolem('stone');
+    else if (type === 'golem_obs' || type === 'golem_boss') model = makeGolem('obs');
+    else if (type === 'skull') model = makeFlameSkull();
+    else if (type === 'marine' || type === 'marine_boss') model = HUM(MARINE_LOOK(type === 'marine_boss' ? 2 : seed % 5 === 0 ? 1 : 0, seed));
+    else if (type === 'pirate') {
+      model = HUM({ shirt: [0x8a2a2a, 0x2a2a2a, 0x5a3a6a, 0x2a5a4a][seed % 4], pants: 0x2a2220, hat: seed % 3 ? 'bandana' : 'tricorn', capColor: [0x1a1a1a, 0xb02a2a, 0x2a4ab0][seed % 3], hair: [0x1a1a1a, 0x6a3a1a, 0xb04a2a][seed % 3], beard: seed % 2 ? 0x2a1a10 : undefined, skin: [0xf0c49a, 0xc68a5a, 0x8a5a3a][seed % 3], sword: true, eyepatch: seed % 4 === 0, sash: 0xc8302a, bootCuff: true, earring: true });
+    } else if (type === 'boss') {
       model = HUM({ bone: 0xe8e2cc, shirt: 0x8a1a1a, hat: 'tricorn', feather: 0xd83a3a, sword: true, blade: 0xffd070, guard: 0xffd070, eyeGlow: 0xff3020, cape: 0x5a0a0a, pauldron: 0x8a1a1a, trim: 0xe0b040 });
     } else {
       model = HUM({ bone: 0xe8e2cc, hat: 'bandana', capColor: [0xb02a2a, 0x2a4ab0, 0x2a2a2a][Math.floor(Math.random() * 3)], sword: true, blade: 0x9a8a7a, eyepatch: Math.random() < 0.3 });
     }
     super(game, model, 0, 0);
     if (type === 'boss') model_scale(model, 1.5);
+    if (type === 'golem_boss') model_scale(model, 1.7);
+    if (type === 'marine_boss') model_scale(model, 1.3);
     this.type = type;
     this.def = ENEMY_DEF[type];
     this.spawnDef = spawn;
@@ -612,6 +638,12 @@ class Enemy extends Actor {
       x = tx; z = tz;
       break;
     }
+    if (!g.W.walkable(x, z)) {
+      // búsqueda en espiral de una casilla libre
+      outer: for (let r = 1; r < 12; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+        if (g.W.walkable(x + dx, z + dz)) { x += dx; z += dz; break outer; }
+      }
+    }
     this.x = x; this.z = z;
     this.home = { x, z };
     this.path = [];
@@ -626,6 +658,7 @@ class Enemy extends Actor {
     this.attackCd = 1;
     this.thinkT = Math.random() * 3;
     this.pending = null;
+    this.provoked = false;
     this.model.root.visible = true;
     this.model.root.rotation.z = 0;
     this.yOff = 0;
@@ -634,6 +667,14 @@ class Enemy extends Actor {
     this.label._vis = true;
     this.g.ui.setHp(this.label, 1);
     this.updateColor();
+  }
+  // enemigos temporales (abordajes, redadas): desaparecen al morir
+  remove() {
+    if (this.removed) return;
+    this.removed = true; this.dead = true; this.model.root.visible = false;
+    this.g.scene.remove(this.model.root);
+    this.label.el.remove();
+    this.label._vis = false;
   }
   // cliente: aplica el estado que manda el anfitrión
   netUpdate(dt) {
@@ -675,9 +716,11 @@ class Enemy extends Actor {
     }
     this.path = [];
   }
+  // la Guardia Naval solo ataca si te buscan (recompensa alta) o si la provocas
+  hostile() { return !this.def.neutral || this.provoked || (this.g.bounty || 0) >= WANTED; }
   updateColor() {
     const d = this.level - (this.g.player ? this.g.player.level : 1);
-    const c = this.type === 'boss' ? '#ff5ad0' : d >= 3 ? '#ff5a4a' : d >= 1 ? '#ffb84a' : d >= -2 ? '#7aff8a' : '#c8c8c8';
+    const c = this.def.boss ? '#ff5ad0' : this.def.neutral && !this.hostile() ? '#9ad0ff' : d >= 3 ? '#ff5a4a' : d >= 1 ? '#ffb84a' : d >= -2 ? '#7aff8a' : '#c8c8c8';
     if (this.label._c !== c) { this.label._c = c; this.label.nm.style.color = c; }
   }
   update(dt) {
@@ -690,7 +733,8 @@ class Enemy extends Actor {
         this.model.root.rotation.z = Math.min(Math.PI / 2, this.deadT * 5);
         this.yOff = -Math.max(0, this.deadT - 0.6) * 0.6;
       } else this.model.root.visible = false;
-      if (this.deadT > (this.type === 'boss' ? 120 : 28)) this.respawn();
+      if (this.temp) { if (this.deadT > 1.3) this.remove(); return; }
+      if (this.deadT > (this.def.boss ? 150 : 28)) this.respawn();
       return;
     }
     const dP = this.dist(p);
@@ -715,9 +759,9 @@ class Enemy extends Actor {
         const z = this.home.z + Math.round((Math.random() * 2 - 1) * 3);
         if (g.W.walkable(x, z)) this.goTo(x, z, false, 300);
       }
-      if (!p.dead && dP < this.def.aggro) this.state = 'chase';
+      if (!p.dead && dP < this.def.aggro && this.hostile()) this.state = 'chase';
     } else if (this.state === 'chase') {
-      if (p.dead || fromHome > 15) {
+      if (p.dead || fromHome > (this.temp ? 60 : 15)) {
         this.state = 'return';
         this.goTo(this.home.x, this.home.z, false, 3000);
       } else {
@@ -794,16 +838,23 @@ class Game {
     this.scene.add(this.torch);
 
     this.W = generateWorld();
-    this.islets = makeIslets();
+    this.islets = [...makeIslets(), ...makeNewIslets()];
     this.rooms = makeInteriors(this.W.buildings);
-    attachRegions(this.W, [...this.islets, ...this.rooms]);
+    this.arena = makeArenaRegion();
+    this.addMarga();
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena]);
+    this.isMobile = isMobile;
+    this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
       { id: 'salitre', name: 'Puerto Salitre', shipX: this.W.ship.x, shipZ: this.W.ship.z, heading: 0, land: { x: 51, z: 92 } },
       ...this.islets.map((r) => r.dock),
     ];
     this.boat = { x: this.W.ship.x, z: this.W.ship.z, heading: 0, speed: 0, docked: 'salitre', waypoint: null };
+    this.shipUp = { hull: 0, cannons: 0, sails: 0, size: 0 };
+    this.bounty = 0;
     this.sailing = false;
     this.flags = {};
+    this.side = {};
     this.chests = [];
     this.social = {};
     this.stats = {};
@@ -842,6 +893,17 @@ class Game {
   }
 
   sfx(n) { sfx(n); }
+  // astillera de Puerto Salitre (mejoras y reparación del barco)
+  addMarga() {
+    const W = this.W;
+    let best = null;
+    for (let r = 0; r < 8 && !best; r++) for (let dz = -r; dz <= r && !best; dz++) for (let dx = -r; dx <= r; dx++) {
+      const x = 55 + dx, z = 89 + dz;
+      if (W.walkable(x, z) && W.tile(x, z) !== T.DOCK) { best = { x, z }; break; }
+    }
+    if (!best) best = { x: 51, z: 90 };
+    W.npcs.push({ id: 'marga', name: 'Astillera Marga', x: best.x, z: best.z, wander: 1, look: { shirt: 0x5a7a9a, pants: 0x3a2a1a, apron: 0x6a4a2a, hair: 0x8a3a1a, longHair: true, hat: 'bandana', capColor: 0x2a4a6a, skin: 0xe0aa80, bracers: true, bracerColor: 0x5a3a20, axe: true } });
+  }
   toast(t, c) { this.ui.toast(t, c); }
 
   // ------------------------------------------------------------- mundo
@@ -864,6 +926,7 @@ class Game {
       const tex = TX.makeGroundTexture(r, 20);
       const t = buildTerrain(r, tex);
       this.scene.add(t.ground, t.sides);
+      if (t.lava) { this.scene.add(t.lava); this.lavaMeshes = [...(this.lavaMeshes || []), t.lava]; }
     }
 
     const batch = new StaticBatcher();
@@ -953,8 +1016,10 @@ class Game {
     allRocks.forEach((r, i) => {
       r.mesh = rim; r.index = i; r.hp = 3; r.down = false; r.rot = (r.x * 7 + r.z * 13) % 6.28;
       this.setInst(rim, i, r.x, 0, r.z, r.rot, r.s * 1.6);
-      const k = 0.85 + ((r.x * 31 + r.z * 17) % 10) / 70;
-      rim.setColorAt(i, col.setRGB(k, k, k * 0.98));
+      const k = (0.85 + ((r.x * 31 + r.z * 17) % 10) / 70) * (r.tint || 1);
+      if (r.tint && r.tint < 1) rim.setColorAt(i, col.setRGB(k * 1.05, k * 0.9, k * 1.1));
+      else if (r.tint) rim.setColorAt(i, col.setRGB(Math.min(1, k), k * 0.86, k * 0.66));
+      else rim.setColorAt(i, col.setRGB(k, k, k * 0.98));
       this.rockMap.set(W.key(r.x, r.z), r);
     });
     rim.castShadow = true;
@@ -1019,6 +1084,7 @@ class Game {
     for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns)]) {
       for (let i = 0; i < s.count; i++) { const e = new Enemy(this, s.type, s, s.lvl); e.idx = this.enemies.length; this.enemies.push(e); }
     }
+    this.baseEnemies = this.enemies.length;
     for (const r of this.rooms) {
       r.doorLabel = this.ui.makeLabel('door', r.front ? '🚪 ' + r.name : '');
       r.exitLabel = this.ui.makeLabel('door', '🚪 Salir');
@@ -1115,7 +1181,8 @@ class Game {
       const k = e.key.toLowerCase();
       this.keys.add(k);
       if (!this.started) return;
-      if (k === ' ' || k === 'f') { e.preventDefault(); this.doAction(); }
+      if (k === ' ') { e.preventDefault(); this.doAction(); }
+      if (k === 'f') { e.preventDefault(); if (this.sailing) this.fireCannons(); else this.doAction(); }
       if (k === 'q') this.player.usePotion();
       if (k === 'i' || k === 'b') this.panels.isOpen ? this.panels.close() : this.panels.openInventory();
       if (k === 'l') this.panels.isOpen ? this.panels.close() : this.panels.openBitacora();
@@ -1134,9 +1201,17 @@ class Game {
     window.addEventListener('keyup', (e) => this.keys.delete(e.key.toLowerCase()));
     window.addEventListener('blur', () => this.keys.clear());
 
-    $('btnAction').addEventListener('click', () => this.doAction());
-    $('btnPotion').addEventListener('click', () => this.player.usePotion());
-    $('btnRun').addEventListener('click', () => { this.player.running = !this.player.running; sfx('click'); });
+    // pointerdown: responde aunque otro dedo esté en el joystick (multitáctil)
+    const press = (id, fn) => {
+      const el = $(id);
+      el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); fn(e); });
+      el.addEventListener('click', (e) => e.preventDefault());
+    };
+    press('btnAction', () => { this.attackHeld = true; this.doAction(); });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('btnAction').addEventListener(ev, () => { this.attackHeld = false; });
+    press('btnPotion', () => this.player.usePotion());
+    press('btnRun', () => { this.player.running = !this.player.running; sfx('click'); });
+    press('btnCannon', () => this.fireCannons());
     $('btnBag').addEventListener('click', () => { if (this.started) this.panels.openInventory(); });
     $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
     $('btnGuide').addEventListener('click', () => this.panels.openGuide());
@@ -1412,7 +1487,7 @@ class Game {
       const px = x + fx * a + rx * c, pz = z + fz * a + rz * c;
       if (this.W.tileAll(Math.round(px), Math.round(pz)) !== T.WATER) return true;
     }
-    return x < -26 || z < -26 || x > 166 || z > 166;
+    return x < -104 || z < -104 || x > 244 || z > 244;
   }
   updateBoat(dt) {
     const b = this.boat, p = this.player;
@@ -1436,7 +1511,7 @@ class Game {
       while (diff < -Math.PI) diff += Math.PI * 2;
       const rate = 1.3 + Math.abs(b.speed) * 0.08;
       b.heading += clamp(diff, -rate * dt, rate * dt);
-      target = 5.5 * throttle * Math.max(0.2, Math.cos(diff));
+      target = 5.5 * this.shipStats().speed * throttle * Math.max(0.2, Math.cos(diff));
     }
     b.speed += (target - b.speed) * Math.min(1, dt * (target > b.speed ? 0.9 : 1.3));
     const nx = b.x + Math.sin(b.heading) * b.speed * dt;
@@ -1523,6 +1598,8 @@ class Game {
   contextAction() {
     const p = this.player;
     if (this.sailing) {
+      const nv = this.navalAction();
+      if (nv) return nv;
       const d = this.nearDock();
       return d ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⬇️', label: 'Bodega', fn: () => this.enterHold() };
     }
@@ -1540,15 +1617,15 @@ class Game {
       const L = { fuego: ['🍳', 'Cocinar'], forja: ['⚒️', 'Forjar'], banco: ['🪚', 'Banco'] }[stn.type];
       if (!(p.target && p.target.kind === 'enemy')) return { icon: L[0], label: L[1], fn: () => this.panels.openCraft(stn.type) };
     }
-    if (p.target && p.target.kind === 'enemy') return { icon: '⚔️', label: 'Atacar', fn: null };
+    if (p.target && p.target.kind === 'enemy') return { icon: '⚔️', label: 'Atacar', fn: () => this.attackPress() };
     const fld = this.nearField();
     if (fld) return { icon: '🌾', label: 'Cosechar', fn: () => this.harvestWheat(fld) };
     let ne = null, nd = 5;
-    for (const e of this.enemies) { if (e.dead) continue; const d = e.dist(p); if (d < nd) { nd = d; ne = e; } }
+    for (const e of this.enemies) { if (e.dead || (e.hostile && !e.hostile())) continue; const d = e.dist(p); if (d < nd) { nd = d; ne = e; } }
     let nn = null, nnd = 2.2;
     for (const n of this.npcs) { const d = n.dist(p); if (d < nnd) { nnd = d; nn = n; } }
     if (nn && (!ne || nnd < 1.8)) return { icon: '💬', label: 'Hablar', fn: () => p.setTarget({ kind: 'npc', ref: nn }) };
-    if (ne) return { icon: '⚔️', label: 'Atacar', fn: () => { p.setTarget({ kind: 'enemy', ref: ne }); this.selection.visible = true; this.selTarget = ne; } };
+    if (ne) return { icon: '⚔️', label: 'Atacar', fn: () => this.attackPress() };
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
       const k = this.W.key(p.tx + dx, p.tz + dz);
       const t = this.treeMap.get(k);
@@ -1561,16 +1638,30 @@ class Game {
   doAction() {
     if (!this.started || this.paused || this.player.dead) return;
     if (this.ui.dialogOpen) return;
-    // atacar en movimiento (con el joystick)
-    if (this.joyVector() && !this.sailing) {
-      const p = this.player;
-      let best = null, bd = 2.0;
-      for (const e of [...this.enemies, ...this.npcs.filter((n) => n.fight)]) { if (e.dead) continue; const d = e.dist(p); if (d < bd) { bd = d; best = e; } }
-      if (best) { if (p.attackCd <= 0) { p.faceTo(best.x - p.x, best.z - p.z, 1); p.attack(best); } return; }
-    }
+    // con el joystick (caminando o corriendo) el botón siempre ataca
+    if (this.joyVector() && !this.sailing) { this.attackPress(); return; }
     const a = this.contextAction();
     if (a.fn) a.fn();
-    else this.player.swingAir();
+    else this.attackPress();
+  }
+  // ataque manual: golpea al objetivo seleccionado o al enemigo más cercano a tu alcance; si no hay, tajo al aire
+  attackPress() {
+    const p = this.player;
+    if (this.sailing) { this.fireCannons && this.fireCannons(); return; }
+    if (p.dead || p.attackCd > 0) return;
+    const inReach = (e) => e && !e.dead && (!e.isNPC || e.fight) && p.dist(e) <= 1.9;
+    let best = p.target && p.target.kind === 'enemy' && inReach(p.target.ref) ? p.target.ref : null;
+    if (!best) {
+      let bd = 1.9;
+      const cands = [...this.enemies, ...this.npcs.filter((n) => n.fight)];
+      if (this.net.room.pvp) for (const r of this.net.remotes.values()) if (!this.net.sameTeam(this.net.myId, r.id)) cands.push(r);
+      for (const e of cands) { if (e.dead || e.removed || (e.hostile && !e.hostile())) continue; const d = p.dist(e); if (d < bd) { bd = d; best = e; } }
+    }
+    if (best) {
+      p.faceTo(best.x - p.x, best.z - p.z, 1);
+      p.attack(best);
+      if (!best.isRemote) { this.selection.visible = true; this.selTarget = best; }
+    } else p.swingAir();
   }
 
   talkTo(n) {
@@ -1648,6 +1739,11 @@ class Game {
     const g = this;
     e.hp -= dmg;
     e.st.flash = 0.18;
+    if (e.def.neutral && !e.provoked) {
+      // atacar a la Guardia alerta a sus compañeros cercanos
+      for (const o of this.enemies) if (o.def.neutral && !o.dead && o.dist(e) < 9) { o.provoked = true; o.updateColor(); if (o.state === 'idle') { o.state = 'chase'; o.thinkT = 0; } }
+      if (!e.temp && (this.bounty || 0) < WANTED) this.toast('🚨 ¡Has atacado a la Guardia Naval!', 'area');
+    }
     if (e.state !== 'chase') { e.state = 'chase'; e.thinkT = 0; }
     g.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, e.model.height + 0.2, e.z);
     g.ui.setHp(e.label, Math.max(0, e.hp) / e.maxHp);
@@ -1681,7 +1777,9 @@ class Game {
       let k = 0;
       for (const [id, ch] of DROPS[type] || []) if (Math.random() < ch) setTimeout(() => this.give(id, 1, x, z), 350 + 250 * k++);
       this.stats.kills = (this.stats.kills || 0) + 1;
+      this.stats['k_' + type] = (this.stats['k_' + type] || 0) + 1;
       this.ui.float(`+${xp} XP`, 'info', x, 1.2, z);
+      this.addBounty(def.bounty || (def.boss ? 400 : Math.max(2, Math.round(level / 3))));
     } else {
       this.ui.float(`+${xp} XP 🤝`, 'info', p.x, 1.5, p.z);
     }
@@ -1734,11 +1832,6 @@ class Game {
     p.st.flash = 0.18;
     this.ui.float('-' + dmg, 'dmg', p.x, 1.3, p.z);
     sfx('hurt');
-    if (!p.target && !this.joyVector()) {
-      p.setTarget({ kind: 'enemy', ref: e });
-      this.selection.visible = true;
-      this.selTarget = e;
-    }
     if (p.hp <= 0) {
       p.hp = 0;
       p.dead = true;
@@ -1753,6 +1846,8 @@ class Game {
 
   respawnPlayer() {
     const p = this.player;
+    if (this.boarding) { const B = this.boarding; this.boarding = null; for (const e of B.temps) e.remove(); this.purgeTemps(); this.clearSea(); this.sailing = false; }
+    if (this.raid) { for (const e of this.raid.temps) e.remove(); this.raid = null; this.purgeTemps(); }
     const sp = this.W.landmarks.spawn;
     p.dead = false;
     p.x = sp.x; p.z = sp.z;
@@ -1773,7 +1868,53 @@ class Game {
 
   // ------------------------------------------------------------- misiones
   npcById(id) { return this.npcs.find((n) => n.id === id); }
+  // ---- encargos secundarios
+  acceptSide(id) {
+    const q = SIDE_QUESTS[id];
+    this.side[id] = { s: 1, p: 0 };
+    this.toast('📜 Nuevo encargo: ' + q.title);
+    sfx('quest');
+    this.save();
+  }
+  sideDone(id) {
+    const q = SIDE_QUESTS[id], st = this.side[id];
+    if (!st || st.s !== 1) return false;
+    if (q.type === 'gather') return (this.player.inv[q.target] || 0) >= q.count;
+    return st.p >= q.count;
+  }
+  sideProgressText(id) {
+    const q = SIDE_QUESTS[id], st = this.side[id] || { p: 0 };
+    const have = q.type === 'gather' ? (this.player.inv[q.target] || 0) : st.p;
+    return `${Math.min(have, q.count)} / ${q.count}`;
+  }
+  completeSide(id) {
+    const q = SIDE_QUESTS[id], p = this.player;
+    if (!this.sideDone(id)) return;
+    if (q.type === 'gather') p.inv[q.target] -= q.count;
+    this.side[id] = { s: 2, p: q.count };
+    p.gold += q.reward.gold || 0;
+    if (q.reward.xp) p.gainXp(q.reward.xp);
+    if (q.reward.item) { this.give(q.reward.item, 1, p.x, p.z); this.toast('🎁 ' + ITEMS[q.reward.item].name); }
+    this.ui.float(`+${q.reward.gold} oro`, 'gold', p.x, 1.6, p.z);
+    this.toast('📜 Encargo completado: ' + q.title);
+    const n = this.npcById(id);
+    if (n) this.addFriend(n, 10);
+    sfx('quest');
+    this.save();
+  }
+  sideTick(kind, target) {
+    for (const [id, st] of Object.entries(this.side || {})) {
+      const q = SIDE_QUESTS[id];
+      if (!q || st.s !== 1 || q.type !== kind || q.target !== target) continue;
+      st.p++;
+      if (st.p === q.count) { const n = this.npcById(id); this.toast(`✔ Encargo cumplido: vuelve con ${n ? n.name : ''}`); sfx('quest'); }
+    }
+  }
+  onShipSunk(type) {
+    this.sideTick('ship', type);
+  }
   onKill(type) {
+    this.sideTick('kill', type);
     const cur = QUESTS[this.quest.stage];
     if (!cur || cur.type !== 'kill' || cur.target !== type) return;
     this.quest.progress++;
@@ -1823,7 +1964,7 @@ class Game {
     if (cur.type === 'kill') {
       if (q.progress >= cur.count) return npc(cur.giver);
       const zones = { wolf: [50, 20], crab: [70, 80], boar: [20, 41], skeleton: [85, 50], boss: [87, 56] };
-      const z = zones[cur.target];
+      const z = cur.zone || zones[cur.target];
       return { x: z[0], z: z[1] };
     }
     if (cur.type === 'chest') {
@@ -1852,13 +1993,14 @@ class Game {
   saveData() {
     const p = this.player;
     for (const n of this.crew()) this.soc(n.id).lvl = n.level;
-    const pos = this.sailing
+    const pos = this.sailing || this.boarding
       ? (() => { const d = this.docks.find((k) => k.id === this.lastDock) || this.docks[0]; return { x: d.land.x, z: d.land.z, boatDock: d.id }; })()
       : { x: p.tx, z: p.tz, boatDock: this.boat.docked || this.lastDock || 'salitre' };
     return {
       v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
       inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
-      playtime: Math.round(this.playtime), day: this.day, area: this.W.areaName(p.tx, p.tz), ...pos,
+      playtime: Math.round(this.playtime), day: this.day, area: this.boarding ? 'Mar de Bruma' : this.W.areaName(p.tx, p.tz), ...pos,
+      bounty: this.bounty || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
   }
   save() {
@@ -2048,6 +2190,12 @@ class Game {
     this.stats = data.stats || {};
     this.playtime = data.playtime || 0;
     this.day = data.day || 0;
+    this.bounty = data.bounty || 0;
+    this.side = data.side || {};
+    this.shipUp = { hull: 0, cannons: 0, sails: 0, size: 0, ...(data.shipUp || {}) };
+    this.boat.hp = undefined;
+    this.applyShipUpgrades();
+    if (data.shipHp) this.boat.hp = Math.min(this.boat.maxHp, data.shipHp);
     const bd = this.docks.find((k) => k.id === data.boatDock) || this.docks[0];
     Object.assign(this.boat, { x: bd.shipX, z: bd.shipZ, heading: bd.heading, speed: 0, docked: bd.id });
     if (data.tod) this.tod = data.tod;
@@ -2284,7 +2432,7 @@ class Game {
     const p = this.player;
     for (const n of this.crew()) {
       n.cxp = (n.cxp || 0) + xp * 0.6;
-      const need = 25 + (n.level - 1) * 20 + (n.level - 1) ** 2 * 6;
+      const need = Math.round(25 + (n.level - 1) * 18 + (n.level - 1) ** 2 * 2.2);
       if (n.cxp >= need && n.level < p.level) {
         n.cxp -= need;
         n.setStats(n.level + 1);
@@ -2416,8 +2564,11 @@ class Game {
     this.updateLighting();
     const p = this.player;
     if (this.started) {
-      if (this.sailing) this.updateBoat(dt);
+      if (this.sailing) { if (!this.boat.sinking) this.updateBoat(dt); }
       else p.update(dt);
+      this.updateNaval(dt);
+      this.updateBoarding(dt);
+      this.updateRaids(dt);
       this.player.st.holdHand = null;
       for (const n of this.npcs) if (!n.onShip) n.update(dt);
       for (const e of this.enemies) e.update(dt);
@@ -2455,6 +2606,7 @@ class Game {
     }
     this.camTarget.lerp(tgt, Math.min(1, dt * 6));
     this.camera.position.copy(this.camTarget).add(this.camOffset);
+    if (this.camShake > 0) { const k = this.camShake * 0.5; this.camera.position.x += (Math.random() - 0.5) * k; this.camera.position.z += (Math.random() - 0.5) * k; }
     this.camera.lookAt(this.camTarget);
     // contorno de ~1.6 px en pantalla, sea cual sea el zoom
     OUTLINE.uniforms.thick.value = clamp(((this.camera.top - this.camera.bottom) / Math.max(1, this.height)) * 1.6, 0.004, 0.035);
@@ -2476,6 +2628,7 @@ class Game {
     // animaciones del entorno
     const t = this.time;
     this.water.material.uniforms.time.value = t;
+    if (this.lavaMeshes) for (const lm of this.lavaMeshes) lm.material.color.setRGB(1, 0.36 + Math.sin(t * 2) * 0.06, 0.08);
     this.ship.rotation.order = 'YXZ';
     this.ship.rotation.y = this.boat.heading;
     this.ship.rotation.z = Math.sin(t * 0.9) * 0.025 + (this.boat.roll || 0);
@@ -2578,10 +2731,14 @@ class Game {
       if (e.dead) continue;
       if (e.dist(p) > 22) { if (e.label._vis) { e.label._vis = false; e.label.el.style.display = 'none'; } continue; }
       if (recolor) e.updateColor();
-      this.ui.placeLabel(e.label, e.x, e.model.height + 0.12 + e.yOff, e.z);
+      this.ui.placeLabel(e.label, e.x, Math.max(0, e.vy || 0) + e.model.height + 0.12 + e.yOff, e.z);
     }
     this.ui.updateFloats(dt);
     this.net.update(dt);
+    if (this.attackHeld && this.started && !this.ui.dialogOpen && !this.panels.isOpen && this.player.attackCd <= 0) {
+      const a = this.sailing || this.joyVector() ? null : this.contextAction();
+      if (!a || a.label === 'Atacar') this.attackPress();
+    }
     this.updateFx(dt);
 
     if (this.started) {
@@ -2602,6 +2759,8 @@ class Game {
     }
   }
 }
+
+installNaval(Game, { sfx, Enemy });
 
 window.addEventListener('load', () => {
   setTimeout(() => {

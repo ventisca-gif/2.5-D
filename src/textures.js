@@ -28,6 +28,8 @@ const PALETTE = {
   [T.FIELD]: [138, 102, 62],
   [T.DOCK]: [150, 110, 70],
   [T.WATER]: [205, 186, 136],
+  [T.ROCK]: [92, 80, 78],
+  [T.LAVA]: [236, 96, 24],
 };
 
 export function makeGroundTexture(W, pxPerTile = 24) {

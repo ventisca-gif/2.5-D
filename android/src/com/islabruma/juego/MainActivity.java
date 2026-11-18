@@ -78,6 +78,7 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
         s.setAllowFileAccess(true);
+        s.setAllowUniversalAccessFromFileURLs(true);
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
@@ -279,6 +280,37 @@ public class MainActivity extends Activity {
                     startDownload(url, version);
                 }
             });
+        }
+
+        // ---------------- actualizador: consulta nativa (evita bloqueos del WebView)
+        @JavascriptInterface
+        public void checkUpdate() {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    String body = null, err = "";
+                    try {
+                        java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL("https://api.github.com/repos/ventisca-gif/2.5-D/releases/latest").openConnection();
+                        c.setRequestProperty("User-Agent", "TheBruma-App");
+                        c.setRequestProperty("Accept", "application/vnd.github+json");
+                        c.setConnectTimeout(10000);
+                        c.setReadTimeout(15000);
+                        int code = c.getResponseCode();
+                        if (code == 200) {
+                            java.io.InputStream in = c.getInputStream();
+                            java.io.ByteArrayOutputStream bo = new java.io.ByteArrayOutputStream();
+                            byte[] buf = new byte[8192];
+                            int n;
+                            while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+                            in.close();
+                            body = new String(bo.toByteArray(), "UTF-8");
+                        } else err = "HTTP " + code;
+                    } catch (Exception e) {
+                        err = e.getClass().getSimpleName() + ": " + e.getMessage();
+                    }
+                    js("window.onUpdateJson && window.onUpdateJson(" + (body == null ? "null" : org.json.JSONObject.quote(body)) + "," + org.json.JSONObject.quote(err) + ")");
+                }
+            }).start();
         }
 
         // ---------------- multijugador local

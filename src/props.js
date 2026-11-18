@@ -266,10 +266,27 @@ export function makeBuilding(b, M) {
     const along = W >= D;
     const L = along ? W : D;
     const S = along ? D : W;
-    const rh = Math.min(1.5, S * 0.42 + 0.2);
-    gableRoof(g, L, S, rh, 0.22, M.roof(b.roof, b.thatch), wallMat, top, !along);
+    const rh = b.flat ? 0 : Math.min(1.5, S * 0.42 + 0.2);
+    if (b.flat) {
+      // azotea de adobe con pretil y vigas asomando
+      const rm = mat(b.roof);
+      box(g, W + 0.14, 0.1, D + 0.14, rm, 0, top + 0.05, 0);
+      for (const [px, pz, pw, pd] of [[0, D / 2, W + 0.14, 0.1], [0, -D / 2, W + 0.14, 0.1], [W / 2, 0, 0.1, D + 0.14], [-W / 2, 0, 0.1, D + 0.14]]) box(g, pw, 0.16, pd, rm, px, top + 0.18, pz);
+      for (let i = 0; i < Math.max(2, Math.round(W / 0.8)); i++) cyl(g, 0.04, 0.04, 0.3, M.timber, -W / 2 + 0.3 + i * ((W - 0.6) / Math.max(1, Math.round(W / 0.8) - 1)), top - 0.15, D / 2 + 0.1, 5).rotation.x = Math.PI / 2;
+    } else gableRoof(g, L, S, rh, 0.22, M.roof(b.roof, b.thatch), wallMat, top, !along);
+    if (b.keep) {
+      // torre del homenaje: almenas y banderola azul
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+        cyl(g, 0.45, 0.5, top + 1.2, M.stone, sx * (W / 2), (top + 1.2) / 2, sz * (D / 2), 10);
+        for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; box(g, 0.16, 0.2, 0.16, M.stone, sx * (W / 2) + Math.cos(a) * 0.42, top + 1.3, sz * (D / 2) + Math.sin(a) * 0.42); }
+        cyl(g, 0.02, 0.5, 0.6, M.roof(0x24345e), sx * (W / 2), top + 1.65, sz * (D / 2), 10);
+      }
+      cyl(g, 0.025, 0.025, 1.2, M.iron, 0, top + rh + 0.6, 0, 4);
+      box(g, 0.6, 0.36, 0.02, mat(0x2a4a9a, { side: THREE.DoubleSide }), 0.3, top + rh + 1.0, 0);
+      box(g, 0.3, 0.12, 0.03, M.white, 0.3, top + rh + 1.0, 0);
+    }
     // chimenea
-    if (!b.thatch || rnd() < 0.5) {
+    if (!b.flat && !b.keep && (!b.thatch || rnd() < 0.5)) {
       const cx = (along ? L * 0.28 : S * 0.15) * (rnd() < 0.5 ? 1 : -1);
       const cz = along ? -S * 0.18 : L * 0.28;
       box(g, 0.32, rh + 0.5, 0.32, M.stoneDark, cx, top + (rh + 0.5) / 2, cz, 1.5);
@@ -454,6 +471,46 @@ export function makeProp(p, M) {
       box(g, 0.07, 0.3, 0.3, M.darkWood, -0.38, 0.15, 0);
       box(g, 0.07, 0.3, 0.3, M.darkWood, 0.38, 0.15, 0);
       box(g, 0.9, 0.25, 0.05, M.plank, 0, 0.47, -0.15, 1);
+      break;
+    }
+    case 'roundtower': {
+      // torre redonda a rayas blancas y azules (Guardia Naval)
+      const n = 5, H = 2.6;
+      for (let i = 0; i < n; i++) cyl(g, 0.7, 0.72, H / n, i % 2 ? mat(0x2a4a8a, { map: M.tx.stone }) : M.stone, 0, (i + 0.5) * (H / n), 0, 12);
+      cyl(g, 0.82, 0.82, 0.16, M.stoneDark, 0, H + 0.08, 0, 12);
+      for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; box(g, 0.22, 0.26, 0.22, M.stone, Math.cos(a) * 0.72, H + 0.29, Math.sin(a) * 0.72, 1); }
+      for (const a of [0.4, 2.4, 4.2]) box(g, 0.1, 0.3, 0.05, M.iron, Math.sin(a) * 0.72, 1.6, Math.cos(a) * 0.72).rotation.y = a;
+      cyl(g, 0.02, 0.02, 0.9, M.iron, 0, H + 0.6, 0, 4);
+      box(g, 0.4, 0.24, 0.02, mat(0x2a4a9a, { side: THREE.DoubleSide }), 0.2, H + 0.92, 0);
+      break;
+    }
+    case 'flag': {
+      cyl(g, 0.3, 0.36, 0.2, M.stoneDark, 0, 0.1, 0, 8);
+      cyl(g, 0.04, 0.05, 3.2, M.iron, 0, 1.7, 0, 6);
+      const fm = mat(p.naval ? 0x2a4a9a : 0x1a1a1a, { side: THREE.DoubleSide });
+      const f = box(g, 1.1, 0.66, 0.02, fm, 0.56, 2.9, 0);
+      f.userData.noCast = true;
+      // emblema: gaviota blanca sobre ancla
+      box(g, 0.36, 0.05, 0.03, M.white, 0.56, 3.0, 0).rotation.z = 0.25;
+      box(g, 0.36, 0.05, 0.03, M.white, 0.84, 3.0, 0).rotation.z = -0.25;
+      box(g, 0.05, 0.26, 0.03, M.white, 0.7, 2.8, 0);
+      box(g, 0.24, 0.05, 0.03, M.white, 0.7, 2.68, 0);
+      break;
+    }
+    case 'totem': {
+      const cs = [0x8a5a2a, 0x2ab07a, 0xc83a2a, 0xe0b030];
+      for (let i = 0; i < 4; i++) {
+        box(g, 0.42, 0.36, 0.42, mat(cs[i]), 0, 0.18 + i * 0.38, 0);
+        box(g, 0.1, 0.06, 0.04, M.white, -0.1, 0.24 + i * 0.38, 0.22); box(g, 0.1, 0.06, 0.04, M.white, 0.1, 0.24 + i * 0.38, 0.22);
+      }
+      box(g, 0.9, 0.1, 0.16, mat(0x2ab07a), 0, 1.25, 0);
+      break;
+    }
+    case 'sacks': {
+      for (const [x, z, s] of [[-0.2, 0, 1], [0.2, 0.05, 0.9], [0, -0.1, 0.8]]) {
+        const m = cyl(g, 0.2 * s, 0.24 * s, 0.38 * s, M.canvas, x, 0.19 * s + (s < 0.85 ? 0.3 : 0), z, 7);
+        m.scale.z = 0.8;
+      }
       break;
     }
     case 'cannon': {
@@ -787,6 +844,36 @@ export function treeGeometries() {
     palmParts.push(colored(at(new THREE.IcosahedronGeometry(0.06, 0), px + Math.cos(i * 2) * 0.08, py - 0.06, Math.sin(i * 2) * 0.08), 0x5a3a1a));
   }
   G.palm = mergeGeometries(palmParts);
+  // cactus del desierto
+  G.cactus = mergeGeometries([
+    colored(at(new THREE.CylinderGeometry(0.13, 0.15, 1.1, 8), 0, 0.55, 0), 0x4a8a3a),
+    colored(at(new THREE.SphereGeometry(0.13, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), 0, 1.1, 0), 0x4a8a3a),
+    colored(at(new THREE.CylinderGeometry(0.08, 0.08, 0.3, 7), 0.22, 0.5, 0, 1, 1, 1, 0, 0, Math.PI / 2), 0x52963f),
+    colored(at(new THREE.CylinderGeometry(0.08, 0.08, 0.42, 7), 0.36, 0.72, 0), 0x52963f),
+    colored(at(new THREE.SphereGeometry(0.08, 7, 3, 0, Math.PI * 2, 0, Math.PI / 2), 0.36, 0.93, 0), 0x52963f),
+    colored(at(new THREE.CylinderGeometry(0.07, 0.07, 0.22, 7), -0.18, 0.7, 0, 1, 1, 1, 0, 0, Math.PI / 2), 0x52963f),
+    colored(at(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 7), -0.29, 0.86, 0), 0x52963f),
+    colored(at(new THREE.IcosahedronGeometry(0.05, 0), 0, 1.2, 0), 0xe85a8a),
+  ]);
+  // árbol muerto (desierto y volcán)
+  G.dead = mergeGeometries([
+    colored(at(new THREE.CylinderGeometry(0.05, 0.1, 0.9, 6), 0, 0.45, 0, 1, 1, 1, 0, 0, 0.08), 0x5a4a3e),
+    colored(at(new THREE.CylinderGeometry(0.03, 0.05, 0.5, 5), 0.16, 0.85, 0, 1, 1, 1, 0, 0, -0.8), 0x5a4a3e),
+    colored(at(new THREE.CylinderGeometry(0.025, 0.04, 0.42, 5), -0.14, 0.95, 0.04, 1, 1, 1, 0.2, 0, 0.7), 0x5a4a3e),
+    colored(at(new THREE.CylinderGeometry(0.02, 0.03, 0.3, 5), 0.02, 1.08, -0.1, 1, 1, 1, -0.6, 0, 0), 0x5a4a3e),
+  ]);
+  // árbol de la jungla: tronco alto, copa ancha en dos pisos y lianas
+  G.jungle = mergeGeometries([
+    colored(at(new THREE.CylinderGeometry(0.08, 0.13, 1.5, 7), 0, 0.75, 0), 0x6a4a2a),
+    colored(at(new THREE.CylinderGeometry(0.62, 0.7, 0.26, 9), 0, 1.5, 0), 0x2a7a32),
+    colored(at(new THREE.CylinderGeometry(0.42, 0.55, 0.24, 9), 0.05, 1.74, 0.03), 0x34903a),
+    blob(0.28, 0.1, 1.92, 0, 0x3a9a42),
+    colored(at(new THREE.BoxGeometry(0.03, 0.6, 0.03), 0.45, 1.15, 0.2), 0x3a7a2a),
+    colored(at(new THREE.BoxGeometry(0.03, 0.45, 0.03), -0.4, 1.22, -0.25), 0x3a7a2a),
+    colored(at(new THREE.BoxGeometry(0.03, 0.5, 0.03), -0.1, 1.2, 0.5), 0x3a7a2a),
+    colored(at(new THREE.ConeGeometry(0.16, 0.25, 5), 0.15, 0.12, 0.05, 1, 1, 1, 0, 0, -0.7), 0x6a4a2a),
+    colored(at(new THREE.ConeGeometry(0.16, 0.25, 5), -0.15, 0.12, -0.05, 1, 1, 1, 0, 0, 0.7), 0x6a4a2a),
+  ]);
 
   // roca
   const rg = new THREE.IcosahedronGeometry(0.42, 0);

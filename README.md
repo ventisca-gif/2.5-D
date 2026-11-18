@@ -15,7 +15,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
   - **Puerto Salitre**: muelles, barco pirata *Gaviota Negra*, faro, taberna La Sirena Tuerta y almacén.
   - **Bosque Norte**, **Pedregal del Oeste**, **Granja de los Trigales** y **Cala de los Huesos** (barco hundido).
 - **Personalización**: chico o chica, 6 peinados por género, color de pelo, piel, ropa y barba. **3 ranuras** de partida con **tiempo jugado**.
-- **Equipo visible** (cabeza, pecho, manos, pies, capa, cuello, anillo, arma, escudo) en tiers de madera/cuero, hierro, plata y oro, más piezas corsarias. **Forja**, **banco de carpintero** y **cocina**. Nivel máximo 50.
+- **Equipo visible** (cabeza, pecho, manos, pies, capa, cuello, anillo, arma, escudo) en tiers de cuero, hierro, plata, oro, ámbar, jade y obsidiana, más piezas corsarias y **cosméticos** (sombreros, chaquetas, capas de lobo/tigre...) que se ven encima de la armadura. **Forja**, **banco de carpintero** y **cocina**. Nivel máximo 100.
 - **Correr con estamina**; los enemigos te persiguen y atacan en movimiento.
 - **Amistad**, **duelos** y peleas con NPCs (cada uno con su nivel según su isla), **tripulación** de hasta 10 que te sigue, lucha, sube contigo al barco y mejora su armadura, **bodega del barco** y **romance** (declararse, besar, pasear de la mano).
 - **Mochila**, **bitácora de viaje** y **guía** dentro del juego.
@@ -24,7 +24,10 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **Navegación**: sube al barco en el muelle, gobiérnalo con el joystick (o tocando el mar) y atraca en los muelles de cada isla.
 - **Más de 25 NPCs** con nombre y diálogo, con cuerpos estructurados (cara, articulaciones, armaduras, capas).
 - **Cadena de 10 misiones**: el jefe Capitán Huesoamargo y el tesoro de la Isla Calavera.
-- **Combate** contra lobos, jabalíes, cangrejos y piratas esqueleto; experiencia, niveles y oro.
+- **Combate manual** (botón ⚔️, también andando o corriendo) contra lobos, jabalíes, cangrejos, piratas esqueleto, escorpiones rojos, tigres, murciélagos, gólems, calaveras llameantes, la Guardia Naval y jefes. **Bestiario** y **armería** en la bitácora.
+- **Mar de Bruma**: Isla Duna (desierto), Isla Selva (jungla), Bastión de la Guardia Naval con Villa Grillete e Isla Ceniza (volcán), cada una con pueblo, historia y encargos propios.
+- **Combate naval**: cañones, fragatas de la Guardia y piratas rivales, serpiente marina, **abordajes** por pasarela, el barco se hunde si llega a 0; la Astillera Marga lo repara y lo mejora (casco, cañones, velas, tamaño).
+- **Recompensa (Se busca)**: sube con cada victoria; la Guardia te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.
 - **Creador de personaje**: Caballero, Corsario, Exploradora o Mercenario + tono de piel.

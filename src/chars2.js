@@ -465,11 +465,22 @@ export function makeHumanoid2(look = {}) {
     w.add(rbox(0.14, 0.022, 0.035, 0.008), look.guard ?? trim, 0, -0.05, 0);
     w.add(bladeGeo(look.bladeLen ?? 0.46, look.bladeW ?? 0.05), look.blade ?? 0xdde2ea, 0, -0.06, 0, Math.PI, 0, 0);
     w.g.rotation.x = 0.25;
+  } else if (look.axe) {
+    weapon = P(arms[1].g, 0, -0.3, 0.02);
+    weapon.add(cyl(0.02, 0.02, 0.62, 6), 0x5a3a20, 0, -0.18, 0.04, 0.25, 0, 0);
+    weapon.add(torus(0.026, 0.009), look.guard ?? trim, 0, -0.02, 0.0, Math.PI / 2, 0, 0);
+    weapon.add(rbox(0.03, 0.2, 0.18, 0.02), look.blade ?? 0x8a8a90, 0, -0.42, 0.18, 0.25, 0, 0);
+    weapon.add(rbox(0.035, 0.24, 0.04, 0.01), shade(look.blade ?? 0x8a8a90, 1.5), 0, -0.42, 0.27, 0.25, 0, 0);
   } else if (look.spear) {
     weapon = P(arms[1].g, 0, -0.3, 0.02);
-    weapon.add(cyl(0.016, 0.016, 1.45, 6), 0x6a4a2a, 0, 0.35, 0);
-    weapon.add(cone(0.04, 0.16, 6), 0xc8ccd4, 0, 1.15, 0);
-    weapon.add(torus(0.022, 0.008), trim, 0, 1.06, 0, Math.PI / 2, 0, 0);
+    weapon.add(cyl(0.016, 0.016, 1.45, 6), look.trident ? 0x1a6a8a : 0x6a4a2a, 0, 0.35, 0);
+    if (look.trident) {
+      weapon.add(rbox(0.22, 0.03, 0.03, 0.01), 0xd8a838, 0, 1.06, 0);
+      for (const x of [-0.1, 0, 0.1]) weapon.add(cone(0.025, x ? 0.16 : 0.2, 5), 0xbfe8ff, x, x ? 1.16 : 1.18, 0);
+    } else {
+      weapon.add(cone(0.04, 0.16, 6), 0xc8ccd4, 0, 1.15, 0);
+      weapon.add(torus(0.022, 0.008), trim, 0, 1.06, 0, Math.PI / 2, 0, 0);
+    }
   } else if (look.rod) {
     weapon = P(arms[1].g, 0, -0.3, 0.02);
     weapon.add(cyl(0.01, 0.016, 1.3, 5), 0x7a5a3a, 0, 0.25, 0.5, 1.0, 0, 0);
@@ -660,9 +671,10 @@ export function makeBeast2(kind) {
   const body = new THREE.Group();
   root.add(body);
   const boar = kind === 'boar';
-  const c = boar ? 0x6a4a32 : 0x8c8f96;
-  const c2 = boar ? 0x4a3222 : 0xd8d8d8;
-  const dark = boar ? 0x2a1a10 : 0x5a5d64;
+  const tiger = kind === 'tiger';
+  const c = boar ? 0x6a4a32 : tiger ? 0xe0801a : 0x8c8f96;
+  const c2 = boar ? 0x4a3222 : tiger ? 0xf4ead8 : 0xd8d8d8;
+  const dark = boar ? 0x2a1a10 : tiger ? 0x1a1210 : 0x5a5d64;
   const parts = [];
   const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
   const torso = P(body, 0, 0.4, 0);
@@ -672,6 +684,7 @@ export function makeBeast2(kind) {
   torso.add(sph(boar ? 0.16 : 0.13), c, 0, 0.02, 0.17);
   if (boar) for (let i = 0; i < 6; i++) torso.add(cone(0.025, 0.08, 4), dark, 0, 0.15, 0.2 - i * 0.07, -0.3, 0, 0);
   else torso.add(sph(0.12, 10, 8), shade(c, 1.1), 0, 0.06, 0.2, 0, 0, 0, 1, 0.9, 1.1);
+  if (tiger) for (let i = 0; i < 6; i++) torso.add(rbox(0.26, 0.03, 0.035, 0.012), dark, 0, 0.11, 0.16 - i * 0.075, 0.25, 0, 0, 1, 1, 1);
   const head = P(torso.g, 0, 0.08, 0.3);
   head.add(rbox(0.2, 0.18, 0.2, 0.06), c, 0, 0, 0.02);
   head.add(rbox(boar ? 0.14 : 0.11, boar ? 0.11 : 0.09, 0.16, 0.035), boar ? 0x8a6a5a : c2, 0, -0.04, 0.15);
@@ -758,4 +771,198 @@ export function makeCrab2() {
   shadow.position.y = 0.012;
   root.add(shadow);
   return { root, parts: { body, torso: torso.g, claws: claws.map((c) => c.g), legs: legs.map((l) => l.g) }, mats: [mat], kind: 'crab', height: 0.45 };
+}
+
+
+// ======================================================================= criaturas nuevas
+function finish(root, parts, mat, r = 0.32) {
+  for (const p of parts) p.bake(mat);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(r, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.22, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.012;
+  root.add(shadow);
+  return shadow;
+}
+function phong(sh = 20) {
+  const m = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: sh, specular: 0x202020 });
+  m.userData.baseEmissive = new THREE.Color(0);
+  return m;
+}
+
+export function makeBat() {
+  const mat = phong(10);
+  const root = new THREE.Group(), body = new THREE.Group();
+  root.add(body);
+  const parts = [];
+  const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
+  const torso = P(body, 0, 0.9, 0);
+  torso.add(sph(0.11, 12, 8), 0x3a2a4a, 0, 0, 0, 0, 0, 0, 1, 1.1, 1);
+  torso.add(sph(0.08, 10, 8), 0x4a3a5a, 0, 0.11, 0.03);
+  for (const s of [-1, 1]) {
+    torso.add(cone(0.03, 0.08, 4), 0x3a2a4a, s * 0.045, 0.2, 0.02);
+    torso.add(sph(0.016, 6, 4), 0xff3a2a, s * 0.03, 0.12, 0.1);
+    torso.add(cone(0.008, 0.03, 3), 0xf4f0e8, s * 0.015, 0.07, 0.1, Math.PI, 0, 0);
+  }
+  const wings = [];
+  for (const s of [-1, 1]) {
+    const w = P(torso.g, s * 0.08, 0.02, 0);
+    w.add(rbox(0.32, 0.012, 0.2, 0.006), 0x2a1a3a, s * 0.17, 0, -0.02, 0, 0, 0);
+    for (let i = 0; i < 3; i++) w.add(cone(0.05, 0.08, 3), 0x2a1a3a, s * (0.12 + i * 0.1), 0, -0.13, -Math.PI / 2, 0, 0);
+    wings.push(w);
+  }
+  const sh = finish(root, parts, mat, 0.2);
+  return { root, parts: { body, torso: torso.g, wings: wings.map((w) => w.g), shadow: sh }, mats: [mat], kind: 'bat', height: 1.2 };
+}
+
+export function makeScorpion() {
+  const mat = phong(40);
+  const root = new THREE.Group(), body = new THREE.Group();
+  root.add(body);
+  const red = 0xb8201a, dark = 0x6a1010;
+  const parts = [];
+  const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
+  const torso = P(body, 0, 0.16, 0);
+  torso.add(sph(0.2, 14, 10), red, 0, 0, 0, 0, 0, 0, 0.9, 0.45, 1.3);
+  for (let i = 0; i < 4; i++) torso.add(torus(0.12 - i * 0.008, 0.012), dark, 0, 0.05, -0.08 + i * 0.07, Math.PI / 2, 0, 0, 1, 1, 0.6);
+  for (const s of [-1, 1]) torso.add(sph(0.022, 6, 4), 0x111111, s * 0.05, 0.08, 0.24);
+  const claws = [];
+  for (const s of [-1, 1]) {
+    const c = P(torso.g, s * 0.16, 0.0, 0.2);
+    c.add(cap(0.03, 0.12), red, s * 0.04, 0, 0.06, Math.PI / 2, 0, s * 0.5);
+    c.add(sph(0.07, 10, 8), red, s * 0.09, 0.02, 0.17, 0, 0, 0, 1, 0.7, 1.3);
+    c.add(cone(0.03, 0.1, 6), dark, s * 0.06, 0.02, 0.26, Math.PI / 2, 0, 0);
+    c.add(cone(0.025, 0.09, 6), dark, s * 0.12, 0.02, 0.25, Math.PI / 2, 0, 0);
+    claws.push(c);
+  }
+  const legs = [];
+  for (let i = 0; i < 4; i++) for (const s of [-1, 1]) {
+    const l = P(torso.g, s * 0.15, -0.02, 0.08 - i * 0.08);
+    l.add(cap(0.014, 0.1), red, s * 0.07, 0.0, 0, 0, 0, s * 1.1);
+    l.add(cap(0.012, 0.09), dark, s * 0.14, -0.07, 0, 0, 0, s * 0.3);
+    legs.push(l);
+  }
+  // cola segmentada con aguijón
+  const tail = P(torso.g, 0, 0.04, -0.24);
+  let y = 0, z = 0;
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 0.9;
+    y += Math.sin(a) * 0.09 + 0.02;
+    z -= Math.cos(a) * 0.08;
+    tail.add(sph(0.05 - i * 0.004, 8, 6), i % 2 ? red : dark, 0, y, z);
+  }
+  tail.add(cone(0.03, 0.12, 6), 0x1a0a0a, 0, y + 0.02, z + 0.08, Math.PI / 2 + 0.6, 0, 0);
+  const sh = finish(root, parts, mat, 0.34);
+  return { root, parts: { body, torso: torso.g, claws: claws.map((c) => c.g), legs: legs.map((l) => l.g), tail: tail.g, shadow: sh }, mats: [mat], kind: 'crab', height: 0.6 };
+}
+
+export function makeGolem(variant = 'stone') {
+  const mat = phong(8);
+  const root = new THREE.Group(), body = new THREE.Group();
+  root.add(body);
+  const obs = variant === 'obs';
+  const c = obs ? 0x2e2238 : 0x8a8680, c2 = obs ? 0x4a3a5a : 0x6a6660, glow = obs ? 0xff3a1a : 0x5ad8ff;
+  const parts = [];
+  const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
+  const legs = [];
+  for (const s of [-1, 1]) {
+    const l = P(body, s * 0.11, 0.38, 0);
+    l.add(rbox(0.15, 0.2, 0.16, 0.04), c, 0, -0.1, 0);
+    l.add(rbox(0.17, 0.18, 0.2, 0.05), c2, 0, -0.28, 0.02);
+    legs.push(l);
+  }
+  const torso = P(body, 0, 0.4, 0);
+  torso.add(rbox(0.46, 0.4, 0.3, 0.08), c, 0, 0.2, 0);
+  torso.add(rbox(0.3, 0.14, 0.32, 0.05), c2, 0, 0.42, 0);
+  torso.add(sph(0.06, 10, 8), glow, 0, 0.24, 0.15, 0, 0, 0, 1, 1, 0.5);
+  for (let i = 0; i < 5; i++) torso.add(rbox(0.1, 0.08, 0.06, 0.02), c2, -0.16 + (i * 0.37) % 0.33, 0.06 + (i * 0.13) % 0.3, 0.15);
+  const arms = [];
+  for (const s of [-1, 1]) {
+    const a = P(torso.g, s * 0.3, 0.36, 0);
+    a.add(sph(0.11, 10, 8), c2, 0, 0, 0);
+    a.add(rbox(0.14, 0.24, 0.14, 0.04), c, 0, -0.16, 0);
+    a.add(rbox(0.18, 0.18, 0.18, 0.05), c2, 0, -0.36, 0.02);
+    arms.push(a);
+  }
+  const head = P(torso.g, 0, 0.48, 0.02);
+  head.add(rbox(0.22, 0.18, 0.2, 0.05), c, 0, 0.08, 0);
+  for (const s of [-1, 1]) head.add(rbox(0.05, 0.025, 0.02, 0.008), glow, s * 0.05, 0.1, 0.105);
+  if (obs) for (const s of [-1, 1]) head.add(cone(0.03, 0.12, 5), 0x1a1020, s * 0.09, 0.2, 0, 0, 0, -s * 0.4);
+  const sh = finish(root, parts, mat, 0.42);
+  return { root, parts: { body, torso: torso.g, head: head.g, legL: legs[0].g, legR: legs[1].g, armL: arms[0].g, armR: arms[1].g, weapon: null, cape: null, shadow: sh }, mats: [mat], kind: 'humanoid', height: 1.15 };
+}
+
+export function makeFlameSkull() {
+  const mat = phong(30);
+  const fire = new THREE.MeshBasicMaterial({ color: 0x40e8ff, transparent: true, opacity: 0.8 });
+  const root = new THREE.Group(), body = new THREE.Group();
+  root.add(body);
+  const parts = [];
+  const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
+  const torso = P(body, 0, 0.75, 0);
+  torso.add(rbox(0.3, 0.26, 0.28, 0.1), 0xf0ead8, 0, 0, 0);
+  torso.add(rbox(0.2, 0.08, 0.2, 0.04), 0xf0ead8, 0, -0.14, 0.03);
+  for (const s of [-1, 1]) torso.add(sph(0.045, 8, 6), 0x0a1a20, s * 0.065, 0.01, 0.13, 0, 0, 0, 1, 1.1, 0.5);
+  for (let i = 0; i < 4; i++) torso.add(rbox(0.02, 0.025, 0.01, 0.004), 0xf8f4e8, -0.03 + i * 0.02, -0.12, 0.12);
+  const sh = finish(root, parts, mat, 0.24);
+  const flames = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const f = new THREE.Mesh(new THREE.ConeGeometry(0.12 - i * 0.025, 0.36 - i * 0.06, 6), fire);
+    f.position.set((i - 1) * 0.06, 0.2 + i * 0.03, -0.04);
+    flames.add(f);
+  }
+  torso.g.add(flames);
+  const eyes = new THREE.Group();
+  for (const s of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 4), new THREE.MeshBasicMaterial({ color: 0x60f0ff }));
+    e.position.set(s * 0.065, 0.01, 0.15);
+    eyes.add(e);
+  }
+  torso.g.add(eyes);
+  return { root, parts: { body, torso: torso.g, flames, shadow: sh }, mats: [mat], kind: 'skull', height: 1.1 };
+}
+
+// Serpiente marina (no es un Actor: se anima a mano desde el juego)
+export function makeSerpent() {
+  const mat = phong(50);
+  const root = new THREE.Group();
+  const segs = [];
+  for (let i = 0; i < 9; i++) {
+    const g = new THREE.Group();
+    const r = 0.42 - i * 0.03;
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), mat);
+    m.scale.set(1, 1, 1.4);
+    g.add(m);
+    const fin = new THREE.Mesh(new THREE.ConeGeometry(r * 0.5, r * 1.2, 4), mat);
+    fin.position.y = r * 0.9;
+    g.add(fin);
+    root.add(g);
+    segs.push(g);
+  }
+  // colores por vértice: lomo verde azulado, vientre claro
+  for (const g of segs) for (const m of [...g.children]) {
+    const geo = m.geometry.clone();
+    const pos = geo.attributes.position, col = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const up = pos.getY(i) > 0;
+      const c = new THREE.Color(up ? 0x1a6a6a : 0x9ad8c0);
+      col.set([c.r, c.g, c.b], i * 3);
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    m.geometry = geo;
+    const o = new THREE.Mesh(geo, OUTLINE);
+    o.scale.copy(m.scale);
+    o.position.copy(m.position);
+    g.add(o);
+  }
+  const head = segs[0];
+  for (const s of [-1, 1]) {
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffe040 }));
+    e.position.set(s * 0.22, 0.15, 0.42);
+    head.add(e);
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.3, 5), mat);
+    horn.position.set(s * 0.18, 0.35, 0.1);
+    horn.rotation.x = -0.5;
+    head.add(horn);
+  }
+  return { root, segs, mats: [mat] };
 }

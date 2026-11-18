@@ -409,7 +409,7 @@ export class Net {
     if (this.tick > 0 || this.connecting) return;
     this.tick = 0.1;
     if (this.isHost) {
-      const en = g.enemies.map((e) => [r2(e.x), r2(e.z), r2(e.face), Math.max(0, Math.round(e.hp)), e.dead ? 1 : 0, e.st.moving ? 1 : 0, e.atkSeq || 0, e.level, e.maxHp]);
+      const en = g.enemies.slice(0, g.baseEnemies || g.enemies.length).map((e) => [r2(e.x), r2(e.z), r2(e.face), Math.max(0, Math.round(e.hp)), e.dead ? 1 : 0, e.st.moving ? 1 : 0, e.atkSeq || 0, e.level, e.maxHp]);
       const pl = [{ id: 0, ...this.myState() }];
       for (const [id, c] of this.clients) if (c.state) pl.push({ id, ...c.state });
       this.hsend('*', { t: 'w', tod: Math.round(g.tod * 100) / 100, en, pl });

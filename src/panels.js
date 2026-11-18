@@ -1,9 +1,9 @@
 // Paneles de interfaz: equipo + mochila (con vista previa 3D), forja/banco/cocina, bitácora, guía y regalos.
 import * as THREE from 'three';
-import { ITEMS, EQUIP, SLOTS, RECIPES, buildLook, gearStats } from './items.js';
+import { ITEMS, EQUIP, SLOTS, COS_SLOTS, RECIPES, DROPS, TIER_NAMES, buildLook, gearStats } from './items.js';
 import { makeHumanoid2, OUTLINE } from './chars2.js';
 import { animateModel } from './characters.js';
-import { QUESTS } from './quests.js';
+import { QUESTS, SIDE_QUESTS } from './quests.js';
 import { friendLevel, heartsText, MAX_CREW } from './social.js';
 
 const $ = (id) => document.getElementById(id);
@@ -80,6 +80,7 @@ export class Panels {
     const left = ['head', 'chest', 'hands', 'feet'].map((id) => slotBtn(SLOTS.find((s) => s.id === id))).join('');
     const right = ['neck', 'cape', 'ring'].map((id) => slotBtn(SLOTS.find((s) => s.id === id))).join('');
     const bottom = ['weapon', 'shield'].map((id) => slotBtn(SLOTS.find((s) => s.id === id))).join('');
+    const cos = COS_SLOTS.map((s) => slotBtn(s)).join('');
     const items = Object.entries(p.inv).filter(([, n]) => n > 0).sort((a, b) => (ITEMS[a[0]]?.type || '').localeCompare(ITEMS[b[0]]?.type || ''));
     const grid = items.map(([id, n]) => {
       const it = ITEMS[id] || { icon: '❔', name: id };
@@ -107,6 +108,8 @@ export class Panels {
             <div class="slotCol">${right}</div>
           </div>
           <div class="slotRow">${bottom}</div>
+          <div class="cosTitle">👕 Aspecto (cosméticos: no cambian tus estadísticas)</div>
+          <div class="slotRow cos">${cos}</div>
         </div>
         <div class="bagArea">
           <div class="bagTitle">Mochila · <span class="coinTxt">🪙 ${p.gold}</span></div>
@@ -199,7 +202,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -207,7 +210,12 @@ export class Panels {
       const done = QUESTS.slice(0, g.quest.stage).map((qq) => `<li>✔ ${esc(qq.title)}</li>`).join('');
       body = `<div class="parch"><div class="qbig">${esc(q.title)}</div><p>${esc(q.desc)}</p>${q.prog ? `<p class="prog">${esc(q.prog)}</p>` : ''}
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
+        <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'bestia') {
+      body = this.bestiaryHtml();
+    } else if (tab === 'armeria') {
+      body = this.armoryHtml();
     } else if (tab === 'amigos') {
       const rows = g.npcs.filter((n) => g.soc(n.id).met).map((n) => {
         const s = g.soc(n.id);
@@ -219,7 +227,7 @@ export class Panels {
     } else if (tab === 'crew') {
       const crew = g.crew();
       const rows = crew.map((n) => `<div class="frow"><b>${esc(n.name)}</b><span class="lv">Nv. ${n.level}</span>
-          <span class="muted">${['Cuero', 'Hierro', 'Plata', 'Oro'][n.tier]}</span>
+          <span class="muted t${n.tier}">${TIER_NAMES[n.tier]}</span>
           <button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${g.soc(n.id).wait ? '▶ Seguir' : '⏸ Esperar'}</button></div>`).join('');
       body = `<p>Tripulación: <b>${crew.length}/${MAX_CREW}</b></p>${rows || '<p class="muted">Aún no tienes tripulación. Haz amistad (3 corazones) y pídeles que se unan.</p>'}
         <p class="muted small">Tu tripulación te sigue, lucha a tu lado, sube contigo al barco y se hace más fuerte (hasta tu nivel), con armaduras cada vez mejores.</p>`;
@@ -227,9 +235,11 @@ export class Panels {
       const st = g.stats;
       body = `<div class="parch diary">
         <p>⏱ Tiempo jugado: <b>${fmtTime(g.playtime)}</b></p>
-        <p>⭐ Nivel: <b>${p.level}</b> / 50 · XP ${p.xp}/${p.xpNext()}</p>
+        <p>⭐ Nivel: <b>${p.level}</b> / 100 · XP ${p.xp}/${p.xpNext()}</p>
         <p>🪙 Oro: <b>${p.gold}</b></p>
         <p>⚔ Enemigos vencidos: <b>${st.kills || 0}</b> · Duelos ganados: <b>${st.duels || 0}</b></p>
+        <p>☠ Recompensa: <b>${g.bounty || 0}</b> oro · <b>${g.bountyText()}</b></p>
+        <p>💥 Barcos hundidos: <b>${(st.s_marine || 0) + (st.s_pirate || 0)}</b> (Guardia ${st.s_marine || 0} · piratas ${st.s_pirate || 0})</p>
         <p>🎁 Cofres abiertos: <b>${Object.keys(g.flags).filter((k) => k.includes('cofre')).length}</b></p>
         <p>🍳 Platos cocinados: <b>${st.cooked || 0}</b> · ⚒ Objetos forjados: <b>${st.crafted || 0}</b></p>
         <p>🗺 Ubicación: <b>${esc(g.W.areaName(p.tx, p.tz))}</b></p></div>`;
@@ -237,14 +247,74 @@ export class Panels {
     this.show('bit', '📖 Bitácora de viaje', `<div class="tabs">${tabs}</div><div class="tabbody">${body}</div>`, true);
   }
 
+  sideHtml() {
+    const g = this.g;
+    const rows = Object.entries(SIDE_QUESTS).map(([id, q]) => {
+      const st = g.side[id];
+      const n = g.npcById(id);
+      const who = n ? n.name : id;
+      if (!st) return g.soc(id).met ? `<li class="muted">❔ ${esc(who)} tiene un encargo para ti</li>` : '';
+      if (st.s === 2) return `<li>✔ ${esc(q.title)} <span class="muted">(${esc(who)})</span></li>`;
+      return `<li>📜 <b>${esc(q.title)}</b> — ${esc(q.desc)} <span class="prog">${g.sideDone(id) ? '✔ vuelve con ' + esc(who) : g.sideProgressText(id)}</span></li>`;
+    }).join('');
+    return `<ul class="qlist">${rows || '<li class="muted">Habla con la gente de las islas nuevas para recibir encargos.</li>'}</ul>`;
+  }
+  bestiaryHtml() {
+    const g = this.g, D = g.ENEMY_DEF, st = g.stats;
+    const ICON = { wolf: '🐺', boar: '🐗', crab: '🦀', skeleton: '💀', boss: '☠️', scorpion: '🦂', tiger: '🐅', bat: '🦇', golem: '🗿', golem_obs: '🌋', skull: '🔥', marine: '⚓', pirate: '🏴‍☠️', marine_boss: '🎖️', golem_boss: '👹' };
+    const where = {};
+    for (const e of g.enemies.slice(0, g.baseEnemies)) {
+      const w = where[e.type] || (where[e.type] = { min: 999, max: 0, zones: new Set() });
+      w.min = Math.min(w.min, e.lvlRange[0]); w.max = Math.max(w.max, e.lvlRange[1]);
+      const a = e.spawnDef.area;
+      w.zones.add(g.W.areaName(Math.round((a[0] + a[2]) / 2), Math.round((a[1] + a[3]) / 2)));
+    }
+    const card = (icon, name, info, drops, kills) => `<div class="bcard ${kills ? '' : 'unk'}"><div class="bic">${icon}</div><div class="binfo"><b>${esc(name)}</b><small>${info}</small><small class="muted">${drops}</small></div><div class="bk">${kills}<small>vencidos</small></div></div>`;
+    const list = Object.keys(ICON).map((t) => {
+      const w = where[t];
+      const kills = st['k_' + t] || 0;
+      const drops = (DROPS[t] || []).map(([id]) => ITEMS[id] ? ITEMS[id].icon + ' ' + ITEMS[id].name : id).filter((v, i, a) => a.indexOf(v) === i).join(', ') || '—';
+      const info = (w ? `Nv. ${w.min}${w.max !== w.min ? '–' + w.max : ''} · ${[...w.zones].join(', ')}` : '') + (D[t].boss ? ' · JEFE' : '') + (D[t].neutral ? ' · neutral si no te buscan' : '');
+      return card(ICON[t], D[t].name, info, 'Botín: ' + drops, kills);
+    });
+    list.push(card('🐍', 'Serpiente marina', 'Aguas profundas, lejos de las islas · se combate con cañones', 'Botín: 🐚 Escamas, ⚪ Perlas', st.k_serpent || 0));
+    list.push(card('⛵', 'Fragata de la Guardia Naval', 'Mar abierto · aparece si tienes recompensa', 'Botín: 🧨 Pólvora, 🥈 Plata', st.s_marine || 0));
+    list.push(card('🏴‍☠️', 'Barco pirata rival', 'Mar abierto · te aborda si se acerca', 'Botín: 🧨 Pólvora, 🥇 Oro', st.s_pirate || 0));
+    return `<p class="muted small">Todas las criaturas del Mar de Bruma. Toca a un enemigo y pulsa ⚔️ para atacar.</p><div class="bgrid">${list.join('')}</div>`;
+  }
+  armoryHtml() {
+    const g = this.g, p = g.player;
+    const crafted = new Set(RECIPES.map((r) => r.out));
+    const dropped = new Set(Object.values(DROPS).flat().map(([id]) => id));
+    const own = (id) => (p.inv[id] || 0) > 0 || Object.values(p.equip).includes(id);
+    const groups = [...SLOTS, ...COS_SLOTS].map((s) => {
+      const items = Object.entries(EQUIP).filter(([, e]) => e.slot === s.id).sort((a, b) => (a[1].tier || 0) - (b[1].tier || 0));
+      if (!items.length) return '';
+      const rows = items.map(([id, e]) => {
+        const it = ITEMS[id];
+        const stats = [e.atk ? `⚔${e.atk}` : '', e.def ? `🛡${e.def}` : '', e.hp ? `❤${e.hp}` : ''].filter(Boolean).join(' ') || (e.cos ? 'cosmético' : '');
+        const how = crafted.has(id) ? (RECIPES.find((r) => r.out === id).station === 'banco' ? '🪚 Banco' : '⚒ Forja') : dropped.has(id) ? '💀 Botín' : '🪙 Tienda / recompensa';
+        return `<div class="arow ${own(id) ? 'own' : ''}"><span class="t${e.tier || 0}">${it.icon} ${esc(it.name)}</span><span>${stats}</span><span class="muted">${how}</span><span>${own(id) ? '✔' : ''}</span></div>`;
+      }).join('');
+      return `<div class="sub">${s.icon} ${esc(s.name)}</div>${rows}`;
+    }).join('');
+    return `<p class="muted small">Niveles: ${TIER_NAMES.map((n, i) => `<span class="t${i}">${n}</span>`).join(' · ')}. ✔ = lo tienes.</p>${groups}`;
+  }
+
   // ------------------------------------------------------------------ guía
   openGuide() {
     const sec = [
       ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
       ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
-      ['⚔️ Combate', 'Toca a un enemigo o pulsa el botón grande (si no hay nadie cerca, das un tajo al aire). Puedes atacar mientras te mueves con el joystick. Sin estamina pegas la mitad.'],
+      ['⚔️ Combate', 'Solo atacas cuando pulsas el botón ⚔️ (mantenlo pulsado para seguir atacando). Funciona andando o corriendo con el joystick: golpea al enemigo más cercano a tu alcance o da un tajo al aire. Tocar a un enemigo lo selecciona. Sin estamina pegas la mitad.'],
+      ['🗺️ Islas del Mar de Bruma', 'Oeste: Isla Duna (desierto, Oasis de Sal, ámbar). Norte: Isla Selva (Aldea Liana, jade, tigres y murciélagos). Sur: Bastión de la Guardia Naval y Villa Grillete. Sureste lejano: Isla Ceniza (volcán, obsidiana, gólems). Cada isla tiene sus encargos y su historia.'],
+      ['💣 Combate naval', 'Navegando, pulsa 💣 Cañones (tecla F) para disparar por las bandas hacia el enemigo más cercano. Los barcos de la Guardia y los piratas te disparan y pueden abordarte. Si te acercas a uno, pulsa 🪝 Abordar y lucha en su cubierta con tu tripulación. Si tu barco llega a 0 se hunde.'],
+      ['⚓ Astillero', 'La Astillera Marga, en Puerto Salitre, repara tu barco y lo mejora: casco (más vida), cañones (más daño y recarga), velas (más velocidad) y ampliación (barco más grande, más cañones y más tripulación). El barco se repara despacio atracado.'],
+      ['☠ Recompensa', 'Cada enemigo que vences sube tu recompensa (☠ en el panel). A partir de 300 la Guardia Naval te ataca al verte, pregunta por ti en los pueblos, desembarca para buscarte (los vecinos te defienden) y manda fragatas. El Teniente Ferro de Villa Grillete acepta sobornos...'],
+      ['👕 Cosméticos', 'En la mochila hay 3 ranuras de Aspecto (sombrero, ropa y capa). Se ven por encima de la armadura, pero tu armadura sigue contando. Se compran al Sastre Selim (Oasis de Sal) o caen de enemigos (capa de lobo, de tigre...).'],
+      ['🐾 Bestiario y armería', 'En la Bitácora verás todos los enemigos (zona, nivel, botín y cuántos has vencido) y todas las armas y armaduras (cómo se consiguen y cuáles tienes).'],
       ['🎒 Mochila y equipo', 'Abre la mochila: toca un objeto para equiparlo, comerlo o beberlo. Toca una ranura para quitarte esa pieza. Todo lo que equipas se ve en tu personaje.'],
-      ['⛏️ Recursos', 'Tala árboles (madera, manzanas) y pica rocas (piedra y menas). Hierro en Isla Bruma, plata en el Pedregal e Isla Tortuga, oro en la Isla Calavera. Lobos y jabalíes sueltan cuero y carne.'],
+      ['⛏️ Recursos', 'Tala árboles (madera, manzanas) y pica rocas (piedra y menas). Hierro en Isla Bruma, plata en el Pedregal e Isla Tortuga, oro en la Isla Calavera, ámbar en Isla Duna, jade en Isla Selva y obsidiana en Isla Ceniza. Los animales sueltan pieles y carne.'],
       ['⚒️ Forja y banco', 'Habla con el Herrero Tadeo (o acércate a una forja) para forjar armas y armaduras de hierro, plata y oro. El Carpintero Bruno tiene el banco para objetos de madera y cuero.'],
       ['🍳 Cocina', 'Acércate a una fogata o chimenea y pulsa Cocinar. La comida cura más que nada y el guiso del capitán rellena la estamina. Cosecha trigo en la granja.'],
       ['❤ Amistad', 'Charla con la gente una vez al día, haz regalos y gana duelos. Cada NPC tiene su nivel según su isla.'],

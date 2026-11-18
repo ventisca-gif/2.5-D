@@ -370,7 +370,19 @@ export function animateModel(model, st, dt) {
     p.head.rotation.x = st.attackT > 0 ? -0.5 * Math.sin((1 - st.attackT / 0.32) * Math.PI) : 0;
     if (st.attackT > 0) p.torso.position.z = Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.18;
     else p.torso.position.z = 0;
+  } else if (model.kind === 'bat') {
+    const fl = Math.sin(st.phase * (moving ? 3 : 2.2));
+    p.wings[0].rotation.z = 0.2 + fl * 0.7;
+    p.wings[1].rotation.z = -0.2 - fl * 0.7;
+    p.body.position.y = Math.sin(st.phase * 0.8) * 0.08;
+    if (st.attackT > 0) p.torso.rotation.x = Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.8; else p.torso.rotation.x = 0;
+  } else if (model.kind === 'skull') {
+    p.body.position.y = Math.sin(st.phase * 0.9) * 0.1;
+    p.flames.scale.set(1 + Math.sin(st.phase * 6) * 0.1, 1 + Math.sin(st.phase * 5) * 0.25, 1);
+    p.torso.rotation.x = st.attackT > 0 ? -Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.6 : 0;
+    p.torso.position.z = st.attackT > 0 ? Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.3 : 0;
   } else if (model.kind === 'crab') {
+    if (p.tail) p.tail.rotation.x = st.attackT > 0 ? -Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.9 : Math.sin(st.phase * 0.7) * 0.08;
     const amp = moving ? 0.5 : 0.05;
     p.legs.forEach((l, i) => (l.rotation.y = Math.sin(st.phase * 1.4 + i) * amp));
     const pinch = st.attackT > 0 ? Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.7 : Math.sin(st.phase * 0.5) * 0.1;

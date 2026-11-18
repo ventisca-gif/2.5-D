@@ -285,7 +285,7 @@ body:not(.playing) #labels { display: none; }
 .slot.full .si { opacity: 1; }
 .slot small { font-size: 8.5px; text-align: center; line-height: 1.05; max-width: 58px; overflow: hidden; }
 .slot.full small { color: #f6e6c0; }
-.t0 { border-color: #8a6a4a !important; } .t1 { border-color: #a8b0bc !important; } .t2 { border-color: #e8f0ff !important; box-shadow: 0 0 6px rgba(200,220,255,0.4); } .t3 { border-color: #f2c860 !important; box-shadow: 0 0 8px rgba(242,200,96,0.5); }
+.t0 { border-color: #8a6a4a !important; } .t1 { border-color: #a8b0bc !important; } .t2 { border-color: #e8f0ff !important; box-shadow: 0 0 6px rgba(200,220,255,0.4); } .t3 { border-color: #f2c860 !important; box-shadow: 0 0 8px rgba(242,200,96,0.5); } .t4 { border-color: #ffa030 !important; box-shadow: 0 0 8px rgba(255,160,48,0.5); } .t5 { border-color: #3ad89a !important; box-shadow: 0 0 8px rgba(58,216,154,0.5); } .t6 { border-color: #b070ff !important; box-shadow: 0 0 10px rgba(176,112,255,0.6); }
 .preview { flex: 1; min-width: 120px; display: flex; flex-direction: column; min-height: 260px; }
 .preview canvas { width: 100%; flex: 1; display: block; }
 .pstats { display: flex; justify-content: space-around; padding-top: 4px; }
@@ -374,3 +374,30 @@ body:not(.playing) #labels { display: none; }
 .tagteam { font-size: 11px; color: #9fff9f; font-weight: 800; }
 .crewline { padding: 0 4px 6px; border-bottom: 1px solid rgba(201,162,90,0.15); }
 .wbtn.danger2 { background: linear-gradient(180deg, #a83a2a, #6a1a12); }
+
+/* barco: vida y cañones */
+#shipHud { display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin-top: 6px; width: 240px; }
+#shipHud .si { font-size: 18px; }
+.bar.ship { flex: 1; height: 14px; position: relative; }
+.bar.ship #shipfill { height: 100%; width: 100%; background: linear-gradient(#8ad0ff, #2a6ab0); transition: width 0.2s; }
+.bar.ship #shiptext { position: absolute; inset: 0; font-size: 10px; text-align: center; line-height: 14px; color: #fff; text-shadow: 0 1px 2px #000; }
+#btnCannon { display: none; }
+body.sailing #btnCannon { display: flex; }
+body.sailing #btnRun { display: none; }
+#btnCannon.cool { opacity: 0.45; }
+#bountyBox { color: #ff9a7a; }
+span.t4 { color: #ffb040; } span.t5 { color: #3ad89a; } span.t6 { color: #b88aff; } span.t3 { color: #f2c860; } span.t2 { color: #dfe8ff; } span.t1 { color: #b8c0cc; } span.t0 { color: #c8a07a; }
+
+.cosTitle { font-size: 11px; color: var(--muted); margin: 8px 0 4px; text-align: center; }
+.slotRow.cos .slot { opacity: 0.95; border-style: dashed; }
+.bgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; }
+.bcard { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,0.25); }
+.bcard.unk { opacity: 0.6; }
+.bic { font-size: 28px; width: 38px; text-align: center; }
+.binfo { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.binfo small { font-size: 11px; }
+.bk { text-align: center; font-weight: 700; color: var(--gold); }
+.bk small { display: block; font-size: 9px; color: var(--muted); font-weight: 400; }
+.arow { display: grid; grid-template-columns: 1.6fr 0.8fr 1fr 20px; gap: 6px; padding: 4px 6px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.arow.own { background: rgba(227,187,85,0.08); }
+.tabs { flex-wrap: wrap; }

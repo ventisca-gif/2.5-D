@@ -210,6 +210,7 @@ export class UI {
     this.set('potions', String(p.inv.potion));
     this.set('potCount', String(p.inv.potion));
     this.set('atk', String(Math.round(p.atk)));
+    this.set('bounty', String(g.bounty || 0));
     this.set('hptext', `${Math.ceil(p.hp)} / ${p.maxHp}`);
     this.style('hpfill', 'width', (100 * Math.max(0, p.hp) / p.maxHp).toFixed(1) + '%');
     this.style('stfill', 'width', (100 * Math.max(0, p.stamina) / p.maxSt).toFixed(1) + '%');
@@ -235,7 +236,7 @@ export class UI {
   // ---------------------------------------------------------- minimapa
   buildMinimapBase() {
     const g = this.g, W = g.W;
-    const B = { x0: -30, z0: -30, size: 200 };
+    const B = { x0: -110, z0: -110, size: 360 };
     const c = document.createElement('canvas');
     const S = 2;
     c.width = B.size * S;
@@ -243,7 +244,7 @@ export class UI {
     const ctx = c.getContext('2d');
     const col = {
       [T.WATER]: '#2f7fb8', [T.SAND]: '#e2cd96', [T.GRASS]: '#6aa848', [T.DARK]: '#5a983e',
-      [T.DIRT]: '#b4895a', [T.STONE]: '#b4b2ac', [T.DOCK]: '#8a6a44', [T.FIELD]: '#c9a24a',
+      [T.DIRT]: '#b4895a', [T.STONE]: '#b4b2ac', [T.DOCK]: '#8a6a44', [T.FIELD]: '#c9a24a', [T.ROCK]: '#5a504e', [T.LAVA]: '#ff6418',
     };
     for (let j = 0; j < B.size; j++) for (let i = 0; i < B.size; i++) {
       ctx.fillStyle = col[W.tileAll(B.x0 + i, B.z0 + j)];
@@ -349,7 +350,7 @@ export class UI {
       ctx.fillStyle = '#f1ead8';
       ctx.font = '13px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillText('Isla Bruma · toca para cerrar', size / 2, size - 9);
+      ctx.fillText('Mar de Bruma · toca para cerrar', size / 2, size - 9);
     }
   }
 }

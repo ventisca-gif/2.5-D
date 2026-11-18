@@ -25,21 +25,26 @@ Juego del usuario (ventisca-gif). Es **independiente de su otro juego "The Bound
 - Push a GitHub ha fallado con 403 en sesiones anteriores: si pasa, avisar y dejar commits locales.
 
 ## Estructura (src/)
-- `world.js` mapa 100×100 (Villarroca amurallada, Puerto Salitre, bosque, pedregal, granja, cala) · `regions.js` islas extra (Tortuga, Calavera) e interiores (x ≥ 1000, incluida la bodega del barco) que comparten cuadrícula y A*.
-- `chars2.js` personajes (humanos con género, peinados, busto, escudos; esqueletos, lobos, jabalíes, cangrejos) horneados en pocas mallas + contorno `OUTLINE` · `characters.js` animaciones.
-- `items.js` objetos, equipo visible por tiers (madera/cuero, hierro, plata, oro + piezas corsarias), recetas de forja/banco/cocina, botines, aspecto (`buildLook`), nivel máx. 50.
+- `world.js` mapa 100×100 (Villarroca amurallada, Puerto Salitre, bosque, pedregal, granja, cala) · `regions.js` islas extra (Tortuga, Calavera), `makeIslet` con biomas (`desert`, `jungle`, `volcano`, `fort`; casillas `T.ROCK`/`T.LAVA`) e interiores (x ≥ 1000, incluida la bodega del barco) que comparten cuadrícula y A*.
+- `isles2.js` capítulo 2: Isla Duna (oeste, Oasis de Sal, ámbar), Isla Selva (norte, Aldea Liana, jade), Bastión de la Guardia Naval + Villa Grillete (sur), Isla Ceniza (sureste lejano, volcán, obsidiana). Mar navegable de -104 a 244 (`SEA` en terrain.js).
+- `naval.js` (se instala en el prototipo de Game): vida del barco y mejoras (`shipUp`: casco, cañones, velas, tamaño) con la Astillera Marga (Puerto Salitre), cañones (`fireCannons`, botón 💣 / F), fragatas de la Guardia y piratas con IA, serpiente marina, abordaje en la región `arena` (x=1700, dos cubiertas + pasarela), hundimiento y rescate, recompensa `bounty` (≥300 la Guardia ataca al verte, pregunta en pueblos, desembarca: `updateRaids`, vecinos de `DEFENDERS` luchan), soborno con el Teniente Ferro.
+- `chars2.js` personajes (humanos con género, peinados, busto, escudos, hachas, tridentes; esqueletos, lobos, jabalíes, tigres, cangrejos, escorpiones, murciélagos, gólems, calaveras llameantes, serpiente marina) horneados en pocas mallas + contorno `OUTLINE` · `characters.js` animaciones.
+- `items.js` objetos, equipo visible por tiers (madera/cuero, hierro, plata, oro + piezas corsarias), recetas de forja/banco/cocina, botines, aspecto (`buildLook`), nivel máx. **100**. Tiers 0-6: cuero, hierro, plata, oro, ámbar, jade, obsidiana (`TIER_NAMES`). Cosméticos en ranuras `cosHead/cosBody/cosCape` (`COS_SLOTS`): se ven encima de la armadura sin cambiar estadísticas.
 - `social.js` niveles de NPC por isla, amistad, tripulación (máx. 10), romance.
 - `panels.js` UI de equipo+mochila (vista previa 3D), forja/cocina, bitácora, guía, regalos · `ui.js` HUD, minimapa, joystick.
-- `quests.js` 10 misiones y tiendas · `main.js` bucle, combate, barco, guardado en 3 ranuras (`thebruma_slot_N`) con tiempo jugado.
+- `quests.js` 22 misiones (capítulo 2 desde la 10, con `talkText`/`doneText`/`zone`), `SIDE_QUESTS` (un encargo por NPC, no se repiten, `g.side`) y tiendas · `main.js` bucle, combate, barco, guardado en 3 ranuras (`thebruma_slot_N`) con tiempo jugado.
 
 ## Sistemas ya hechos
-Combate (enemigos atacan en movimiento), correr con estamina, recursos y menas por isla, forja/banco/cocina, comer para curar, mochila y equipo (todo visible), amistad (charlar, regalar), duelos y peleas con NPCs (nadie muere), tripulación que sigue, lucha, sube de nivel y mejora armadura, barco navegable con bodega, romance (declararse, besar, pasear de la mano), día/noche, interiores, 2 islas extra, menú pirata con creador. Personajes estilo anime (`src/anime.js`): cara pintada en textura (4 expresiones por género, 8 colores de ojos, nariz/boca/rubor opcionales), 4 formas de cara, pelo de mechones 3D (6 peinados por género, 10 colores), 5 cuerpos por género (incluido "Clásico" de bloques), busto en 4 tamaños; los NPCs reciben cara anime determinista por id (`animeLook` en main.js). Nadar (brazadas, gasta estamina, ahogo) y tajo de espada con estela (`slash`).
+Combate **manual** (solo se ataca con el botón ⚔️, también andando/corriendo con joystick; mantener = repetir; sin autoataque), Guardia Naval neutral hasta que te buscan (`hostile()`), bestiario y armería en la bitácora, correr con estamina, recursos y menas por isla, forja/banco/cocina, comer para curar, mochila y equipo (todo visible), amistad (charlar, regalar), duelos y peleas con NPCs (nadie muere), tripulación que sigue, lucha, sube de nivel y mejora armadura, barco navegable con bodega, romance (declararse, besar, pasear de la mano), día/noche, interiores, 2 islas extra, menú pirata con creador. Personajes estilo anime (`src/anime.js`): cara pintada en textura (4 expresiones por género, 8 colores de ojos, nariz/boca/rubor opcionales), 4 formas de cara, pelo de mechones 3D (6 peinados por género, 10 colores), 5 cuerpos por género (incluido "Clásico" de bloques), busto en 4 tamaños; los NPCs reciben cara anime determinista por id (`animeLook` en main.js). Nadar (brazadas, gasta estamina, ahogo) y tajo de espada con estela (`slash`).
 
 ## Multijugador local
 `src/net.js` + `android/.../NetHub.java`: relé WebSocket en el móvil anfitrión (puerto 47800, UDP 47801 para buscar partidas). Anfitrión = autoridad de enemigos (`enemyTarget`, `hurtRemote`); clientes mandan su estado a 10 Hz y los golpes (`hitEnemy` → `hit`). Equipos y XP compartida (`killRecipients` → `grantKill`), PvP opcional del anfitrión. Para probar en PC: `node tools/hub.mjs` y `game.net.host('ws://127.0.0.1:47800/host')` / `game.net.join('127.0.0.1')` en varios contextos de Playwright.
 
 ## Ideas pendientes que el usuario mencionó
-Cubierta del barco caminable, más islas/misiones, interacción más rica de la tripulación en tiendas, más armaduras únicas.
+Sistema de construcción con materiales en 4 casillas y defensas de pueblo (dar materiales a los pueblos; la Guardia las destruye o las reforzamos), cubierta exterior del barco caminable y ampliable por dentro, interacción más rica de la tripulación en tiendas.
+
+## Actualizador
+Desde v2.4 la consulta a GitHub se hace en Java (`AndroidBridge.checkUpdate` → `window.onUpdateJson`) porque el fetch del WebView fallaba. Quien tenga ≤ v2.3 debe instalar la v2.4 a mano una vez.
 
 ## Cómo trabajar con el usuario
 - Escribe en español, frases cortas. Envía la APK con SendUserFile y capturas horizontal/vertical.

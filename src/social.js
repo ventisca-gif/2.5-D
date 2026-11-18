@@ -4,8 +4,10 @@
 const AREA_LEVEL = {
   'Villarroca': 6, 'Granja de los Trigales': 4, 'Prados de Isla Bruma': 5, 'Puerto Salitre': 10,
   'Bosque Norte': 7, 'Pedregal del Oeste': 8, 'Cala de los Huesos': 12, 'Isla Tortuga': 16, 'Isla Calavera': 20,
+  'Isla Duna': 18, 'Oasis de Sal': 16, 'Isla Selva': 24, 'Aldea Liana': 22, 'Bastión de la Guardia Naval': 30, 'Villa Grillete': 26,
+  'Fortaleza de la Guardia': 34, 'Isla Ceniza': 40, 'Campamento Brasa': 38,
 };
-const STRONG = new Set(['ramiro', 'elvira', 'nerea', 'olga', 'mara', 'tadeo']);
+const STRONG = new Set(['ramiro', 'elvira', 'nerea', 'olga', 'mara', 'tadeo', 'farid', 'kuno', 'lucas', 'brasa', 'ferro']);
 export function npcLevel(id, area) {
   let h = 0;
   for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
@@ -14,8 +16,8 @@ export function npcLevel(id, area) {
 }
 
 // Quién puede unirse a la tripulación y quién puede enamorarse.
-export const RECRUITABLE = new Set(['rufo', 'olga', 'quino', 'pepe', 'telmo', 'nico', 'tito', 'ines', 'gaspar', 'tomasa', 'pio', 'elvira', 'ramiro']);
-export const ROMANCE = new Set(['rosa', 'coral', 'olga', 'elvira', 'ines', 'mara', 'lucia', 'tomasa', 'rufo', 'quino', 'telmo', 'nico', 'ramiro', 'tito']);
+export const RECRUITABLE = new Set(['rufo', 'olga', 'quino', 'pepe', 'telmo', 'nico', 'tito', 'ines', 'gaspar', 'tomasa', 'pio', 'elvira', 'ramiro', 'kuno', 'farid', 'lucas', 'berta', 'naira', 'brasa', 'marga']);
+export const ROMANCE = new Set(['rosa', 'coral', 'olga', 'elvira', 'ines', 'mara', 'lucia', 'tomasa', 'rufo', 'quino', 'telmo', 'nico', 'ramiro', 'tito', 'naira', 'ixa', 'lucas', 'berta', 'kuno', 'brasa', 'marga', 'farid']);
 export const MAX_CREW = 10;
 
 export function friendLevel(f) {

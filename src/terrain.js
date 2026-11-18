@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { N, T } from './world.js';
 
 export function buildTerrain(W, groundTex) {
-  const pos = [], uv = [], nrm = [];
+  const pos = [], uv = [], nrm = [], lava = [];
   const sidePos = [], sideNrm = [];
   const isSolid = (x, z) => {
     const t = W.tile(x, z);
@@ -15,6 +15,7 @@ export function buildTerrain(W, groundTex) {
       const x = ox + lx, z = oz + lz;
       if (!isSolid(x, z)) continue;
       const x0 = x - 0.5, x1 = x + 0.5, z0 = z - 0.5, z1 = z + 0.5;
+      if (W.tile(x, z) === T.LAVA) lava.push(x0, 0.012, z0, x0, 0.012, z1, x1, 0.012, z1, x0, 0.012, z0, x1, 0.012, z1, x1, 0.012, z0);
       const u0 = lx / RN, u1 = (lx + 1) / RN, v0 = 1 - lz / RN, v1 = 1 - (lz + 1) / RN;
       pos.push(x0, 0, z0, x0, 0, z1, x1, 0, z1, x0, 0, z0, x1, 0, z1, x1, 0, z0);
       uv.push(u0, v0, u0, v1, u1, v1, u0, v0, u1, v1, u1, v0);
@@ -41,10 +42,17 @@ export function buildTerrain(W, groundTex) {
   sg.setAttribute('position', new THREE.Float32BufferAttribute(sidePos, 3));
   sg.setAttribute('normal', new THREE.Float32BufferAttribute(sideNrm, 3));
   const sides = new THREE.Mesh(sg, new THREE.MeshLambertMaterial({ color: 0xa88a5a }));
-  return { ground, sides };
+  let lavaMesh = null;
+  if (lava.length) {
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(lava, 3));
+    lavaMesh = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({ color: 0xff6418, transparent: true, opacity: 0.85 }));
+    lavaMesh.userData.lava = true;
+  }
+  return { ground, sides, lava: lavaMesh };
 }
 
-export const SEA = { x0: -30, z0: -30, size: 200 };
+export const SEA = { x0: -110, z0: -110, size: 360 };
 export function buildWater(W) {
   // distancia (en casillas) a la tierra más cercana, para agua somera y espuma (todo el mar navegable)
   const MAXD = 8;
@@ -123,9 +131,8 @@ export function buildWater(W) {
   mat.uniforms.deep.value.convertLinearToSRGB();
   mat.uniforms.shallow.value.convertLinearToSRGB();
   mat.uniforms.foam.value.convertLinearToSRGB();
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), mat);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), mat);
   water.rotation.x = -Math.PI / 2;
   water.position.set(70, -0.12, 70);
-  water.scale.set(1.3, 1.3, 1);
   return water;
 }
