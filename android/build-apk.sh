@@ -17,6 +17,7 @@ npm run build
 echo "==> Empaquetando recursos"
 rm -rf "$B"; mkdir -p "$B/classes" "$B/assets" dist
 cp -r www "$B/assets/www"
+rm -f "$B/assets/www/showcase."*
 aapt package -f -M android/AndroidManifest.xml -S android/res -A "$B/assets" -I "$ANDROID_JAR" -F "$B/unsigned.apk"
 
 echo "==> Compilando Java"

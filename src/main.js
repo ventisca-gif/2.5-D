@@ -12,6 +12,12 @@ import { findPath } from './pathfinding.js';
 import { QUESTS, dialogFor } from './quests.js';
 import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
+import { makeHumanoid2, makeBeast2, OUTFITS2 } from './chars2.js';
+
+// Personajes v2 (prueba): ?v2=1
+const V2 = (typeof __V2__ !== 'undefined' && __V2__) || /[?&]v2=1/.test(location.search);
+const HUM = V2 ? makeHumanoid2 : makeHumanoid;
+const OUTF = V2 ? OUTFITS2 : OUTFITS;
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'islabruma_save_v1';
@@ -104,8 +110,8 @@ class Actor {
 
 class Player extends Actor {
   constructor(game, data) {
-    const look = { ...OUTFITS[data.outfit].look, skin: SKINS[data.skin] };
-    super(game, makeHumanoid(look), data.x, data.z);
+    const look = { ...OUTF[data.outfit].look, skin: SKINS[data.skin] };
+    super(game, HUM(look), data.x, data.z);
     this.name = data.name;
     this.outfit = data.outfit;
     this.skin = data.skin;
@@ -132,7 +138,7 @@ class Player extends Actor {
     this.outfit = outfit;
     this.skin = skin;
     this.g.scene.remove(this.model.root);
-    this.model = makeHumanoid({ ...OUTFITS[outfit].look, skin: SKINS[skin] });
+    this.model = HUM({ ...OUTF[outfit].look, skin: SKINS[skin] });
     this.g.scene.add(this.model.root);
   }
   recalc() {
@@ -324,7 +330,7 @@ class Player extends Actor {
 
 class NPC extends Actor {
   constructor(game, def) {
-    super(game, makeHumanoid(def.look), def.x, def.z);
+    super(game, HUM(def.look), def.x, def.z);
     this.def = def;
     this.id = def.id;
     this.name = def.name;
@@ -370,12 +376,12 @@ function model_scale(model, s) {
 class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
-    if (type === 'wolf' || type === 'boar') model = makeQuadruped(type);
+    if (type === 'wolf' || type === 'boar') model = V2 ? makeBeast2(type) : makeQuadruped(type);
     else if (type === 'crab') model = makeCrab();
     else if (type === 'boss') {
-      model = makeHumanoid({ bone: 0xe8e2cc, shirt: 0x8a1a1a, hat: 'tricorn', coat: true, sword: true, blade: 0xffd070, bladeGlow: 0x6a3a00, eyeGlow: 0xff3020, cape: 0x5a0a0a });
+      model = HUM({ bone: 0xe8e2cc, shirt: 0x8a1a1a, hat: 'tricorn', coat: true, sword: true, blade: 0xffd070, bladeGlow: 0x6a3a00, eyeGlow: 0xff3020, cape: 0x5a0a0a });
     } else {
-      model = makeHumanoid({ bone: 0xe8e2cc, hat: 'bandana', capColor: [0xb02a2a, 0x2a4ab0, 0x2a2a2a][Math.floor(Math.random() * 3)], sword: true, blade: 0x9a8a7a });
+      model = HUM({ bone: 0xe8e2cc, hat: 'bandana', capColor: [0xb02a2a, 0x2a4ab0, 0x2a2a2a][Math.floor(Math.random() * 3)], sword: true, blade: 0x9a8a7a });
     }
     super(game, model, 0, 0);
     if (type === 'boss') model_scale(model, 1.5);
@@ -704,7 +710,7 @@ class Game {
     }
     for (const t of W.towers) {
       if (!t.guard) continue;
-      const m = makeHumanoid({ shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', armor: true, spear: true, skin: 0xe0aa80 });
+      const m = HUM({ shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', armor: true, spear: true, skin: 0xe0aa80 });
       m.root.position.set(t.x, 2.51, t.z);
       this.scene.add(m.root);
       this.guards.push({ m, st: {}, base: Math.random() * 6 });
@@ -1167,7 +1173,7 @@ class Game {
       [...skinBox.children].forEach((c, i) => c.classList.toggle('sel', i === skin));
       this.player.setLook(outfit, skin);
     };
-    OUTFITS.forEach((o, i) => {
+    OUTF.forEach((o, i) => {
       const b = document.createElement('button');
       b.className = 'ofit';
       b.innerHTML = `<span class="sw" style="background:${swatch[o.id]}"></span>${o.name}`;

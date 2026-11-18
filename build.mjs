@@ -11,7 +11,10 @@ await build({
   target: ['es2019', 'chrome80'],
   outfile: 'www/game.js',
   legalComments: 'none',
+  define: { __V2__: process.env.V2 === '1' ? 'true' : 'false' },
 });
+await build({ entryPoints: ['src/showcase.js'], bundle: true, minify: true, format: 'iife', target: ['es2019'], outfile: 'www/showcase.js' });
+copyFileSync('web/showcase.html', 'www/showcase.html');
 copyFileSync('web/index.html', 'www/index.html');
 copyFileSync('web/style.css', 'www/style.css');
 console.log('www/ listo');
