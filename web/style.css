@@ -443,3 +443,8 @@ body.sailing #skillBar { display: none; }
 .tmap p { font-size: 12px; margin: 4px 0; }
 .flagimg { width: 90px; height: 60px; border: 2px solid #5a3a1a; }
 .wflag { width: 22px; height: 15px; vertical-align: middle; margin-right: 4px; border: 1px solid #5a3a1a; }
+
+.lbl .ttl { font-size: 10px; color: #ffd870; text-shadow: 0 1px 2px #000; text-align: center; white-space: nowrap; }
+body.sailing #btnMount { display: none; }
+.logro { display: flex; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+.logro.no { opacity: 0.45; }

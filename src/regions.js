@@ -24,6 +24,7 @@ function biomeTile(biome, lx, lz, r, R, t, seed, def) {
     return shore ? (n > 0.5 ? T.ROCK : T.DIRT) : T.ROCK;
   }
   if (biome === 'fort') return shore ? T.SAND : t;
+  if (biome === 'ghost') return shore ? T.DIRT : n > 0.6 ? T.DARK : T.ROCK;
   return t;
 }
 
@@ -284,8 +285,18 @@ export const ROOMS = [
     npcs: [{ id: 'ramon', name: 'Abuelo Ramón', x: 2, z: 2, wander: 1, look: { shirt: 0x7a6a4a, pants: 0x4a3a2a, hair: 0xe0e0e0, beard: 0xe8e8e8, hat: 'straw', skin: 0xe0aa80 } }],
   },
   {
+    id: 'casaplaya', name: 'Casa de la playa', w: 10, d: 6, floor: 0xc8a878, wall: 0xf0f0e8, wood: 0x8a6a4a,
+    items: [['bed', 9, 1, 0, 1, 2], ['window', 3, 0, 0, 1, 1, false], ['window', 6, 0, 0, 1, 1, false], ['chest', 0, 0], ['anchor', 0, 3, Math.PI / 2], ['plant', 9, 5]],
+    npcs: [],
+  },
+  {
+    id: 'casa2', name: 'Mansión de Villarroca', w: 14, d: 8, floor: 0x8a5a3a, wall: 0xf4ecd8, wood: 0x4a2a18,
+    items: [['bed', 13, 1, 0, 1, 2], ['bed', 12, 1, 0, 1, 2], ['window', 3, 0, 0, 1, 1, false], ['window', 6, 0, 0, 1, 1, false], ['window', 9, 0, 0, 1, 1, false], ['fireplace', 0, 3, Math.PI / 2], ['chest', 0, 0], ['bookshelf', 1, 0], ['banner', 5, 0, 0, 1, 1, false], ['plant', 13, 7], ['plant', 0, 7]],
+    npcs: [],
+  },
+  {
     id: 'casa5', name: 'Tu casa en Villarroca', w: 9, d: 6, floor: 0xb89062, wall: 0xf0e4c8, wood: 0x6a4428,
-    items: [['bed', 8, 1, 0, 1, 2], ['window', 3, 0, 0, 1, 1, false], ['window', 6, 0, 0, 1, 1, false], ['fireplace', 0, 2, Math.PI / 2], ['poster', 0, 4, Math.PI / 2, 1, 1, false]],
+    items: [['bed', 8, 1, 0, 1, 2], ['window', 3, 0, 0, 1, 1, false], ['window', 6, 0, 0, 1, 1, false], ['fireplace', 0, 2, Math.PI / 2], ['poster', 0, 4, Math.PI / 2, 1, 1, false], ['chest', 0, 0]],
     npcs: [],
   },
 ];

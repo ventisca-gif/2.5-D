@@ -173,6 +173,8 @@ export const EQUIP = {
   c_capa_campeon: { name: 'Capa del campeón de regatas', slot: 'cosCape', tier: 4, cos: true, icon: '🏁', src: 'regata', look: { cape: 0x2ad84a, wingTrim: 0xffffff } },
   c_corona_campeon: { name: 'Corona del campeón del torneo', slot: 'cosHead', tier: 4, cos: true, icon: '👑', src: 'torneo', look: { hat: 'circlet', halo: 0xffd040 } },
   c_corona_cripta: { name: 'Corona del Rey de la Cripta', slot: 'cosHead', tier: 5, cos: true, icon: '💀', src: 'cripta', look: { hat: 'horned', hatColor: 0xd8d0b8, hornColor: 0x3a3030, visorGlow: 0x7aff8a } },
+  c_espectral: { name: 'Casaca espectral', slot: 'cosBody', tier: 5, cos: true, icon: '👻', src: 'espectral', look: { coat: true, shirt: 0x2a4a50, vest: 0x7af0e0, sleeve: 0x3a6a70, trim: 0x7af0e0, sash: 0x1a2a30 } },
+  c_capa_espectral: { name: 'Capa de niebla', slot: 'cosCape', tier: 5, cos: true, icon: '🌫️', src: 'espectral', look: { cape: 0x9ad8d8 } },
   // ---- armaduras de superjefe (cosméticas)
   c_dragon: { name: 'Armadura del Dragón Carmesí', slot: 'cosBody', tier: 6, cos: true, icon: '🐉', src: 'dragon', look: { armor: true, armorColor: 0x1a1418, trim: 0xd8a838, pauldron: 0x8a1010, tabard: 0x8a1010, gem: 0xff6020, emblem: 0xff6020, gloves: 0x1a1418, legArmor: 0x8a1010, boots: 0x1a1418, hat: 'horned', hatColor: 0x1a1418, hornColor: 0xd8a838, gem2: 0xff6020, dragonHorns: 0xd8a838, tail: 0x2a2026, tailSpike: 0xd8a838, visorGlow: 0xff8030, hair: 0x8a1010 } },
   c_serafin: { name: 'Armadura del Serafín', slot: 'cosBody', tier: 6, cos: true, icon: '😇', src: 'serafin', look: { armor: true, armorColor: 0xf0f0f4, trim: 0xe8c050, pauldron: 0xf4f4f8, tabard: 0xf0e8d0, gem: 0xffe080, emblem: 0xffe080, gloves: 0xf0f0f4, legArmor: 0xf0f0f4, boots: 0xe8e8ee, hat: 'helmet', hatColor: 0xf4f4f8, plume: 0xffe080, halo: 0xffd040, visorGlow: 0xffe080, cape: 0xf4ecd8 } },
@@ -290,6 +292,7 @@ export const DROPS = {
   marine_boss: [['goldore', 1], ['goldore', 1], ['perla', 1], ['chaqueta_negra', 1], ['polvora', 1]],
   serafin: [['c_serafin', 1], ['c_alas_serafin', 0.6], ['goldore', 1], ['perla', 1]],
   crypt_king: [['goldore', 1], ['silver', 1]],
+  ghost_captain: [['c_espectral', 0.7], ['c_capa_espectral', 0.7], ['perla', 1], ['goldore', 1]],
   dragon: [['c_dragon', 1], ['c_capa_lava', 0.5], ['huevo_dragon', 0.35], ['obsidiana', 1], ['nucleo_golem', 1]],
   tentacle: [['escama', 0.5]],
   golem_boss: [['obsidiana', 1], ['obsidiana', 1], ['obsidiana', 1], ['nucleo_golem', 1], ['nucleo_golem', 1]],

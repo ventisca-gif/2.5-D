@@ -7,6 +7,7 @@ import { QUESTS, SIDE_QUESTS } from './quests.js';
 import { STRUCTS } from './build.js';
 import { JOBS, JOB_MAX, DECOR } from './extra.js';
 import { PETS } from './more.js';
+import { LOGROS, CREW_JOBS, MOUNTS } from './more2.js';
 import { friendLevel, heartsText, MAX_CREW } from './social.js';
 
 const $ = (id) => document.getElementById(id);
@@ -72,6 +73,9 @@ export class Panels {
     if (act === 'craft') { g.craft(Number(b.dataset.i)); return this.openCraft(this.station); }
     if (act === 'gift') { const n = this.giftTo; this.close(); g.giveGift(n, b.dataset.id); return; }
     if (act === 'crewtoggle') { g.toggleCrewWait(b.dataset.id); return this.openBitacora('crew'); }
+    if (act === 'cjob') { g.cycleCrewJob(b.dataset.id); return this.openBitacora('crew'); }
+    if (act === 'title') { g.title = b.dataset.t || null; g.applyTitle(); return this.openBitacora('logros'); }
+    if (act === 'stash') { g.stashMove(b.dataset.id, Number(b.dataset.n), b.dataset.d); return; }
     if (act === 'crewrole') {
       const r = b.dataset.role;
       if (r === 'collect') { const n = g.npcById(b.dataset.id), s = g.soc(n.id); const f = { ...s.farm }; g.collectFarm(n); s.farm = { ...f, t0: g.playtime }; }
@@ -224,7 +228,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['logros', '🏆 Logros'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -234,6 +238,10 @@ export class Panels {
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
         <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'logros') {
+      const lg = g.logros || {};
+      const n = LOGROS.filter((L) => lg[L.id]).length;
+      body = `<p>Logros: <b>${n}/${LOGROS.length}</b> · Título actual: <b>${g.title ? '«' + esc(g.title) + '»' : 'ninguno'}</b> ${g.title ? '<button class="pbtn small" data-p="title" data-t="">Quitar</button>' : ''}</p>` + LOGROS.map((L) => `<div class="logro ${lg[L.id] ? '' : 'no'}"><span>${lg[L.id] ? '🏆' : '🔒'}</span><b style="flex:1">${esc(L.name)}</b><span class="muted small" style="flex:1.4">${esc(L.desc)}</span>${lg[L.id] ? `<button class="pbtn small" data-p="title" data-t="${esc(L.title)}">${g.title === L.title ? '✔' : 'Usar título'}</button>` : ''}</div>`).join('');
     } else if (tab === 'mapas') {
       body = this.mapsHtml();
     } else if (tab === 'vida') {
@@ -262,7 +270,8 @@ export class Panels {
         const role = s.role === 'farm' ? `⛏ Recolectando en ${esc(s.farm ? s.farm.isle : '?')}` : s.role === 'ship' ? '⚓ En el barco' : s.wait ? '⏸ Esperando' : '▶ Te acompaña';
         const y = s.role === 'farm' ? g.farmYield(n) : null;
         const btn = (r, label) => `<button class="pbtn small" data-p="crewrole" data-id="${n.id}" data-role="${r}">${label}</button>`;
-        const btns = [s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : ''].join('');
+        const job = s.cjob ? CREW_JOBS[s.cjob] : null;
+        const btns = [`<button class="pbtn small" data-p="cjob" data-id="${n.id}">${job ? job.icon + ' ' + job.name : '🎓 Sin puesto'}</button>`, s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : ''].join('');
         return `<div class="frow crewrow"><b>${esc(n.name)}${s.partner ? ' 💗' : ''}</b><span class="lv">Nv. ${n.level}</span>
           <span class="muted t${n.tier}">${TIER_NAMES[n.tier] || ''}</span><span class="muted">${role}${g.autoHelm === n.id ? ' · 🧭 Timonel' : ''}</span><div class="cbtns">${btns}</div></div>`;
       }).join('');
@@ -302,8 +311,15 @@ export class Panels {
   // ------------------------------------------------------------------ camarote del barco
   openDecor() {
     const g = this.g, p = g.player;
-    const rows = DECOR.map((d) => `<div class="rec"><span class="rname">${esc(d.name)}</span><span class="small">${d.price} oro</span><button class="pbtn" data-p="decor" data-id="${d.t}" ${p.gold >= d.price ? '' : 'disabled'}>Colocar</button></div>`).join('');
-    this.show('decor', `🪑 Decorar «${esc(g.shipName())}»`, `<p class="muted small">El mueble se coloca en la casilla a la que miras. Es tu casa en el mar: amplía el barco con Marga para tener un camarote más grande. Acércate a un mueble y pulsa 🪑 para guardarlo.</p>${rows}`, true);
+    const rows = DECOR.filter((d) => !d.premium || g.flags.furn).map((d) => `<div class="rec"><span class="rname">${esc(d.name)}</span><span class="small">${d.price} oro</span><button class="pbtn" data-p="decor" data-id="${d.t}" ${p.gold >= d.price ? '' : 'disabled'}>Colocar</button></div>`).join('');
+    this.show('decor', `🪑 Decorar «${esc(g.shipName())}»`, `<p class="muted small">El mueble se coloca en la casilla a la que miras. Es tu casa en el mar: amplía el barco con Marga para tener un camarote más grande. Acércate a un mueble y pulsa 🪑 para guardarlo.${g.flags.furn ? '' : ' Bruno el carpintero vende un catálogo de muebles de lujo.'}</p>${rows}`, true);
+  }
+  openStash(items) {
+    const g = this.g, p = g.player;
+    const clan = g.net.active && g.clan;
+    const inChest = Object.entries(items || {}).filter(([, n]) => n > 0).map(([id, n]) => `<div class="rec"><span class="rname">${ITEMS[id] ? ITEMS[id].icon + ' ' + esc(ITEMS[id].name) : esc(id)} ×${n}</span><button class="pbtn small" data-p="stash" data-id="${id}" data-n="1" data-d="take">Sacar 1</button><button class="pbtn small" data-p="stash" data-id="${id}" data-n="${n}" data-d="take">Todo</button></div>`).join('');
+    const mine = Object.entries(p.inv).filter(([id, n]) => n > 0 && ITEMS[id] && id !== 'mapa_tesoro').map(([id, n]) => `<div class="rec"><span class="rname">${ITEMS[id].icon} ${esc(ITEMS[id].name)} ×${n}</span><button class="pbtn small" data-p="stash" data-id="${id}" data-n="1" data-d="put">Guardar 1</button><button class="pbtn small" data-p="stash" data-id="${id}" data-n="${n}" data-d="put">Todo</button></div>`).join('');
+    this.show('stash', clan ? `📦 Cofre del clan «${esc(g.clan.name)}»` : '📦 Tu cofre', `<div class="sub">En el cofre</div>${inChest || '<p class="muted">Vacío.</p>'}<div class="sub">Tu mochila</div>${mine}`, true);
   }
   oficiosHtml() {
     const g = this.g, p = g.player;
@@ -337,10 +353,11 @@ export class Panels {
       const btn = has ? (g.petType === id ? '<span class="muted small">✔ Contigo</span>' : `<button class="pbtn small" data-p="pet" data-id="${id}">Llevar</button>`) : id === 'dragon' ? `<button class="pbtn small" data-p="hatch">🥚 Hacer nacer (${p.inv.huevo_dragon || 0} huevos)</button>` : `<span class="muted small">${esc(d.where)} · ${d.price} oro</span>`;
       return `<div class="rec"><span class="rname">${d.icon} ${esc(d.name)}${has && g.petType === id ? ` · Nv. ${g.petLevel()}` : ''}</span><span class="small muted">${esc(d.perk)}</span>${btn}</div>`;
     }).join('');
+    const mounts = Object.entries(MOUNTS).map(([id, d]) => `<div class="rec"><span class="rname">${d.icon} ${esc(d.name)}</span><span class="small muted">x${d.speed} de velocidad · ${(g.ownMounts || []).includes(id) ? '✔ tuya' : d.price + ' oro'}</span></div>`).join('');
     const flag = g.flagCfg ? `<img class="flagimg" src="${g.flagURL()}" alt="">` : '<span class="muted">sin diseñar</span>';
     const L = g.love(), pt = g.partner();
     const board = (g.raceBoard || []).map((r, i) => `<li>${i + 1}. ${esc(r.name)} — ${r.t}s</li>`).join('');
-    return `<div class="sub">🐾 Mascotas</div>${pets}${g.petType ? '<button class="pbtn small" data-p="pet" data-id="">Dejar a la mascota en casa</button>' : ''}
+    return `<div class="sub">🐴 Monturas (botón 🐴 o tecla K)</div>${mounts}<p class="muted small">Caballo: Lucía (granja) · Camello: Zaid (Oasis de Sal) · Salamandra de lava: Brasa (Isla Ceniza).</p><div class="sub">🐾 Mascotas</div>${pets}${g.petType ? '<button class="pbtn small" data-p="pet" data-id="">Dejar a la mascota en casa</button>' : ''}
       <div class="sub">🏴 Bandera de tu tripulación</div><div class="rec">${flag}<button class="pbtn" data-p="flag">Diseñar</button></div>
       <div class="sub">💞 Pareja</div><p>${pt ? `${esc(pt.name)} · citas ${Object.keys(L.dates).length}/5${g.soc(pt.id).married ? ' · 💒 casados (+10% daño y defensa juntos)' : ''}` : g.spouseP ? `💒 Casado/a con ${esc(g.spouseP)} (otro jugador)` : 'Sin pareja todavía.'}</p>
       <div class="sub">🏆 Hazañas</div><p>🏁 Mejor regata: <b>${st.raceBest ? st.raceBest + ' s' : '—'}</b> · ⚔️ Torneos ganados: <b>${st.tourneys || 0}</b> · 🕯️ Criptas superadas: <b>${st.dungeons || 0}</b> · 💰 Tesoros: <b>${st.treasures || 0}</b> · 🏠 Casa: <b>${g.flags.house ? 'sí' : 'no'}</b></p>
@@ -438,6 +455,14 @@ export class Panels {
       ['👹 Superjefes', 'Azrael, el Serafín Caído (Isla Calavera) e Ignaros, el Dragón Rey (Isla Ceniza), son de nivel 101 y sueltan sus armaduras cosméticas. En aguas profundas, el Leviatán Abisal puede atrapar tu barco: toda la tripulación lucha en cubierta. Los jefes ganan vida según cuántos aliados luchan, y con muchos tripulantes cada uno pega algo menos, para que 3 o 10 sea justo.'],
       ['🚢 Barcos', 'Marga vende balandra (rápida), bergantín y galeón (enorme). Decora velas, casco, bandera y mascarón, y ponle nombre. Junto al mar pulsa 📯 para llamar a tu barco, y navegando puedes desembarcar en cualquier costa. En la bodega pulsa 🪑 Decorar para amueblar tu camarote.'],
       ['🎉 Eventos', 'De vez en cuando: festival en Villarroca (rebajas y baile), lluvia de estrellas (+50% XP), mercader errante con ropa rara, invasión de esqueletos de noche y tesoros a la deriva en el mar.'],
+      ['🐴 Monturas', 'Caballo (Lucía, granja), camello (Zaid, Oasis de Sal) y salamandra de lava (Brasa, Isla Ceniza). Pulsa 🐴 (o K) para montar: vas mucho más rápido y apenas gastas estamina. Te bajas solo al entrar en casas, nadar o embarcar.'],
+      ['🌫️ Isla Espectral', 'Con niebla (o de madrugada, de 0:00 a 4:00) aparece al suroeste una isla que no está en los mapas, con el Capitán Espectro Valdrak (nivel 85) y ropa espectral única. Llega en barco y desembarca en su costa.'],
+      ['🏴 Clanes', 'En multijugador, funda un clan (👥 Online): todos llevan su nombre y la bandera del fundador. El cofre de vuestras casas es común (lo guarda el anfitrión).'],
+      ['🎵 Música', 'Cada zona tiene su música (pueblo, taberna, mar, selva, desierto, volcán, cripta, isla espectral, combate) y sonidos de olas y lluvia. Se quita en el menú.'],
+      ['🏆 Logros', '25 logros con títulos que salen encima de tu nombre (y los ven los demás jugadores). Elige tu título en Bitácora › Logros.'],
+      ['🏠 Casas y muebles', 'Lope vende la casa de la plaza, la casa de la playa y la mansión. Todas tienen cama y cofre. Bruno vende un catálogo de muebles de lujo (sofá, piano, trono, acuario...).'],
+      ['🎓 Puestos', 'En Bitácora › Tripulación da un puesto a cada tripulante: cocinero, artillero, médico, navegante o carpintero. Cada uno mejora el barco o te cura.'],
+      ['⚔️ PvP naval', 'En multijugador con PvP activado, tus cañones dañan los barcos de otros jugadores. El anfitrión puede iniciar Captura la bandera: recoge la bandera en el mar y llévala a Puerto Salitre; si te hunden, la sueltas.'],
       ['🐾 Mascotas', 'Loro y mono (Mara, Isla Tortuga), gato (Coral, La Sirena Tuerta) y cría de dragón (huevo de Ignaros o del tesoro, o 30 fichas). Te siguen, ayudan en combate, suben de nivel y cada una tiene su ventaja. Elige cuál llevar en Bitácora › Vida.'],
       ['🕯️ Cripta de la Bruma', 'Entradas en la cueva de los murciélagos (Isla Selva) y en el templo de arena (Isla Duna). 4 salas: limpia cada una para que se abra la reja. Al final, el Rey de la Cripta. En multijugador entráis juntos: hay más enemigos y el tesoro es para todos.'],
       ['🏁 Regata y ⚔️ torneo', 'Nerea organiza una regata alrededor de Isla Bruma: pasa por las 8 boyas y vuelve a la verde (oro, plata o bronce). Marisol organiza un torneo diario de 3 duelos en la plaza. Las regatas de otros jugadores aparecen en tu tabla.'],
@@ -489,6 +514,9 @@ export class Panels {
     const n = this.g.net, b = window.AndroidBridge;
     this.netMsg = '';
     if (a === 'host') { const r = n.host(); if (r.error) this.netMsg = r.error; }
+    if (a === 'ctf') { this.close(); this.g.ctfStart(); return; }
+    if (a === 'clan') { this.g.foundClan(); return this.renderNet(); }
+    if (a === 'leaveClan') { this.g.leaveClan(); return this.renderNet(); }
     if (a === 'scan') {
       if (b && b.discover) {
         this.netMsg = '🔍 Buscando partidas en tu Wi-Fi…';
@@ -538,10 +566,12 @@ export class Panels {
         <div class="sub">Jugadores (${n.room.players.length}/5)</div>${rows || '<p class="muted">Esperando jugadores…</p>'}
         <div class="netbtns">
           ${n.isHost ? `<button class="wbtn" data-p="net" data-a="pvp">${n.room.pvp ? '🕊️ Desactivar PvP' : '⚔️ Activar PvP'}</button>` : ''}
+          ${n.isHost ? '<button class="wbtn" data-p="net" data-a="ctf">🏴 Captura la bandera (mar)</button>' : ''}
+          ${g.clan ? `<button class="wbtn" data-p="net" data-a="leaveClan">Salir del clan «${esc(g.clan.name)}»</button>` : '<button class="wbtn" data-p="net" data-a="clan">🏴 Fundar clan</button>'}
           ${myTeam != null ? '<button class="wbtn" data-p="net" data-a="leaveTeam">Salir del equipo</button>' : ''}
           <button class="wbtn danger2" data-p="net" data-a="leave">🚪 Salir de la partida</button>
         </div>
-        <p class="muted small">En equipo, la experiencia de los enemigos se comparte. Toca a otro jugador para ver su tripulación o invitarlo.</p>`;
+        <p class="muted small">En equipo, la experiencia de los enemigos se comparte. Toca a otro jugador para invitarlo al equipo, al clan o pedirle matrimonio. Con PvP activado, los cañones dañan los barcos de otros jugadores. El cofre del clan está en vuestras casas y lo guarda el anfitrión.</p>`;
     }
     if (this.netMsg) html = `<div class="netmsg">${esc(this.netMsg)}</div>` + html;
     root.innerHTML = html;

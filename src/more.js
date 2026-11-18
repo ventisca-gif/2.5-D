@@ -632,6 +632,7 @@ export function installMore(Game, D) {
 
   // ============================================================ multijugador: mensajes de las nuevas funciones
   P.onNetX = function (from, m) {
+    if (this.onNetX2 && this.onNetX2(from, m)) return;
     const r = this.net.remotes.get(from);
     const name = r ? r.name : '?';
     if (m.k === 'toast') this.toast(m.msg);
@@ -653,7 +654,7 @@ export function installMore(Game, D) {
     this.toast(`💍 Le pides matrimonio a ${r.name}...`);
   };
   // datos extra que ven los demás jugadores
-  P.netExtraInfo = function () { return { pet: this.petType || null, flag: this.flagCfg || null, spouse: this.spouseP || (this.partner() && this.soc(this.partner().id).married ? this.partner().name : null) }; };
+  P.netExtraInfo = function () { return { title: this.title || null, clan: this.clan ? this.clan.name : null, pet: this.petType || null, flag: (this.clan && this.clan.flag) || this.flagCfg || null, spouse: this.spouseP || (this.partner() && this.soc(this.partner().id).married ? this.partner().name : null) }; };
   P.updateRemoteExtras = function (dt) {
     for (const r of this.net.remotes.values()) {
       if (r.petType !== r.pet) {
@@ -670,6 +671,14 @@ export function installMore(Game, D) {
         o.m.visible = !(r.ship && r.ship.visible);
         for (const w of o.m.userData.wings) w.rotation.z = Math.sin(o.t * 18) * 0.6 * Math.sign(w.position.x);
       }
+      // montura del otro jugador
+      const mt = r.tgt && r.tgt.mt;
+      if (r.mountType !== mt) {
+        if (r.mountObj) { this.scene.remove(r.mountObj); r.mountObj = null; }
+        r.mountType = mt;
+        if (mt && D.mountModel) { r.mountObj = D.mountModel(mt); this.scene.add(r.mountObj); }
+      }
+      if (r.mountObj) { r.mountObj.position.set(r.x, r.vy, r.z); r.mountObj.rotation.y = r.face; r.mountObj.visible = !(r.ship && r.ship.visible); }
       const fk = JSON.stringify(r.flag || null);
       if (r.ship && r.flagKey !== fk) { r.flagKey = fk; if (r.flag) this.applyFlag(r.ship, r.flag); }
     }

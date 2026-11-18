@@ -1,9 +1,11 @@
 ---
 name: thebruma-proyecto
-description: Contexto y memoria del proyecto TheBruma (antes "Isla Bruma"), el RPG medieval-pirata 2.5D isométrico en cuadrícula de ventisca-gif, con APK Android. Úsala siempre que el usuario hable de TheBruma, Isla Bruma, "mi juego pirata", el repo 2.5-D, o pida cambios, APKs o ideas para ese juego. NO es "The Bound": The Bound es otro juego distinto del usuario con su propia memoria; no mezcles contenido, nombres ni decisiones entre ambos.
+description: Contexto y memoria del proyecto Bruma / TheBruma (antes "Isla Bruma"), el RPG medieval-pirata 2.5D isométrico en cuadrícula de ventisca-gif, con APK Android. Úsala siempre que el usuario hable de Bruma, TheBruma, Isla Bruma, "mi juego pirata", el repo 2.5-D, o pida cambios, APKs o ideas para ese juego. NO es "The Bound": The Bound es otro juego distinto del usuario con su propia memoria; no mezcles contenido, nombres ni decisiones entre ambos.
 ---
 
-# TheBruma — memoria del proyecto
+# Bruma (TheBruma) — memoria del proyecto
+
+> **Dos memorias separadas:** esta es la de **Bruma** (el RPG medieval-pirata). **The Bound** es otro juego del usuario con su propia memoria. No mezclar nunca nombres, mecánicas, archivos ni decisiones entre los dos.
 
 Juego del usuario (ventisca-gif). Es **independiente de su otro juego "The Bound"**: nunca reutilices nombres, mecánicas ni archivos de uno en el otro sin que el usuario lo pida.
 
@@ -52,6 +54,12 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 ## v2.7
 - `more.js`: mascotas (`PETS`: loro, mono, gato, cría de dragón; `petObj`, ayudan en combate, `petOnKill`), bandera de tripulación (`flagCfg`, `drawFlag` → textura en barco propio y de remotos, y en el cartel), casa propia (sala `casa5`, se compra a Lope, dormir = buff `descanso`, decorable como el camarote), citas (`DATES`, `loveData`) y boda (anillo `anillo_boda` en la forja; `soc.married`, buff `juntos`; boda entre jugadores con `spouseP`), mapas del tesoro (`tmaps`, `mapCanvas`, cavar), regata (`raceCourse`, Nerea) y torneo (3 duelos, Marisol), Cripta de la Bruma (región `dungeon` en x=2000, 4 salas con rejas, `crypt_king`; la controla el anfitrión) y barcos de piratas famosos (`spawnFamousShip`; abordarlos mete al famoso en la cubierta).
 - Multijugador: los enemigos temporales del anfitrión se sincronizan (`announceSpawn` → `clientSpawn`, `g.netMap` por índice del anfitrión, `e.netIdx`); los del cliente para sí mismo son `e.local`. El anfitrión no hace `purgeTemps` mientras hay partida. Mensajes genéricos `net.sendX` / `g.onNetX` (bodas, regatas, rejas de la cripta, botín). `myInfo` lleva mascota, bandera y cónyuge.
+
+## v2.8
+- `more2.js`: monturas (`MOUNTS`: caballo de Lucía, camello de Zaid, salamandra de Brasa; `toggleMount`, botón 🐴/K, `p.yOff`, pose `st.ride`; remotos con `s.mt`), Isla Espectral (`makeGhostIslet`, región que solo existe con niebla o de 0 a 4 h: `R.hidden`, `updateGhost`, jefe `ghost_captain`), clanes (`clan`, `foundClan`/`inviteClan`; nombre y bandera del fundador) y cofre (personal o del clan guardado por el anfitrión: `stashes`, `onNetHost`), música generativa por zona (`updateMusic`, `ZONES`; ajuste `settings.music`), logros con títulos (`LOGROS`, `title`, etiqueta `.ttl`), casas (`HOUSES`: casa5, casaplaya —se crea en `addBeachHouse`—, casa2 mansión; cama y cofre) y muebles de lujo (`PREMIUM_DECOR`, catálogo de Bruno `flags.furn`), puestos de tripulación (`CREW_JOBS`, `soc.cjob`) y PvP naval (`pvpShips`, `shiphit`) + Captura la bandera (`ctfStart`, lo controla el anfitrión).
+
+## Ideas pendientes (propuestas al usuario tras v2.8)
+Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 
 ## Multijugador local
 `src/net.js` + `android/.../NetHub.java`: relé WebSocket en el móvil anfitrión (puerto 47800, UDP 47801 para buscar partidas). Anfitrión = autoridad de enemigos (`enemyTarget`, `hurtRemote`); clientes mandan su estado a 10 Hz y los golpes (`hitEnemy` → `hit`). Equipos y XP compartida (`killRecipients` → `grantKill`), PvP opcional del anfitrión. Para probar en PC: `node tools/hub.mjs` y `game.net.host('ws://127.0.0.1:47800/host')` / `game.net.join('127.0.0.1')` en varios contextos de Playwright.

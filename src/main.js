@@ -26,6 +26,8 @@ import { installSkills } from './skills.js';
 import { installBuild } from './build.js';
 import { installExtra, EVENT_COS } from './extra.js';
 import { installMore, makeDungeonRegion } from './more.js';
+import { installMore2, makeGhostIslet, HOUSES, MOUNTS, PREMIUM_DECOR, mountModel } from './more2.js';
+import { DECOR } from './extra.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -87,6 +89,7 @@ const ENEMY_DEF = {
   serafin: { name: 'Azrael, el Serafín Caído', hp: () => 26000, atk: () => 270, speed: 3.0, xp: () => 30000, gold: () => 6000, aggro: 7, cd: 1.3, boss: true, super: 'serafin', bounty: 5000 },
   dragon: { name: 'Ignaros, el Dragón Rey', hp: () => 32000, atk: () => 300, speed: 2.4, xp: () => 36000, gold: () => 7000, aggro: 7, cd: 1.6, boss: true, super: 'dragon', bounty: 6000 },
   leviathan: { name: 'Leviatán Abisal', hp: (L) => 7000 + L * 90, atk: (L) => 40 + L * 2.6, speed: 0, xp: () => 0, gold: () => 0, aggro: 12, cd: 2.2, boss: true, super: 'leviathan' },
+  ghost_captain: { name: 'Capitán Espectro Valdrak', hp: () => 14000, atk: () => 210, speed: 2.8, xp: () => 16000, gold: () => 4000, aggro: 8, cd: 1.3, boss: true, super: 'ghost', bounty: 3000 },
   crypt_king: { name: 'Rey de la Cripta', hp: (L) => 1800 + L * 90, atk: (L) => 12 + L * 2.6, speed: 2.4, xp: (L) => 400 + L * 40, gold: (L) => 100 + L * 8, aggro: 9, cd: 1.5, boss: true, super: 'crypt' },
   tentacle: { name: 'Tentáculo', hp: (L) => 900 + L * 18, atk: (L) => 20 + L * 2, speed: 0, xp: (L) => 200 + L * 10, gold: (L) => 30 + L, aggro: 12, cd: 1.8 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
@@ -313,12 +316,12 @@ class Player extends Actor {
       this.wasSwimming = true;
     } else if (wantRun && this.st.moving && this.stamina > 0 && !this.exhausted) {
       this.wasSwimming = false;
-      this.speed = 5.6;
-      this.stamina -= 16 * dt;
+      this.speed = g.mounted ? 5.6 * g.mountSpeed() * 0.9 : 5.6;
+      this.stamina -= (g.mounted ? 5 : 16) * dt;
       if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; g.ui.toast('😮‍💨 Sin aliento'); }
     } else {
       this.wasSwimming = false;
-      this.speed = 3.4;
+      this.speed = g.mounted ? 3.4 * g.mountSpeed() : 3.4;
       this.stamina = Math.min(this.maxSt, this.stamina + (this.st.moving ? 9 : 16) * dt);
       if (this.exhausted && this.stamina > 25) this.exhausted = false;
     }
@@ -650,6 +653,7 @@ class Enemy extends Actor {
     else if (type === 'skull') model = makeFlameSkull();
     else if (type === 'serafin') model = HUM({ ...EQUIP.c_serafin.look, ...EQUIP.c_alas_serafin.look, sword: true, blade: 0xfff4c0, bladeLen: 0.7, guard: 0xffd040, skin: 0xf0d8c0, anime: true, female: false, eyeColor: 3 });
     else if (type === 'dragon') model = HUM({ ...EQUIP.c_dragon.look, axe: true, skin: 0x8a3a2a, anime: true, eyeColor: 1 });
+    else if (type === 'ghost_captain') model = HUM({ bone: 0xbfe8e8, hat: 'tricorn', hatColor: 0x1a2a30, feather: 0x7af0e0, coat: true, shirt: 0x2a4a50, cape: 0x3a6a70, sword: true, blade: 0x7af0e0, guard: 0x7af0e0, eyeGlow: 0x7af0e0 });
     else if (type === 'crypt_king') model = HUM({ bone: 0xe0d8c0, hat: 'horned', hatColor: 0xd8d0b8, hornColor: 0x3a3030, cape: 0x3a0a1a, sword: true, blade: 0x7aff8a, guard: 0xd8a838, eyeGlow: 0x7aff8a, pauldron: 0x3a3040, trim: 0xd8a838 });
     else if (type === 'tentacle' || type === 'leviathan') model = makeTentacleModel(type === 'leviathan');
     else if (type.startsWith('famous_')) { const f = FAMOUS.find((k) => 'famous_' + k.id === type); model = HUM(animeLook({ id: f.id, look: f.look })); }
@@ -669,6 +673,7 @@ class Enemy extends Actor {
     if (type === 'serafin') model_scale(model, 1.6);
     if (type === 'dragon') model_scale(model, 1.75);
     if (type === 'crypt_king') model_scale(model, 1.55);
+    if (type === 'ghost_captain') { model_scale(model, 1.5); for (const m of model.mats) { m.transparent = true; m.opacity = 0.75; } }
     this.type = type;
     this.def = ENEMY_DEF[type];
     this.spawnDef = spawn;
@@ -898,7 +903,9 @@ class Game {
     this.scene.add(this.torch);
 
     this.W = generateWorld();
-    this.islets = [...makeIslets(), ...makeNewIslets()];
+    this.ghostIsle = makeGhostIslet();
+    this.islets = [...makeIslets(), ...makeNewIslets(), this.ghostIsle];
+    this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
     this.arena = makeArenaRegion();
@@ -909,7 +916,7 @@ class Game {
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
       { id: 'salitre', name: 'Puerto Salitre', shipX: this.W.ship.x, shipZ: this.W.ship.z, heading: 0, land: { x: 51, z: 92 } },
-      ...this.islets.map((r) => r.dock),
+      ...this.islets.filter((r) => !r.ghost).map((r) => r.dock),
     ];
     this.boat = { x: this.W.ship.x, z: this.W.ship.z, heading: 0, speed: 0, docked: 'salitre', waypoint: null };
     this.shipUp = { hull: 0, cannons: 0, sails: 0, size: 0 };
@@ -933,6 +940,7 @@ class Game {
     this.updater = new Updater(this);
     this.net = new Net(this);
     this.buildWorld();
+    this.buildGhostProps();
     this.buildMarkers();
     this.applyQuality();
     this.resize();
@@ -957,6 +965,22 @@ class Game {
   }
 
   sfx(n) { sfx(n); }
+  // casa de la playa (a la venta), junto a Puerto Salitre
+  addBeachHouse() {
+    const W = this.W;
+    const cands = [];
+    for (let z0 = 80; z0 <= 96; z0++) for (let x0 = 12; x0 <= 84; x0++) cands.push([x0, z0]);
+    cands.sort((a, b) => Math.hypot(a[0] - 30, a[1] - 90) - Math.hypot(b[0] - 30, b[1] - 90));
+    for (const [x0, z0] of cands) {
+      let ok = true;
+      for (let z = z0 - 1; z <= z0 + 4 && ok; z++) for (let x = x0 - 1; x <= x0 + 4 && ok; x++) if (!W.walkable(x, z) || W.tile(x, z) === T.WATER || W.tile(x, z) === T.DOCK || W.tile(x, z) === T.STONE) ok = false;
+      if (!ok) continue;
+      const b = { id: 'casaplaya', x0, z0, w: 4, d: 3, door: 's', wall: 0xf4f0e6, roof: 0x3a8ab0, plank: true, h: 1.5 };
+      W.buildings.push(b);
+      for (let z = z0; z < z0 + 3; z++) for (let x = x0; x < x0 + 4; x++) W.blocked[W.idx(x, z)] = 1;
+      return;
+    }
+  }
   // tablones de Se busca en cada pueblo
   addPosters() {
     const spot = (W, x0, z0, add) => {
@@ -1005,9 +1029,11 @@ class Game {
     this.water = buildWater(W);
     this.scene.add(this.water);
     for (const r of this.islets) {
+      if (r.ghost) r.hidden = false;
       const tex = TX.makeGroundTexture(r, 20);
       const t = buildTerrain(r, tex);
       this.scene.add(t.ground, t.sides);
+      if (r.ghost) { r.hidden = true; t.ground.visible = t.sides.visible = false; t.ground.material.color.set(0x8a9aa8); r.meshes = [t.ground, t.sides]; }
       if (t.lava) { this.scene.add(t.lava); this.lavaMeshes = [...(this.lavaMeshes || []), t.lava]; }
     }
 
@@ -1270,6 +1296,7 @@ class Game {
       if (k === ' ' || k === 'f') { e.preventDefault(); this.doAction(); }
       if (k === 'e') { e.preventDefault(); const a = this.contextAction(); if (a && a.fn && a.label !== 'Atacar') a.fn(); }
       if (k === 'q') this.player.usePotion();
+      if (k === 'k') this.toggleMount();
       if (k === 'i' || k === 'b') this.panels.isOpen ? this.panels.close() : this.panels.openInventory();
       if (k === 'l') this.panels.isOpen ? this.panels.close() : this.panels.openBitacora();
       if (k === 'r') this.player.running = !this.player.running;
@@ -1299,6 +1326,7 @@ class Game {
     press('btnRun', () => { this.player.running = !this.player.running; sfx('click'); });
     press('btnUse', () => { if (!this.started || this.paused || this.ui.dialogOpen) return; const a = this.contextAction(); if (a && a.fn && a.label !== 'Atacar') a.fn(); });
     press('btnMed', () => this.meditate());
+    press('btnMount', () => this.toggleMount());
     press('btnBuild', () => this.panels.openBuild());
     $('btnBag').addEventListener('click', () => { if (this.started) this.panels.openInventory(); });
     $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
@@ -1472,7 +1500,7 @@ class Game {
   }
   enterRoom(r) {
     const p = this.player;
-    if (r.id === 'casa5' && !this.flags.house) { this.toast('🏠 Se vende. Habla con el Escribano Lope (Ayuntamiento): 6000 oro'); p.path = []; p.target = null; return; }
+    if (HOUSES[r.id] && !this.flags[HOUSES[r.id].flag]) { this.toast(`🏠 ${HOUSES[r.id].name}: se vende por ${HOUSES[r.id].price} oro. Habla con el Escribano Lope (Ayuntamiento)`); p.path = []; p.target = null; return; }
     p.x = r.inside.x; p.z = r.inside.z; p.path = []; p.target = null;
     setTimeout(() => this.placeFollowers(p.tx, p.tz), 0);
     p.face = Math.PI;
@@ -1720,9 +1748,11 @@ class Game {
     const tm = this.mapNear();
     if (tm) return { icon: '⛏️', label: 'Cavar', fn: () => this.dig(tm) };
     const room0 = this.roomAt(p.x, p.z);
-    if (room0 && room0.id === 'casa5') {
+    if (room0 && HOUSES[room0.id]) {
       const bd = room0.room.items.find((it) => it[0] === 'bed');
       if (bd && Math.hypot(room0.X + bd[1] - p.x, room0.Z + bd[2] - p.z) < 1.8) return { icon: '😴', label: 'Dormir', fn: () => this.sleepHere() };
+      const ch = room0.room.items.find((it) => it[0] === 'chest');
+      if (ch && Math.hypot(room0.X + ch[1] - p.x, room0.Z + ch[2] - p.z) < 1.8) return { icon: '📦', label: this.net.active && this.clan ? 'Cofre clan' : 'Cofre', fn: () => this.openChestPanel() };
     }
     const hold = this.inHold();
     if (hold) {
@@ -1957,6 +1987,7 @@ class Game {
     const txt = `Nivel ${r.lv}. Tripulación: ${crew}. ${r.partner ? 'Pareja: ' + r.partner + '. ' : ''}${team ? 'Es de tu equipo.' : ''}`;
     const opts = [];
     if (!this.spouseP && !this.partner()) opts.push({ label: '💍 Pedir matrimonio', action: () => this.proposeRemote(r) });
+    if (this.clan && r.clan !== this.clan.name) opts.push({ label: '🏴 Invitar a mi clan', action: () => this.inviteClan(r) });
     if (r.spouse) opts.unshift({ label: `💒 Casado/a con ${r.spouse}`, action: null });
     if (!team) opts.push({ label: '🤝 Invitar a mi equipo', action: () => this.net.invite(r.id) });
     else opts.push({ label: '🚪 Salir del equipo', action: () => this.net.leaveTeam() });
@@ -2146,6 +2177,7 @@ class Game {
       v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
       inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
       playtime: Math.round(this.playtime), day: this.day, area: this.boarding ? 'Mar de Bruma' : this.W.areaName(p.tx, p.tz), ...pos,
+      mounts: this.ownMounts || [], mountSel: this.mountSel || null, logros: this.logros || {}, title: this.title || null, clan: this.clan || null, stashes: this.stashes || {},
       pets: this.ownPets || [], pet: this.petType || null, petXp: this.petXp || {}, flagCfg: this.flagCfg || null, love: this.loveData || null, spouseP: this.spouseP || null,
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
@@ -2272,6 +2304,7 @@ class Game {
       sfx('click');
       if (act === 'resume') this.toggleMenu(false);
       if (act === 'save') { this.save(); this.ui.toast('💾 Partida guardada'); this.toggleMenu(false); }
+      if (act === 'music') { this.settings.music = this.settings.music === false; store(SETTINGS_KEY, this.settings); this.refreshMenu(); }
       if (act === 'sound') {
         this.settings.sound = !this.settings.sound;
         audio.enabled = this.settings.sound;
@@ -2303,6 +2336,7 @@ class Game {
     const p = this.player;
     const q = { baja: 'Baja', media: 'Media', alta: 'Alta' }[this.settings.quality];
     $('menu').querySelector('[data-act=sound]').textContent = 'Sonido: ' + (this.settings.sound ? 'Sí' : 'No');
+    $('menu').querySelector('[data-act=music]').textContent = 'Música: ' + (this.settings.music === false ? 'No' : 'Sí');
     $('menu').querySelector('[data-act=quality]').textContent = 'Calidad: ' + q;
     $('mstats').innerHTML = `
       <span>Nombre: <b>${p.name.replace(/[<>&]/g, '')}</b></span><span>Nivel: <b>${p.level}</b></span>
@@ -2350,7 +2384,8 @@ class Game {
     this.flagCfg = data.flagCfg || null; this.loveData = data.love || null; this.spouseP = data.spouseP || null;
     this.tmaps = data.tmaps || []; this.player.inv.mapa_tesoro = this.tmaps.length; this.raceBoard = data.raceBoard || [];
     if (this.flagCfg) this.applyFlag(this.ship, this.flagCfg);
-    { const hr = this.houseRoom(); if (hr && hr.doorLabel) hr.doorLabel.nm.textContent = this.flags && data.flags && data.flags.house ? '🏠 Tu casa' : '🏠 Se vende'; }
+    this.refreshHouseLabels();
+    this.ownMounts = data.mounts || []; this.mountSel = data.mountSel || null; this.logros = data.logros || {}; this.title = data.title || null; this.clan = data.clan || null; this.stashes = data.stashes || {};
     this.jobBoard = data.jobBoard || null;
     this.wardrobe = data.wardrobe || [];
     this.migrateCos();
@@ -2420,7 +2455,7 @@ class Game {
     const p = this.player, it = ITEMS[id];
     if (!it || !p.inv[id]) return;
     if (p.hp >= p.maxHp && !it.stamina) return this.ui.toast('Ya tienes la salud al máximo');
-    const h = it.type === 'heal' ? Math.round(p.maxHp * it.heal + 15) : it.heal;
+    const h = Math.round((it.type === 'heal' ? Math.round(p.maxHp * it.heal + 15) : it.heal) * (this.crewJob && this.crewJob('cocinero') ? 1.3 : 1));
     p.inv[id]--;
     p.hp = Math.min(p.maxHp, p.hp + h);
     if (it.stamina) { p.stamina = p.maxSt; p.exhausted = false; }
@@ -2814,6 +2849,12 @@ class Game {
       this.updateFamous(dt);
       this.updateFishing(dt);
       this.updatePet(dt);
+      this.updateMount(dt);
+      this.updateGhost(dt);
+      this.updateCrewJobs(dt);
+      this.updateCtf(dt);
+      this.updateMusic(dt);
+      this.logT = (this.logT || 0) - dt; if (this.logT <= 0) { this.logT = 2; this.updateLogros(); }
       this.updateLove(dt);
       this.updateRace(dt);
       this.updateTournament(dt);
@@ -3018,7 +3059,9 @@ installLife(Game, { sfx, Enemy, buildLook, animeLook });
 installSkills(Game, { sfx, EQUIP });
 installBuild(Game, { sfx, T });
 installExtra(Game, { sfx, Enemy, NPC, ITEMS, EQUIP, T });
-installMore(Game, { sfx, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
+installMore2(Game, { sfx, audio });
+for (const d of PREMIUM_DECOR) DECOR.push({ ...d, premium: true });
+installMore(Game, { sfx, mountModel, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
 
 window.addEventListener('load', () => {
   setTimeout(() => {

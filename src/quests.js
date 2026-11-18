@@ -1,5 +1,6 @@
 // Cadena de misiones principal y diálogos de los NPCs.
 import { ITEMS } from './items.js';
+import { HOUSES, MOUNTS } from './more2.js';
 
 export const QUESTS = [
   { title: 'Bienvenida a Isla Bruma', desc: 'Habla con la Alcaldesa Marisol frente al Ayuntamiento de Villarroca.', type: 'talk', target: 'marisol', giver: 'marisol' },
@@ -181,6 +182,7 @@ export function dialogFor(id, G) {
   } else if (id === 'bruno') {
     text = text || NPC_LINES.bruno[0];
     opts.push({ label: '🪚 Banco de carpintero', action: () => G.panels.openCraft('banco') });
+    if (!G.flags.furn) opts.push({ label: '🪑 Catálogo de muebles de lujo (2000 oro)', action: () => G.buy({ gold: 2000 }, () => { G.flags.furn = true; G.toast('🪑 ¡Ya puedes colocar muebles de lujo en tus casas y en el camarote!'); }) });
   } else if (id === 'mara') {
     text = text || NPC_LINES.mara[Math.floor(Math.random() * 2)];
     sell('potion', 10, '🍶 Ron de contrabando (10 oro)');
@@ -207,8 +209,8 @@ export function dialogFor(id, G) {
     sell('casaca_corsario', 220);
   } else if (id === 'lope') {
     text = text || NPC_LINES.lope[0];
-    if (!G.flags.house) opts.push({ label: '🏠 Comprar la casa de la plaza (6000 oro)', action: () => G.buyHouse() });
-    else text = '¿Qué tal la casa? Recuerda que dentro puedes dormir y decorarla a tu gusto.';
+    for (const [hid, h] of Object.entries(HOUSES)) if (!G.flags[h.flag]) opts.push({ label: `🏠 Comprar: ${h.name} (${h.price} oro)`, action: () => (hid === 'casa5' ? G.buyHouse() : G.buyHouseId(hid)) });
+    if (G.flags.house) text = '¿Qué tal la casa? Dentro puedes dormir, decorarla y guardar cosas en el cofre.';
   } else if (id === 'marga') {
     text = text || NPC_LINES.marga[0];
     opts.push({ label: '⚓ Astillero: mejorar y reparar', action: () => G.openShipyard() });
@@ -242,6 +244,7 @@ export function dialogFor(id, G) {
     const total = mats.reduce((a, [k, n]) => a + n * ITEMS[k].value, 0);
     opts.push({ label: `💰 Vender materiales (${total} oro)`, action: () => { if (!total) return G.toast('No tienes materiales'); for (const [k] of mats) P.inv[k] = 0; P.gold += total; G.sfx('coin'); G.toast(`+${total} oro`); } });
   }
+  for (const [mid, m] of Object.entries(MOUNTS)) if (m.seller === id) opts.push({ label: (G.ownMounts || []).includes(mid) ? `${m.icon} Montar en tu ${m.name.toLowerCase()}` : `${m.icon} Comprar ${m.name} (${m.price} oro)`, action: () => G.buyMount(mid) });
   if (id === 'nerea') opts.push({ label: `🏁 Regata alrededor de Isla Bruma (50 oro)${G.stats.raceBest ? ' · récord ' + G.stats.raceBest + 's' : ''}`, action: () => G.buy({ gold: 50 }, () => G.startRace()) });
   if (id === 'marisol') opts.push({ label: '⚔️ Torneo de duelos de Villarroca (1 al día)', action: () => G.startTournament() });
   if (!text) {

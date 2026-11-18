@@ -312,6 +312,7 @@ function poses(p, st, dt) {
     p.legL.rotation.x = Math.sin(T * 6) * 0.4; p.legR.rotation.x = -Math.sin(T * 6) * 0.4;
     p.body.position.y = Math.abs(Math.sin(T * 6)) * 0.07;
   }
+  if (st.ride) { p.legL.rotation.set(-1.25, 0, -0.55); p.legR.rotation.set(-1.25, 0, 0.55); if (!st.attackT || st.attackT <= 0) { p.armL.rotation.set(-0.7, 0, 0); p.armR.rotation.set(-0.7, 0, 0); } }
   if (st.carry) { p.armL.rotation.set(-1.35, 0, 0.3); p.armR.rotation.set(-1.35, 0, -0.3); }
   if (st.carried) { p.legL.rotation.x = -1.4; p.legR.rotation.x = -1.4; p.armL.rotation.set(-2.4, 0, -0.2); p.armR.rotation.set(-0.5, 0, 0.5); }
   if (st.meditate) {

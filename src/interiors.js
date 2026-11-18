@@ -53,6 +53,37 @@ export function furniture(type, fw, fd, M, room, dyn) {
       box(g, 0.86, 0.06, 0.16, woodL, 0, 0.93, 0.04);
       g.position.z = -0.47;
       break;
+    case 'sofa':
+      box(g, 1.0, 0.35, 0.5, mat(0x8a1a2a), 0, 0.3, 0.05); box(g, 1.0, 0.5, 0.15, mat(0x8a1a2a), 0, 0.55, -0.2);
+      box(g, 0.12, 0.45, 0.5, mat(0x6a1020), -0.5, 0.4, 0.05); box(g, 0.12, 0.45, 0.5, mat(0x6a1020), 0.5, 0.4, 0.05);
+      break;
+    case 'lamp':
+      box(g, 0.25, 0.06, 0.25, M.iron, 0, 0.03, 0); box(g, 0.05, 1.3, 0.05, M.iron, 0, 0.68, 0);
+      box(g, 0.24, 0.3, 0.24, M.lantern, 0, 1.4, 0); box(g, 0.3, 0.05, 0.3, M.iron, 0, 1.57, 0);
+      break;
+    case 'aquarium':
+      box(g, 0.9, 0.5, 0.45, wood, 0, 0.25, 0); box(g, 0.86, 0.5, 0.42, mat(0x5ac8e8, { emissive: 0x103040 }), 0, 0.76, 0);
+      box(g, 0.12, 0.06, 0.03, mat(0xff8a20), -0.15, 0.8, 0.22); box(g, 0.1, 0.05, 0.03, mat(0xffe040), 0.2, 0.68, 0.22);
+      break;
+    case 'throne':
+      box(g, 0.7, 0.45, 0.6, mat(0xd8a838), 0, 0.22, 0); box(g, 0.7, 1.3, 0.12, mat(0xd8a838), 0, 0.9, -0.25);
+      box(g, 0.6, 0.08, 0.5, mat(0x8a1a2a), 0, 0.48, 0.02); box(g, 0.4, 0.9, 0.04, mat(0x8a1a2a), 0, 0.95, -0.18);
+      break;
+    case 'statue':
+      box(g, 0.5, 0.3, 0.5, M.stone, 0, 0.15, 0); box(g, 0.22, 0.7, 0.2, M.stone, 0, 0.65, 0); box(g, 0.2, 0.2, 0.2, M.stone, 0, 1.1, 0);
+      box(g, 0.35, 0.1, 0.25, M.stone, 0, 0.35, 0.12);
+      break;
+    case 'piano':
+      box(g, 1.1, 0.75, 0.5, mat(0x1a1414), 0, 0.5, -0.1); box(g, 1.0, 0.04, 0.16, mat(0xf4f4f0), 0, 0.72, 0.2);
+      for (let i = 0; i < 8; i++) box(g, 0.05, 0.03, 0.09, mat(0x111111), -0.42 + i * 0.12, 0.75, 0.17);
+      break;
+    case 'globe':
+      box(g, 0.3, 0.6, 0.3, wood, 0, 0.3, 0); { const s2 = new THREE.Mesh(new THREE.SphereGeometry(0.25, 12, 10), mat(0x3a8ab0)); s2.position.y = 0.88; g.add(s2); }
+      break;
+    case 'trophy':
+      box(g, 0.9, 1.4, 0.4, wood, 0, 0.7, -0.05); box(g, 0.8, 1.2, 0.05, mat(0xbfe2f2, { emissive: 0x203040 }), 0, 0.75, 0.16);
+      box(g, 0.15, 0.25, 0.15, M.gold, -0.2, 0.85, 0); box(g, 0.15, 0.25, 0.15, M.gold, 0.2, 0.45, 0);
+      break;
     case 'poster': {
       // tablón con carteles de Se busca
       box(g, 0.95, 0.7, 0.05, wood, 0, 1.35, 0);

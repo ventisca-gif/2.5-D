@@ -89,10 +89,10 @@ export function installNaval(Game, D) {
     const T = this.shipType ? this.shipType() : { hp: 1, guns: 0, speed: 1 };
     return {
       maxHp: Math.round((300 + u.hull * 250 + u.size * 150) * T.hp),
-      dmg: (18 + u.cannons * 14 + this.player.level * 2) * (1 + (this.jobLevel ? this.jobLevel('marinero') : 0) * 0.01),
-      reload: 1.9 - u.cannons * 0.3,
+      dmg: (18 + u.cannons * 14 + this.player.level * 2) * (1 + (this.jobLevel ? this.jobLevel('marinero') : 0) * 0.01) * (this.crewJob && this.crewJob('artillero') ? 1.2 : 1),
+      reload: (1.9 - u.cannons * 0.3) * (this.crewJob && this.crewJob('artillero') ? 0.85 : 1),
       guns: Math.max(1, 2 + u.size + T.guns),
-      speed: (1 + u.sails * 0.12) * T.speed,
+      speed: (1 + u.sails * 0.12) * T.speed * (this.crewJob && this.crewJob('navegante') ? 1.12 : 1),
       crew: u.size * 2,
     };
   };
@@ -115,6 +115,7 @@ export function installNaval(Game, D) {
   };
   P.sinkBoat = function () {
     const b = this.boat;
+    if (this.ctfState && this.ctfState.holder === this.net.myId) this.net.toHost({ k: 'ctfdrop', x: b.x, z: b.z });
     b.sinking = 3;
     this.toast('💥 ¡Tu barco se hunde!', 'area');
     sfx('die');
@@ -173,7 +174,7 @@ export function installNaval(Game, D) {
     if (N.cd > 0) return;
     N.cd = st.reload;
     const fx = Math.sin(b.heading), fz = Math.cos(b.heading), rx = Math.cos(b.heading), rz = -Math.sin(b.heading);
-    const targets = [...N.ships.filter((s) => !s.sinking), ...N.serpents.filter((s) => !s.dead)];
+    const targets = [...N.ships.filter((s) => !s.sinking), ...N.serpents.filter((s) => !s.dead), ...(this.pvpShips ? this.pvpShips() : [])];
     let fired = false;
     for (const side of [1, -1]) {
       let best = null, bd = 17;
@@ -188,7 +189,7 @@ export function installNaval(Game, D) {
         const sx = b.x + fx * a + rx * side * 1.4, sz = b.z + fz * a + rz * side * 1.4;
         let tx = sx + rx * side * 10, tz = sz + rz * side * 10;
         if (best) { tx = best.x + (Math.random() - 0.5) * 1.2 + fx * a * 0.5; tz = best.z + (Math.random() - 0.5) * 1.2 + fz * a * 0.5; }
-        setTimeout(() => this.shootBall(sx, sz, 0.75, tx, tz, 'player', st.dmg), i * 90);
+        setTimeout(() => { this.shootBall(sx, sz, 0.75, tx, tz, 'player', st.dmg); if (this.net.active) this.net.sendX({ k: 'shot', x: Math.round(sx * 10) / 10, z: Math.round(sz * 10) / 10, tx: Math.round(tx * 10) / 10, tz: Math.round(tz * 10) / 10 }); }, i * 90);
       }
     }
     if (!fired) { N.cd = 0.3; return; }
@@ -392,7 +393,7 @@ export function installNaval(Game, D) {
       bl.life -= dt;
       bl.m.position.set(bl.x, bl.y, bl.z);
       let hit = false;
-      if (bl.from === 'enemy') {
+      if (bl.from === 'fx') { /* bala de otro jugador: solo se ve */ } else if (bl.from === 'enemy') {
         if (Math.hypot(bl.x - b.x, bl.z - b.z) < 2.2 && bl.y < 2.5) { this.damageBoat(bl.dmg, bl.x, bl.z); hit = true; }
       } else {
         for (const s of N.ships) if (!s.sinking && Math.hypot(bl.x - s.x, bl.z - s.z) < 2.4 && bl.y < 2.5) {
@@ -400,6 +401,12 @@ export function installNaval(Game, D) {
           this.ui.float(String(Math.round(bl.dmg)), 'pdmg', s.x, 2.2, s.z);
           this.ui.setHp(s.label, Math.max(0, s.hp) / s.maxHp);
           if (s.hp <= 0) this.killShip(s);
+          break;
+        }
+        if (!hit && this.pvpShips) for (const s of this.pvpShips()) if (Math.hypot(bl.x - s.x, bl.z - s.z) < 2.4 && bl.y < 2.5) {
+          hit = true;
+          this.net.sendX({ k: 'shiphit', to: s.remote.id, dmg: Math.round(bl.dmg * 0.6) });
+          this.ui.float(String(Math.round(bl.dmg * 0.6)), 'pdmg', s.x, 2.2, s.z);
           break;
         }
         if (!hit) for (const s of N.serpents) if (!s.dead && Math.hypot(bl.x - s.x, bl.z - s.z) < 2.2 && bl.y < 2) {

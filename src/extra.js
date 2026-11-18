@@ -179,9 +179,9 @@ export function installExtra(Game, D) {
       this.sAtk = this.def.super === 'leviathan' ? 5 : 6.5;
       // ataque de área anunciado: aparece el círculo y estalla al segundo
       const x = p.x, z = p.z, r = this.def.super === 'dragon' ? 2.8 : 2.4;
-      const col = { dragon: 0xff4010, serafin: 0xffe060, leviathan: 0x3a2a6a, crypt: 0x7aff8a }[this.def.super];
+      const col = { dragon: 0xff4010, serafin: 0xffe060, leviathan: 0x3a2a6a, crypt: 0x7aff8a, ghost: 0x7af0e0 }[this.def.super];
       g.ring(x, z, r * 0.8, col);
-      g.ui.float({ dragon: '¡Aliento de fuego!', serafin: '¡Juicio de luz!', leviathan: '¡Tinta abisal!', crypt: '¡Maldición de la cripta!' }[this.def.super], 'crit', this.x, this.model.height + 0.6, this.z);
+      g.ui.float({ dragon: '¡Aliento de fuego!', serafin: '¡Juicio de luz!', leviathan: '¡Tinta abisal!', crypt: '¡Maldición de la cripta!', ghost: '¡Lamento espectral!' }[this.def.super], 'crit', this.x, this.model.height + 0.6, this.z);
       this.st.attackT = 0.32;
       setTimeout(() => {
         if (this.dead) return;
@@ -195,7 +195,7 @@ export function installExtra(Game, D) {
     if (!this.enraged && this.hp < this.maxHp * 0.5) {
       this.enraged = true;
       this.speed *= 1.25;
-      const minion = { dragon: 'skull', serafin: 'skeleton', leviathan: null, crypt: 'skeleton' }[this.def.super];
+      const minion = { dragon: 'skull', serafin: 'skeleton', leviathan: null, crypt: 'skeleton', ghost: 'skull' }[this.def.super];
       g.toast(`⚠️ ¡${this.def.name} se enfurece!`, 'area');
       if (minion) for (let i = 0; i < 3; i++) {
         const a = (i / 3) * Math.PI * 2, x = Math.round(this.x + Math.cos(a) * 2.5), z = Math.round(this.z + Math.sin(a) * 2.5);
@@ -349,7 +349,7 @@ export function installExtra(Game, D) {
   };
 
   // ============================================================ camarote decorable (bodega del barco)
-  P.inHold = function () { const r = this.roomAt(this.player.x, this.player.z); return r && (r.id.startsWith('bodega') || (r.id === 'casa5' && this.flags.house)) ? r : null; };
+  P.inHold = function () { const r = this.roomAt(this.player.x, this.player.z); return r && (r.id.startsWith('bodega') || (r.id === 'casa5' && this.flags.house) || (r.id === 'casaplaya' && this.flags.house_playa) || (r.id === 'casa2' && this.flags.house_mansion)) ? r : null; };
   P.decorFront = function (r) {
     const p = this.player;
     const x = Math.round(p.x + Math.sin(p.face)), z = Math.round(p.z + Math.cos(p.face));

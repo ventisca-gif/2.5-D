@@ -116,6 +116,7 @@ export class Net {
     const g = this.g, p = g.player;
     const s = { x: r2(p.x), z: r2(p.z), f: r2(p.face), mv: p.st.moving ? 1 : 0, sw: p.st.swim ? 1 : 0, d: p.dead ? 1 : 0, hp: Math.round(p.hp), mhp: p.maxHp, lv: p.level };
     if (g.sailing) Object.assign(s, { sl: 1, bx: r2(g.boat.x), bz: r2(g.boat.z), bh: r2(g.boat.heading) });
+    if (g.mounted) s.mt = g.mounted;
     return s;
   }
   myInfo() {
@@ -375,6 +376,9 @@ export class Net {
       if (this.myId !== null && this.sameTeam(this.myId, id)) tags.push('🤝 Equipo');
       if (r.crew.length) tags.push('⚓' + r.crew.length);
       if (r.partner) tags.push('💗 ' + r.partner);
+      r.title = info.title || null; r.clan = info.clan || null;
+      if (r.clan) tags.unshift(`[${r.clan}]`);
+      if (r.title) tags.unshift(`«${r.title}»`);
       const tg = r.label.el.querySelector('.tag');
       if (tg) { tg.textContent = tags.join(' · '); tg.style.display = tags.length ? '' : 'none'; }
     }
@@ -434,7 +438,8 @@ export class Net {
         const gy = g.W.groundY(r.x, r.z);
         r.vy += (gy - r.vy) * Math.min(1, dt * 7);
         r.st.swim = gy < -0.5;
-        root.position.set(r.x, r.vy, r.z);
+        root.position.set(r.x, r.vy + (s.mt ? 0.6 : 0), r.z);
+        r.st.ride = !!s.mt;
         root.rotation.set(0, r.face, r.dead ? Math.PI / 2 : 0);
       }
       animateModel(r.model, r.st, dt);
