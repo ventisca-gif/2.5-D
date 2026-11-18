@@ -692,6 +692,7 @@ export function makeHumanoid2(look = {}) {
     mats: allMats,
     kind: 'humanoid',
     height: 1.18,
+    look,
   };
 }
 

@@ -115,6 +115,16 @@ const VELARIA_SPOTS = [{ x: 140, z: 60 }, { x: -20, z: 130 }, { x: 150, z: -40 }
 
 const FISH = [['fish', 0.62], ['atun', 0.24], ['pez_espada', 0.09], ['pez_luna', 0.04], ['pez_dorado', 0.01]];
 
+// Armamento en el torso: pecho, hombros y, si es mujer, también el busto
+const BUSTK = [0, 0.78, 1, 1.22];
+function espTorso(m, dark, list) {
+  const pa = m.parts, add = (geo, parent, x, y, z, sx = 1, sy = 1, sz = 1) => { const k = new THREE.Mesh(geo, dark); k.position.set(x, y, z); k.scale.set(sx, sy, sz); parent.add(k); list.push(k); };
+  add(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), pa.torso, 0, 0.18, 0, 1.04, 1, 1.02);
+  for (const arm of [pa.armL, pa.armR]) if (arm) add(new THREE.SphereGeometry(0.074, 12, 10), arm, 0, -0.01, 0);
+  const L = m.look || {};
+  const bk = L.female ? BUSTK[L.bust ?? 2] : 0;
+  if (bk > 0) for (const sx of [-1, 1]) add(new THREE.SphereGeometry(0.058 * bk * 1.18, 14, 10), pa.torso, sx * 0.062 * (0.85 + bk * 0.15), 0.245, 0.095 + (bk - 1) * 0.02 + 0.004, 1, 0.92, 0.9);
+}
 export function installMore4(Game, D) {
   const P = Game.prototype;
   const sfx = D.sfx;
@@ -164,12 +174,12 @@ export function installMore4(Game, D) {
       const glow = new THREE.MeshBasicMaterial({ color: 0xff3a8a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide });
       o.glow = glow;
       for (const arm of [m.parts.armL, m.parts.armR]) {
-        const a = new THREE.Mesh(new THREE.CapsuleGeometry(0.062, 0.2, 4, 8), dark); a.position.y = -0.16; arm.add(a); o.meshes.push(a);
+        const a = new THREE.Mesh(new THREE.CapsuleGeometry(0.071, 0.2, 4, 10), dark); a.position.y = -0.17; arm.add(a); o.meshes.push(a);
         const fist = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), dark); fist.position.set(0, -0.3, 0.01); arm.add(fist); o.meshes.push(fist);
         const g2 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), glow); g2.position.y = -0.26; g2.scale.set(1, 1.5, 1); arm.add(g2); o.meshes.push(g2);
       }
       if (m.parts.weapon) { const ks = []; m.parts.weapon.traverse((k) => { if (k.isMesh && !k.userData.espCopy && k.material !== D.OUTLINE) ks.push(k); }); ks.forEach((k) => { const c = new THREE.Mesh(k.geometry, dark); c.userData.espCopy = true; c.position.copy(k.position); c.rotation.copy(k.rotation); c.scale.copy(k.scale).multiplyScalar(1.04); k.parent.add(c); o.meshes.push(c); }); }
-      if (this.esp.l >= 30) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.set(1.04, 1, 1.02); m.parts.torso.add(t); o.meshes.push(t); }
+      if (this.esp.l >= 30) espTorso(m, dark, o.meshes);
     } else if (!on && o) {
       for (const k of o.meshes) k.parent && k.parent.remove(k);
       m.espFx = null;
@@ -566,12 +576,12 @@ export function installMore4(Game, D) {
     if (m.kind === 'humanoid' && pa.armL && pa.armR) {
       const big = /golem|yeti|automata/.test(e.type);
       for (const arm of [pa.armL, pa.armR]) {
-        const a = new THREE.Mesh(new THREE.CapsuleGeometry(big ? 0.11 : 0.062, big ? 0.3 : 0.2, 4, 8), dark); a.position.y = big ? -0.24 : -0.16; arm.add(a); F.meshes.push(a);
+        const a = new THREE.Mesh(new THREE.CapsuleGeometry(big ? 0.11 : 0.071, big ? 0.3 : 0.2, 4, 10), dark); a.position.y = big ? -0.24 : -0.17; arm.add(a); F.meshes.push(a);
         const fist = new THREE.Mesh(big ? new THREE.BoxGeometry(0.2, 0.2, 0.2) : new THREE.SphereGeometry(0.06, 12, 10), dark); fist.position.set(0, big ? -0.36 : -0.3, big ? 0.02 : 0.01); arm.add(fist); F.meshes.push(fist);
         const g2 = new THREE.Mesh(new THREE.SphereGeometry(big ? 0.17 : 0.1, 10, 8), glow); g2.position.y = big ? -0.32 : -0.26; g2.scale.set(1, 1.5, 1); arm.add(g2); F.meshes.push(g2);
       }
       if (pa.weapon) { const ks = []; pa.weapon.traverse((k) => { if (k.isMesh && k.material !== D.OUTLINE) ks.push(k); }); ks.forEach((k) => { const c = new THREE.Mesh(k.geometry, dark); c.position.copy(k.position); c.rotation.copy(k.rotation); c.scale.copy(k.scale).multiplyScalar(1.04); k.parent.add(c); F.meshes.push(c); }); }
-      if (pa.torso && !big && (e.def.boss || e.level >= 95)) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.set(1.04, 1, 1.02); pa.torso.add(t); F.meshes.push(t); }
+      if (pa.torso && !big && (e.def.boss || e.level >= 95)) espTorso(m, dark, F.meshes);
     } else {
       // bestias y gólems: aura oscura alrededor del cuerpo
       const s = m.root.scale.x || 1, h = (m.height || 1) / s;

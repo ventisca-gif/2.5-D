@@ -36,6 +36,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **v3.0**: botón ⚡ Atajos (pantalla despejada), pestaña Novedades, 4 islas nuevas (Escarcha, Engranaje, Merengue, Burbuja) con su ambiente, equipos Escarcha y Estelar, Armamento Espiritual a nivel 100, gruta marina, ciudad flotante Velaria, bruja vudú, capturas de piratas famosos, erupción, Día de la caza, pesca con minijuego y oficios más valiosos.
 - **v3.1**: los enemigos fuertes y los jefes también usan el Armamento Espiritual para defenderse (se cubren de negro, pegan más y aguantan más golpes; tu propio Armamento lo compensa).
 - **v3.2**: puños negros con el Armamento, jefes de las islas nuevas, trineo de perros, fragatas de globo, torneo de pesca semanal, Puño espiritual (nivel 40/50), Isla Naciente durante la erupción, prisión de la Marina para rescatar a la tripulación y clima propio en cada isla.
+- **v3.3**: el Armamento Espiritual a nivel 30 cubre de negro todo el torso, los hombros y el busto.
 - **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.

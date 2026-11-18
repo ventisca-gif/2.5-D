@@ -74,6 +74,7 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Puños negros: el Armamento añade una esfera negra en la mano y el brillo rosa va en `BackSide` (halo detrás), en jugador y enemigos. Al usuario le gusta así (antebrazos + puños negros, torso a nivel 30).
 - Jefes `reina_hielo` (Escarcha), `gran_automata` (Engranaje), `rey_pastel` (Merengue): `def.super` propio con `sCol/sTxt/sMin` (superTick de extra.js usa esos campos). Logro `islas`.
 - Trineo de perros (`MOUNTS.trineo`, `sledModel`, vende Helga, `mountSpeed5` ×1,3 en nieve). Fragatas de globo cerca de Engranaje (`balloons`, `balloonTargets`/`balloonHit` enganchados en naval.js). Torneo de pesca (`day % 7 === 3`, Gaspar, `fishT`, `fishScore`). Puño espiritual (nivel 40, botón 🖤 `.skb.espk`, `espPunch`; nivel 50 Puño del Rey aturde y `_pierce` ignora el Armamento enemigo). Isla Naciente (`makeNewbornIslet`, ghost+newborn, solo con el evento `erupcion`, cofre `naciente_cofre`). Prisión del Bastión (`role: 'jail'`, `onPlayerDeath5` 45% si te derrota la Marina, `startRescue`/`updateRescue`). Clima por isla (`updateIsleWeather`, `WEATHER5`).
+- v3.3: a nivel 30 el Armamento cubre torso, hombros y, en mujeres, también el busto (`espTorso` en more4.js; usa `model.look.female/bust`, que ahora devuelve `makeHumanoid2`). Antebrazos más gruesos para tapar los puños de la manga.
 - Los diálogos (`ui.openDialog`) usan textContent: `<br>` se convierte en salto de línea y se quitan `<b>`/`<small>`.
 
 ## Ideas pendientes (propuestas al usuario tras v2.8)
