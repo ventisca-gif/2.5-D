@@ -1961,6 +1961,7 @@ class Game {
   }
   damageEnemy(e, dmg, crit, byCrew, killerId = 0) {
     const g = this;
+    if (this.enemyEspDef) dmg = this.enemyEspDef(e, dmg, killerId, byCrew);
     if (e.def.famous && e.provoked && Math.random() < 0.2) { dmg = Math.max(1, Math.round(dmg * 0.3)); this.ui.float('¡Bloqueo!', 'info', e.x, e.model.height + 0.5, e.z); }
     e.hp -= dmg;
     e.st.flash = 0.18;
@@ -2059,7 +2060,7 @@ class Game {
   damagePlayer(e, atk) {
     const p = this.player;
     if (p.dead) return;
-    let dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def)) * (this.espRes ? this.espRes() : 1)));
+    let dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def)) * (this.espRes ? this.espRes() : 1) * (this.enemyEspAtk ? this.enemyEspAtk(e) : 1)));
     if (p.blocking) { dmg = this.blockDamage(e, dmg); if (dmg <= 0) return; }
     if (e.isNPC && p.hp - dmg <= p.maxHp * 0.15) { this.endFight(e, 'lose'); return; }
     p.hp -= dmg;
@@ -2935,6 +2936,7 @@ class Game {
       this.updateDungeon(dt);
       this.updateGrotto();
       this.updateEsp(dt);
+      this.updateEnemyEsp(dt);
       this.updateEruption(dt);
       this.updateVelaria();
       this.updateFishGame(dt);

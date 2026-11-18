@@ -34,6 +34,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **v2.8**: monturas, Isla Espectral (solo con niebla), clanes y cofre común, música por zona, logros con títulos, casa de la playa y mansión con muebles de lujo, puestos de la tripulación, PvP naval y Captura la bandera.
 - **v2.9**: Ciudad de Coralia bajo el mar, granja con animales, mercado entre jugadores, historias de la tripulación, combos y parada perfecta, mareas, modo foto y caballos rediseñados.
 - **v3.0**: botón ⚡ Atajos (pantalla despejada), pestaña Novedades, 4 islas nuevas (Escarcha, Engranaje, Merengue, Burbuja) con su ambiente, equipos Escarcha y Estelar, Armamento Espiritual a nivel 100, gruta marina, ciudad flotante Velaria, bruja vudú, capturas de piratas famosos, erupción, Día de la caza, pesca con minijuego y oficios más valiosos.
+- **v3.1**: los enemigos fuertes y los jefes también usan el Armamento Espiritual para defenderse (se cubren de negro, pegan más y aguantan más golpes; tu propio Armamento lo compensa).
 - **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.

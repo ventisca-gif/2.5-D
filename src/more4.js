@@ -485,7 +485,8 @@ export function installMore4(Game, D) {
     }
     return `<div class="parch">
       <p><b>🖤 Armamento Espiritual</b>: ${E ? `nivel <b>${E.l}/50</b> (${E.xp}/${25 + E.l * 12}) · daño ×${this.espMul().toFixed(2)} · resistencia ${Math.round((1 - this.espRes()) * 100)}%${E.l >= 30 ? ' · torso cubierto' : ' · al nivel 30 cubre el torso'}` : p.level >= 100 ? 'ya puedes despertarlo: busca al <b>Maestro Ishvar</b> en el Monasterio del Pico (Isla Escarcha)' : `se desbloquea al nivel 100 con el Maestro Ishvar (Isla Escarcha). Tu nivel: ${p.level}`}.</p>
-      <p class="muted small">Cada golpe lo entrena, como un oficio. Al atacar, tus manos y tu arma se cubren de energía negra.</p></div>
+      <p class="muted small">Cada golpe lo entrena, como un oficio. Al atacar, tus manos y tu arma se cubren de energía negra.</p>
+      <p class="muted small">🖤 Los enemigos fuertes también lo usan: mientras brillan en negro reciben un 40% menos de daño y pegan +20%. Tu Armamento lo compensa (daño completo desde el nivel 25).</p></div>
       <div class="sub">🏝 Islas nuevas</div>
       <ul class="qlist">
         <li>❄️ <b>Isla Escarcha</b> (noreste lejano): nieve, castillo de hielo, Monasterio del Pico. Lobos de las nieves y yetis (Nv. 80-94). Cristal de escarcha → equipo <span class="t7">Escarcha</span>.</li>
@@ -505,6 +506,71 @@ export function installMore4(Game, D) {
       <p class="muted small">Cuando pica un pez, mantén pulsada la barra para que la zona verde siga al pez hasta llenar el medidor.</p>
       <div class="sub">🛠 Oficios</div><p>Niveles totales: <b>${jobsT}</b> · daño +${jobsT}% · vida +${(jobsT * 0.3).toFixed(1)}%. Hitos en los niveles 10, 20 y 30 de cada oficio (oro, fichas y ropa). Ahora hay 4 trabajos al día y pagan el doble.</p>
       ${rank}`;
+  };
+
+  // ============================================================ Armamento Espiritual de los enemigos
+  // Los enemigos fuertes (nivel 90+, autómatas, yetis, galletas, piratas famosos de nivel 70+, jefes y superjefes)
+  // también lo usan: se cubren de negro unos segundos, pegan +20% y aguantan más golpes.
+  const ESP_TYPES = new Set(['yeti', 'automata', 'galleta', 'serafin', 'dragon', 'abyss_queen', 'ghost_captain', 'crypt_king', 'marine_boss', 'golem_boss']);
+  P.enemyHasEsp = function (e) {
+    if (e.isNPC || e.isRemote || !e.def) return false;
+    return ESP_TYPES.has(e.type) || e.level >= 90 || (!!e.def.famous && e.level >= 70) || !!e.def.super;
+  };
+  // daño que recibe un enemigo con el Armamento activo: sin el tuyo haces un 40% menos; con el tuyo, cada nivel lo compensa
+  P.enemyEspDef = function (e, dmg, killerId = 0, byCrew = false) {
+    if (!e.espOn) return dmg;
+    let k = 0.6;
+    if (!byCrew && killerId === 0 && this.esp) k = Math.min(1, 0.75 + this.esp.l * 0.01);
+    else if (!byCrew && killerId !== 0) k = 0.75;
+    if (k < 1 && Math.random() < 0.25) this.ui.float('🖤 ¡Bloqueo espiritual!', 'info', e.x, e.model.height + 0.6, e.z);
+    return Math.max(1, Math.round(dmg * k));
+  };
+  P.enemyEspAtk = function (e) { return e && e.espOn ? 1.2 : 1; };
+  P.updateEnemyEsp = function (dt) {
+    const p = this.player;
+    for (const e of this.enemies) {
+      if (!e.espCan) { if (e.espCan === undefined) e.espCan = this.enemyHasEsp(e) ? 1 : 0; if (!e.espCan) continue; }
+      const near = !e.dead && !e.removed && e.dist(p) < 22;
+      let on = false;
+      if (near && (e.state === 'chase' || e.provoked || e.st.attackT > 0)) {
+        // ciclo: 7 s activo, 5 s descanso (desfasado por enemigo)
+        e.espT = (e.espT ?? (e.idx % 5)) + dt;
+        on = e.espT % 12 < 7;
+      }
+      if (on !== !!e.espOn) {
+        e.espOn = on;
+        if (on && !e.espToast && e.dist(p) < 12) { e.espToast = true; this.toast(`🖤 ¡${e.def.name} se cubre con Armamento Espiritual! ${this.esp ? '' : '(sin el tuyo le harás menos daño)'}`); }
+        this.enemyEspFx(e, on);
+      }
+      if (on && e.espFx) { e.espFx.glow.opacity = 0.22 + Math.sin(this.time * 9 + e.idx) * 0.1; if (e.espFx.ring) e.espFx.ring.rotation.z += dt * 3; }
+      if (e.dead && e.espFx) { e.espOn = false; this.enemyEspFx(e, false); }
+    }
+  };
+  P.enemyEspFx = function (e, on) {
+    const m = e.model;
+    if (!on) { if (e.espFx) { for (const k of e.espFx.meshes) k.parent && k.parent.remove(k); e.espFx = null; } if (e.label) e.label.el.classList.remove('esp'); return; }
+    if (e.espFx) return;
+    const dark = new THREE.MeshPhongMaterial({ color: 0x050408, emissive: 0x0c0414, shininess: 140, specular: 0xb08aff });
+    const glow = new THREE.MeshBasicMaterial({ color: 0xff3a8a, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
+    const F = e.espFx = { meshes: [], glow };
+    const pa = m.parts || {};
+    if (m.kind === 'humanoid' && pa.armL && pa.armR) {
+      const big = /golem|yeti|automata/.test(e.type);
+      for (const arm of [pa.armL, pa.armR]) {
+        const a = new THREE.Mesh(new THREE.CapsuleGeometry(big ? 0.11 : 0.062, big ? 0.3 : 0.2, 4, 8), dark); a.position.y = big ? -0.24 : -0.16; arm.add(a); F.meshes.push(a);
+        const g2 = new THREE.Mesh(new THREE.SphereGeometry(big ? 0.17 : 0.11, 10, 8), glow); g2.position.y = big ? -0.38 : -0.25; arm.add(g2); F.meshes.push(g2);
+      }
+      if (pa.weapon) { const ks = []; pa.weapon.traverse((k) => { if (k.isMesh && k.material !== D.OUTLINE) ks.push(k); }); ks.forEach((k) => { const c = new THREE.Mesh(k.geometry, dark); c.position.copy(k.position); c.rotation.copy(k.rotation); c.scale.copy(k.scale).multiplyScalar(1.04); k.parent.add(c); F.meshes.push(c); }); }
+      if (pa.torso && !big && (e.def.boss || e.level >= 95)) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.z = 0.78; pa.torso.add(t); F.meshes.push(t); }
+    } else {
+      // bestias y gólems: aura oscura alrededor del cuerpo
+      const s = m.root.scale.x || 1, h = (m.height || 1) / s;
+      const aura = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 10), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false }));
+      aura.scale.set(1.1, h * 1.1, 1.1); aura.position.y = h * 0.5; m.root.add(aura); F.meshes.push(aura);
+      const g2 = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), glow); g2.scale.set(1.15, h * 1.15, 1.15); g2.position.y = h * 0.5; m.root.add(g2); F.meshes.push(g2);
+    }
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.6, 24), glow); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04; m.root.add(ring); F.meshes.push(ring); F.ring = ring;
+    if (e.label) e.label.el.classList.add('esp');
   };
 }
 
