@@ -494,7 +494,7 @@ export function makeHumanoid2(look = {}) {
     w.add(sph(0.024, 8, 6), look.guard ?? trim, 0, 0.055, 0);
     w.add(rbox(0.14, 0.022, 0.035, 0.008), look.guard ?? trim, 0, -0.05, 0);
     w.add(bladeGeo(look.bladeLen ?? 0.46, look.bladeW ?? 0.05), look.blade ?? 0xdde2ea, 0, -0.06, 0, Math.PI, 0, 0);
-    w.g.rotation.x = 0.25;
+    w.g.rotation.x = 0.25 + Math.max(0, (look.bladeLen ?? 0.46) - 0.46) * 0.55;
   } else if (look.axe) {
     weapon = P(arms[1].g, 0, -0.3, 0.02);
     weapon.add(cyl(0.02, 0.02, 0.62, 6), 0x5a3a20, 0, -0.18, 0.04, 0.25, 0, 0);
@@ -503,12 +503,12 @@ export function makeHumanoid2(look = {}) {
     weapon.add(rbox(0.035, 0.24, 0.04, 0.01), shade(look.blade ?? 0x8a8a90, 1.5), 0, -0.42, 0.27, 0.25, 0, 0);
   } else if (look.spear) {
     weapon = P(arms[1].g, 0, -0.3, 0.02);
-    weapon.add(cyl(0.016, 0.016, 1.45, 6), look.trident ? 0x1a6a8a : 0x6a4a2a, 0, 0.35, 0);
+    weapon.add(cyl(0.016, 0.016, 1.45, 6), look.guard ?? (look.trident ? 0x1a6a8a : 0x6a4a2a), 0, 0.35, 0);
     if (look.trident) {
       weapon.add(rbox(0.22, 0.03, 0.03, 0.01), 0xd8a838, 0, 1.06, 0);
-      for (const x of [-0.1, 0, 0.1]) weapon.add(cone(0.025, x ? 0.16 : 0.2, 5), 0xbfe8ff, x, x ? 1.16 : 1.18, 0);
+      for (const x of [-0.1, 0, 0.1]) weapon.add(cone(0.025, x ? 0.16 : 0.2, 5), look.blade ?? 0xbfe8ff, x, x ? 1.16 : 1.18, 0);
     } else {
-      weapon.add(cone(0.04, 0.16, 6), 0xc8ccd4, 0, 1.15, 0);
+      weapon.add(cone(0.04, 0.16, 6), look.blade ?? 0xc8ccd4, 0, 1.15, 0);
       weapon.add(torus(0.022, 0.008), trim, 0, 1.06, 0, Math.PI / 2, 0, 0);
     }
   } else if (look.rod) {
