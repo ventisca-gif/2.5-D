@@ -36,6 +36,7 @@ import { installMore6 } from './more6.js';
 import { installMore7 } from './more7.js';
 import { installMore8 } from './more8.js';
 import { installMore9, makeWanderIslets } from './more9.js';
+import { installMore10, makeOwnPort, makeIceBridge } from './more10.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -984,7 +985,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets())];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort()];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -993,7 +994,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1828,6 +1829,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c10 = this.contextAction10 && this.contextAction10();
+    if (c10) return c10;
     const c7 = this.contextAction7 && this.contextAction7();
     if (c7) return c7;
     const cap = this.canCapture && this.canCapture();
@@ -2301,6 +2304,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
+      relics: this.relics || [], amulets: this.amulets || [], amuletEq: this.amuletEq ?? null, adv: this.adv || null,
       towns9: this.towns9 || {}, escortId: this.escortId || null, vision: this.vision || null,
       esp: this.esp || null, hunts: this.hunts || null, fishDex: this.fishDex || {}, child: this.child || null, childDay: this.childDay ?? null, crewOrder: this.crewOrder || 'follow', smuggle: this.smuggle || null,
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
@@ -2499,6 +2503,7 @@ class Game {
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
+    this.relics = data.relics || []; this.amulets = data.amulets || []; this.amuletEq = data.amuletEq ?? undefined; this.adv = data.adv || null; this.portBuilt = false;
     this.towns9 = data.towns9 || {}; this.escortId = data.escortId || null; this.vision = data.vision || null; this.townsGrown = false;
     this.esp = data.esp || null; this.hunts = data.hunts || null; this.fishDex = data.fishDex || {};
     this.child = data.child || null; this.childDay = data.childDay ?? undefined; this.crewOrder = data.crewOrder || 'follow'; this.smuggle = data.smuggle || null;
@@ -3004,6 +3009,7 @@ class Game {
       this.updateMore7(dt);
       this.updateMore8(dt);
       this.updateMore9(dt);
+      this.updateMore10(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3236,6 +3242,13 @@ for (const d of PREMIUM_DECOR) DECOR.push({ ...d, premium: true });
 installMore(Game, { sfx, mountModel, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
 installMore8(Game, { sfx });
 installMore9(Game, { sfx, NPC });
+installMore10(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'arqueologo', name: 'Arqueólogo', title: 'Arqueólogo', desc: 'Excava 10 hallazgos', ok: (g) => (g.stats.digs || 0) >= 10 },
+  { id: 'gremio_oro', name: 'Aventurero de oro', title: 'Aventurero de oro', desc: 'Llega a rango Oro en el gremio', ok: (g) => g.advRank && g.advRank() >= 2 },
+  { id: 'puerto', name: 'Señor del puerto', title: 'Señor del puerto', desc: 'Lleva tu puerto a nivel 5', ok: (g) => (g.flags.portLv || 0) >= 5 },
+  { id: 'concurso', name: 'El barco más bonito', title: 'Capitán con estilo', desc: 'Gana el concurso de barcos', ok: (g) => (g.stats.contests || 0) >= 1 },
+);
 LOGROS.push(
   { id: 'bestia', name: 'Cazador de leyendas vivas', title: 'Matabestias', desc: 'Caza una bestia legendaria', ok: (g) => (g.stats.beasts || 0) >= 1 },
   { id: 'torneo_trip', name: 'La mejor tripulación', title: 'Capitán campeón', desc: 'Gana el torneo de tripulaciones', ok: (g) => (g.stats.ctours || 0) >= 1 },

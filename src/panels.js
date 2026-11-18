@@ -81,6 +81,8 @@ export class Panels {
     if (act === 'cjob') { g.cycleCrewJob(b.dataset.id); return this.openBitacora('crew'); }
     if (act === 'title') { g.title = b.dataset.t || null; g.applyTitle(); return this.openBitacora('logros'); }
     if (act === 'stash') { g.stashMove(b.dataset.id, Number(b.dataset.n), b.dataset.d); return; }
+    if (act === 'relic') { g.toggleRelic(this.sel); this.sel = null; return this.renderInv(); }
+    if (act === 'relicoff') { g.toggleRelic(b.dataset.id); return this.openBitacora('guia'); }
     if (act === 'crewgive') { const id = this.sel; this.close(); return g.giveCrewItemMenu(id); }
     if (act === 'diary') { this.close(); return g.crewDiary(g.npcById(b.dataset.id)); }
     if (act === 'explore') { this.close(); return g.exploreMenu(g.npcById(b.dataset.id)); }
@@ -125,6 +127,7 @@ export class Panels {
       const it = ITEMS[this.sel];
       let btn = '';
       if (it.type === 'equip') btn = `<button class="pbtn" data-p="equip">Equipar</button>${!it.cos && g.crew().length + (g.partner() ? 1 : 0) ? ' <button class="pbtn" data-p="crewgive">🎽 Dar a tripulante</button>' : ''}`;
+      if (it.type === 'relic') btn = `<button class="pbtn" data-p="relic">🗿 Activar reliquia</button> <span class="muted small">Activas: ${(g.relics || []).length}/2</span>`;
       if (it.type === 'spell') btn = `<button class="pbtn" data-p="cast">✨ Lanzar</button>`;
       if (it.type === 'food' || it.type === 'heal') btn = `<button class="pbtn" data-p="eat">${it.type === 'heal' ? 'Beber' : 'Comer'}</button>`;
       const cmp = it.type === 'equip' && p.equip[it.slot] ? ` <span class="muted">(llevas: ${esc(ITEMS[p.equip[it.slot]].name)})</span>` : '';
@@ -237,7 +240,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['mundo', '🌍 Novedades'], ['logros', '🏆 Logros'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['guia', '❓ Guía'], ['mundo', '🌍 Novedades'], ['logros', '🏆 Logros'], ['oficios', '🛠 Oficios'], ['mapas', '🗺 Mapas'], ['vida', '🐾 Vida'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -247,6 +250,13 @@ export class Panels {
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
         <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'guia') {
+      const sec = this.guideSections();
+      const k = sec.findIndex(([t]) => t.startsWith('⚡'));
+      const card = ([t, d]) => `<div class="gsec"><button class="gt" data-p="guide">${t}</button><div class="gd">${d}</div></div>`;
+      const relics = (g.relics || []).map((id) => `<button class="pbtn small" data-p="relicoff" data-id="${id}">${ITEMS[id].icon} ${esc(ITEMS[id].name)} ✕</button>`).join(' ');
+      const k2 = sec.findIndex(([t]) => t.startsWith('🎯 Día de la caza')) + 1;
+      body = `${relics ? `<p>🗿 Reliquias activas: ${relics}</p>` : ''}<div class="sub">🆕 Lo nuevo, lo más reciente primero (toca para leer)</div><div class="guide">${[...sec.slice(k, k2 - 1).reverse(), sec[k2 - 1]].map(card).join('')}</div><div class="sub">📘 Todo lo demás</div><div class="guide">${[...sec.slice(0, k), ...sec.slice(k2)].map(card).join('')}</div>`;
     } else if (tab === 'mundo') {
       body = g.mundoHtml();
     } else if (tab === 'logros') {
@@ -465,8 +475,9 @@ export class Panels {
   }
 
   // ------------------------------------------------------------------ guía
-  openGuide() {
-    const sec = [
+  guideSections() {
+    const g = this.g;
+    return [
       ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
       ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
       ['⚔️ Combate', 'Solo atacas cuando pulsas el botón ⚔️ (mantenlo pulsado para seguir atacando). Funciona andando o corriendo con el joystick: golpea al enemigo más cercano a tu alcance o da un tajo al aire. Tocar a un enemigo lo selecciona. Sin estamina pegas la mitad.'],
@@ -505,6 +516,13 @@ export class Panels {
       ['🐾 Bestias legendarias', 'De vez en cuando aparece una bestia legendaria en una isla (punto rojo grande en el minimapa). Tienes 10 minutos; en multijugador gana quien la caza primero.'],
       ['🍲 Banquete y sueños', '⚡ Atajos › Banquete: 6 ingredientes dan +15% de ataque y defensa a todos durante 10 min (15 con un cocinero). Al dormir puedes soñar con un tesoro o con la Sombra del Abismo, que te esperará en una isla ese día.'],
       ['🌀 Isla Errante', 'Cada día aparece en un sitio distinto (míralo en Novedades). Tiene un laberinto de ruinas; en el centro despierta un guardián y hay un cofre que se rellena cada día.'],
+      ['⛏ Arqueología y reliquias', 'Compra una pala al Herrero Tadeo y busca los montículos con una X roja (6 nuevos cada día, en Isla Bruma y otras islas). Puedes encontrar gemas, monedas antiguas o reliquias: actívalas en la Mochila (máx. 2) para ganar daño, defensa, vida, experiencia o velocidad del barco.'],
+      ['⚔️ Gremio de aventureros', 'La Gremialista Orla (Puerto Salitre) da 3 misiones difíciles cada semana. Suma puntos para subir de rango: Bronce, Plata, Oro, Platino y Leyenda, con oro y una capa exclusiva.'],
+      ['❄️ Mar helado', 'En invierno el mar entre Isla Escarcha e Isla Engranaje se congela y puedes cruzarlo a pie por el puente de hielo.'],
+      ['🏴 Tu propio puerto', 'Navega a la Isla Libre (sureste) y funda tu puerto con una carta de fundación (10000 oro). Hazlo crecer hasta nivel 5: taberna, mercado, astillero y fortaleza, y cobra impuestos cada día.'],
+      ['🏆 Concurso de barcos', 'Una vez por semana Nerea organiza un concurso: los vecinos votan según los muebles del camarote, tu bandera, las mejoras y el tipo de barco.'],
+      ['💎 Amuletos', 'Tadeo o Helga engarzan 3 gemas en un amuleto (500 oro). Cada gema da algo distinto (ámbar daño, jade vida, perla experiencia, obsidiana defensa, meteorito todo...). Tres iguales hacen un amuleto puro (+50%). Elige cuál llevar hablando con ellos.'],
+      ['💖 Historia de tu pareja', 'Con 5 corazones, tu pareja te contará un secreto: una carta misteriosa, cazadores del pasado, un medallón enterrado y el Capitán Varek. Al final ganáis la Diadema del destino, un título y lealtad total.'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],
@@ -562,6 +580,9 @@ export class Panels {
       ['📖 Bitácora', 'Ahí verás la misión principal, tus amistades, tu tripulación y tu tiempo de juego.'],
       ['💾 Partidas', 'Tienes 3 ranuras de guardado en el menú principal. El juego guarda solo.'],
     ];
+  }
+  openGuide() {
+    const sec = this.guideSections();
     const html = sec.map(([t, d]) => `<div class="gsec"><button class="gt" data-p="guide">${t}</button><div class="gd">${d}</div></div>`).join('');
     this.show('guide', '❓ Guía de TheBruma', `<div class="guide">${html}</div>`);
   }

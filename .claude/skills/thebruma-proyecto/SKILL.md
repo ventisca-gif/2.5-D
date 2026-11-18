@@ -103,6 +103,11 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Bestias legendarias (`bestia_lobo/tigre/golem`, `updateBeastHunt` cada 12-20 min, marcador rojo, `beastDown` en multijugador). Banquete (`BUFFS.banquete`, Atajos `btnBanquet`). Sueños (`dream` al dormir: mapa del tesoro o `vision` → jefe `sombra_abismo`). Torneo de tripulaciones (Marisol, `ctour`, 3 rondas en (50,30)).
 - Isla Errante: 3 islotes ghost (`makeWanderIslets`, `WANDER_SPOTS`), visible el de `day % 3`; laberinto (`R.maze`, InstancedMesh), guardián `guardian_errante` y cofre diario `errante_cofreN`.
 
+## v3.8 (more10.js)
+- El usuario quiere TODO lo nuevo explicado en la Bitácora › pestaña «❓ Guía» (`guideSections()` en panels.js; lo nuevo = de «⚡ Atajos» a «🎯 Día de la caza», mostrado al revés, lo más reciente primero). Al añadir funciones, mete su entrada en guideSections antes de «🎯 Día de la caza».
+- Arqueología (`pala` de Tadeo, 6 montículos diarios `digSites`, `excavate`), reliquias `RELICS` (type 'relic', máx 2 activas `relics`, `passiveMul` en buffMul/jobHp/shipStats). Gremio de aventureros (NPC 'orla', `adv` semanal, rangos Bronce→Leyenda, `c_capa_gremio`). Puente de hielo en invierno (región 'hielo' x 202-208, `season()===3`). Puerto propio (Isla Libre ox128 oz146, `flags.portLv` 1-5, impuestos `portDay`, `portMenu`). Concurso de barcos semanal (Nerea). Amuletos de 3 gemas (`GEMS`, `amulets`, `amuletEq`, Tadeo/Helga). Historia de la pareja (`soc.pq.s` 0-5: carta → Sombra → cazadores → medallón al excavar → Capitán Varek; premio `c_anillo_destino`, título, `loyal`).
+- El usuario NO quiere «enemigos que aprenden».
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 
