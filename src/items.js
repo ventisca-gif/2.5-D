@@ -248,6 +248,8 @@ export const EQUIP = {
   c_disfraz_fantasma: { name: 'Disfraz de fantasma', slot: 'cosCape', tier: 3, cos: true, icon: '👻', src: 'evento', look: { cape: 0xf4f4f4 } },
   c_mascara_carnaval: { name: 'Máscara de carnaval', slot: 'cosHead', tier: 3, cos: true, icon: '🎭', src: 'evento', look: { hat: 'circlet', hatColor: 0xff4a8a, halo: 0x4ad8ff } },
   c_corona_bruma: { name: 'Corona de la Bruma', slot: 'cosHead', tier: 6, cos: true, icon: '👑', src: 'evento', look: { hat: 'circlet', hatColor: 0xd8a838, halo: 0x8a5aff } },
+  c_corona_marea: { name: 'Corona de Marea', slot: 'cosHead', tier: 5, cos: true, icon: '🔱', src: 'evento', look: { hat: 'circlet', hatColor: 0x7af0ff, halo: 0x3ad8ff } },
+  c_capa_marea: { name: 'Capa de algas de Marea', slot: 'cosCape', tier: 4, cos: true, icon: '🌊', src: 'tienda', look: { cape: 0x2a8a7a } },
   c_capa_burbuja: { name: 'Capa de pompas', slot: 'cosCape', tier: 3, cos: true, icon: '🫧', src: 'tienda', look: { cape: 0x9ae0f8 } },
   // ---- armaduras de superjefe (cosméticas)
   c_dragon: { name: 'Armadura del Dragón Carmesí', slot: 'cosBody', tier: 6, cos: true, icon: '🐉', src: 'dragon', look: { armor: true, armorColor: 0x1a1418, trim: 0xd8a838, pauldron: 0x8a1010, tabard: 0x8a1010, gem: 0xff6020, emblem: 0xff6020, gloves: 0x1a1418, legArmor: 0x8a1010, boots: 0x1a1418, hat: 'horned', hatColor: 0x1a1418, hornColor: 0xd8a838, gem2: 0xff6020, dragonHorns: 0xd8a838, tail: 0x2a2026, tailSpike: 0xd8a838, visorGlow: 0xff8030, hair: 0x8a1010 } },

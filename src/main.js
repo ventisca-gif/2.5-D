@@ -38,6 +38,7 @@ import { installMore8 } from './more8.js';
 import { installMore9, makeWanderIslets } from './more9.js';
 import { installMore10, makeOwnPort, makeIceBridge } from './more10.js';
 import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
+import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -1013,7 +1014,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive()]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1444,6 +1445,7 @@ class Game {
     $('btnTravel').addEventListener('click', () => { if (this.started) this.travelMenu(); });
     $('btnBanquet').addEventListener('click', () => { if (this.started) this.banquet(); });
     $('btnMap').addEventListener('click', () => { if (this.started) this.openWorldMap(); });
+    $('btnGazette').addEventListener('click', () => { if (this.started) this.gazette(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1840,6 +1842,8 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      const s12 = this.sailAction12 && this.sailAction12();
+      if (s12) return s12;
       const s11 = this.sailAction11 && this.sailAction11();
       if (s11) return s11;
       if (!this.deck && this.grottoNear && this.grottoNear()) return { icon: '🚣', label: 'Gruta', fn: () => this.enterGrotto() };
@@ -1851,6 +1855,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c12 = this.contextAction12 && this.contextAction12();
+    if (c12) return c12;
     const c11 = this.contextAction11 && this.contextAction11();
     if (c11) return c11;
     const c10 = this.contextAction10 && this.contextAction10();
@@ -2328,6 +2334,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
+      rvc: this.rvc || null, gz: this.gz || null,
       conq: Object.fromEntries(Object.entries(this.conq || {}).map(([k, v]) => [k, { fid: v.fid, name: v.name, isle: v.isle }])), owned: this.owned || {}, legend: this.legend || {}, wmap: (this.wmap || []).join(''),
       relics: this.relics || [], amulets: this.amulets || [], amuletEq: this.amuletEq ?? null, adv: this.adv || null,
       towns9: this.towns9 || {}, escortId: this.escortId || null, vision: this.vision || null,
@@ -2528,6 +2535,7 @@ class Game {
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
+    this.rvc = data.rvc || null; this.gz = data.gz || null; this.bdayChecked = null;
     this.conq = data.conq || {}; this.owned = data.owned || {}; this.legend = data.legend || {}; this.wmap = data.wmap ? data.wmap.split('').map(Number) : null; this.festCur = undefined; this.portCannons = null;
     this.relics = data.relics || []; this.amulets = data.amulets || []; this.amuletEq = data.amuletEq ?? undefined; this.adv = data.adv || null; this.portBuilt = false;
     this.towns9 = data.towns9 || {}; this.escortId = data.escortId || null; this.vision = data.vision || null; this.townsGrown = false;
@@ -3037,6 +3045,7 @@ class Game {
       this.updateMore9(dt);
       this.updateMore10(dt);
       this.updateMore11(dt);
+      this.updateMore12(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3271,6 +3280,13 @@ installMore8(Game, { sfx });
 installMore9(Game, { sfx, NPC });
 installMore10(Game, { sfx, NPC });
 installMore11(Game, { sfx });
+installMore12(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'marea', name: 'Amigo de Marea', title: 'Amigo de los tritones', desc: 'Completa las misiones de la Reina de Marea', ok: (g) => (g.flags.mareaQ || 0) >= 3 },
+  { id: 'gran_regata', name: 'Rey de los mares', title: 'Rey de los mares', desc: 'Gana la Gran Regata de las Islas', ok: (g) => (g.stats.regattas || 0) >= 1 },
+  { id: 'domador', name: 'Domador', title: 'Domador', desc: 'Doma una bestia salvaje', ok: (g) => (g.ownMounts || []).some((m) => m === 'tigre_m' || m === 'lobo_m') },
+  { id: 'puzle', name: 'Maestro de la luz', title: 'Maestro de la luz', desc: 'Resuelve la Cueva de Cristal', ok: (g) => (g.stats.puzzles || 0) >= 1 },
+);
 LOGROS.push(
   { id: 'leyenda', name: 'Leyenda de la Bruma', title: 'Leyenda de la Bruma', desc: 'Derrota al Rey de la Bruma', ok: (g) => !!g.flags.legendDone },
   { id: 'libertador_islas', name: 'Libertador de islas', title: 'Libertador', desc: 'Recupera una isla conquistada', ok: (g) => (g.stats.liberated || 0) >= 1 },

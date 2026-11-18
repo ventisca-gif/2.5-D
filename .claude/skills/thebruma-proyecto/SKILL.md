@@ -114,6 +114,10 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Pecio submarino (región 'pecio' x=2300 `underwater`, `WRECK_SPOTS`, tiburones `tiburon` con `makeSharkModel`, 3 cofres diarios). Defensa del puerto con cañones en tierra (`praid`, `portCannons`, `fireLandCannon`). Rasgos (`TRAITS`, `soc.trait`). Mapa del mundo revelable (`wmap`, celdas de 6, Atajos `btnMap`). Leyenda final (`legend` 5 fragmentos de jefes → `summonFinal` `rey_bruma` 60000 vida con fases; premio `c_corona_bruma`, título «Leyenda de la Bruma»).
 - En main.js ya existía `makeWreck` (barco hundido decorativo): el de buceo se llama `makeWreckDive`.
 
+## v4.0 (more12.js)
+- Pueblo de Marea (región 'marea' x=2400 underwater, aire infinito dentro, `MAREA_SPOT` (95,150), NPCs 'marina_t'/'coralino'/'nerito', misiones `flags.mareaQ` 0-3, `c_corona_marea`, `c_capa_marea`). Clanes rivales (`rvc` semanal, `clanScore`/`rivalScore`, `rivalSquad` al cavar tesoros, se llevan la bestia si nadie la caza; envuelve `dig` y `beastReward`). Gran Regata de las Islas (Nerea, `regatta`, boyas en los muelles de Tortuga/Duna/Selva, barriles y rocas). Domar (tigre/lobo_nieve <25% vida + carne → `MOUNTS.tigre_m/lobo_m`, `beastMount` en more2 con makeBeast2). Gaceta semanal (Pepe o Atajos `btnGazette`, `gz`, pista = mapa del tesoro). Cueva de Cristal (entrada en Burbuja, región x=2500, espejos `s` 0='/' 1='\', solución A/B '/', C '\', `traceBeam`, puerta y cofre `cristal_cofre`). Cumpleaños (`hash(id)%12`, `soc.bdayWait`, regalo +15 y recuerdo, olvido −4).
+- El usuario NO quiere Nueva Partida+ (lo volvió a rechazar).
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

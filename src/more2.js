@@ -3,18 +3,22 @@
 import * as THREE from 'three';
 import { makeIslet } from './regions.js';
 import { T } from './world.js';
+import { makeBeast2 } from './chars2.js';
 
 // ---------------------------------------------------------------- monturas
 export const MOUNTS = {
   caballo: { name: 'Caballo de la granja', icon: '🐴', price: 800, seller: 'lucia', speed: 1.75, col: 0x7a4a2a, mane: 0x2a1a10 },
   camello: { name: 'Camello del desierto', icon: '🐫', price: 1400, seller: 'zaid', speed: 1.7, col: 0xc89a5a, mane: 0x8a6a3a, hump: true },
   salamandra: { name: 'Salamandra de lava', icon: '🦎', price: 4000, seller: 'brasa', speed: 2.0, col: 0x3a2a2a, mane: 0xff6020, lizard: true },
+  tigre_m: { name: 'Tigre domado', icon: '🐅', price: 0, seller: null, speed: 1.95, beast: 'tiger', tame: true },
+  lobo_m: { name: 'Lobo de las nieves domado', icon: '🐺', price: 0, seller: null, speed: 1.9, beast: 'wolf', tint: 0xf4f8fc, tame: true },
   trineo: { name: 'Trineo de perros', icon: '🛷', price: 5000, seller: 'helga', speed: 1.85, col: 0x8a8a90, mane: 0xf4f4f4, sled: true },
 };
 export function mountModel(type) {
   const d = MOUNTS[type];
   if (d.lizard) return lizardModel(d);
   if (d.sled) return sledModel(d);
+  if (d.beast) return beastMount(d);
   const camel = !!d.hump;
   const g = new THREE.Group();
   const body = new THREE.Group(); g.add(body);
@@ -71,6 +75,16 @@ export function mountModel(type) {
     mesh(new THREE.BoxGeometry(0.01, 0.01, 0.62), 0x3a2414, sx * 0.06, H + 0.36, 0.44, -0.55, 0, 0);
   }
   g.userData = { legs, body, neck, tail, h: H + (camel ? 0.48 : 0.25) };
+  return g;
+}
+function beastMount(d) {
+  const m = makeBeast2(d.beast);
+  if (d.tint) { const c = new THREE.Color(d.tint), tmp = new THREE.Color(); m.root.traverse((o) => { if (!o.isMesh || !o.geometry || !o.geometry.attributes.color || (o.material && o.material.isShaderMaterial)) return; o.geometry = o.geometry.clone(); const a = o.geometry.attributes.color; for (let i = 0; i < a.count; i++) { tmp.setRGB(a.getX(i), a.getY(i), a.getZ(i)); if ((tmp.r + tmp.g + tmp.b) / 3 > 0.85) continue; tmp.lerp(c, 0.75); a.setXYZ(i, tmp.r, tmp.g, tmp.b); } a.needsUpdate = true; }); }
+  const g = new THREE.Group();
+  m.root.scale.setScalar(1.75);
+  g.add(m.root);
+  const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.05, 0.4), new THREE.MeshLambertMaterial({ color: 0x8a1a1a })); saddle.position.set(0, 0.8 * 1.75 * 0.56, 0); g.add(saddle);
+  g.userData = { legs: (m.parts.legs || []).slice(0, 4), body: m.parts.body || m.root, tail: m.parts.tail, h: 0.8 * 1.75 * 0.56 + 0.05 };
   return g;
 }
 function sledModel(d) {
