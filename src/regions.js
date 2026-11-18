@@ -283,7 +283,13 @@ export function attachRegions(W, regions) {
   W.regionAt = (x, z) => at(Math.round(x), Math.round(z));
   W.walkable = (x, z) => { const r = at(x, z); return r === null ? main.walkable(x, z) : r ? r.walkable(x, z) : false; };
   W.tileAll = (x, z) => { const r = at(x, z); return r === null ? main.tile(x, z) : r ? r.tile(x, z) : T.WATER; };
-  W.groundY = (x, z) => { const r = at(Math.round(x), Math.round(z)); return r === null ? main.groundY(x, z) : r ? r.groundY(x, z) : 0; };
+  W.groundY = (x, z) => {
+    const rx = Math.round(x), rz = Math.round(z);
+    const r = at(rx, rz);
+    if (r && r.kind === 'interior') return 0;
+    if (W.tileAll(rx, rz) === T.WATER) return -0.88;
+    return r === null ? main.groundY(x, z) : r ? r.groundY(x, z) : 0;
+  };
   W.areaName = (x, z) => {
     const r = at(x, z);
     if (r === null) return main.tile(x, z) === T.WATER ? 'Mar de Bruma' : main.areaName(x, z);
@@ -291,5 +297,6 @@ export function attachRegions(W, regions) {
   };
   W.setBlocked = (x, z, v) => { const r = at(x, z); if (r === null) W.blocked[W.idx(x, z)] = v; else if (r) r.setBlocked(x, z, v); };
   W.isInterior = (x) => x >= INTERIOR_X0 - 2;
+  W.isWater = (x, z) => x > -24 && z > -24 && x < 164 && z < 164 && W.tileAll(x, z) === T.WATER;
   W.key = KEY;
 }

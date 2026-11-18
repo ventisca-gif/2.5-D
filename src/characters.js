@@ -307,27 +307,57 @@ export function animateModel(model, st, dt) {
   st.phase = (st.phase || 0) + dt * (moving ? 11 : 2);
   const s = Math.sin(st.phase);
   if (model.kind === 'humanoid') {
-    const amp = moving ? 0.7 : 0;
-    p.legL.rotation.x = s * amp;
-    p.legR.rotation.x = -s * amp;
-    p.armL.rotation.x = -s * amp * 0.8;
-    let ar = s * amp * 0.8;
-    if (st.attackT > 0) {
-      const t = 1 - st.attackT / 0.32;
-      ar = t < 0.4 ? -2.4 * (t / 0.4) : -2.4 + 3.2 * ((t - 0.4) / 0.6);
-    } else if (st.gather > 0) {
-      ar = -1.6 + Math.sin(st.gatherPhase || 0) * 1.0;
-    } else if (st.sit) {
-      ar = -0.6;
+    p.torso.rotation.set(0, 0, 0);
+    p.armL.rotation.set(0, 0, 0);
+    p.armR.rotation.set(0, 0, 0);
+    if (st.swim) {
+      // nadar: brazadas de crol al moverse, flotar moviendo los brazos al estar quieto
+      const sp = st.phase;
+      if (moving) {
+        p.armL.rotation.x = -((sp * 0.75) % (Math.PI * 2));
+        p.armR.rotation.x = -((sp * 0.75 + Math.PI) % (Math.PI * 2));
+        p.armL.rotation.z = -0.25;
+        p.armR.rotation.z = 0.25;
+        p.torso.rotation.x = 0.35;
+      } else {
+        p.armL.rotation.set(-0.5 + Math.sin(sp * 2) * 0.25, 0, -1.0 + Math.sin(sp * 2) * 0.35);
+        p.armR.rotation.set(-0.5 + Math.sin(sp * 2) * 0.25, 0, 1.0 - Math.sin(sp * 2) * 0.35);
+      }
+      p.legL.rotation.x = Math.sin(sp * 2) * 0.45;
+      p.legR.rotation.x = -Math.sin(sp * 2) * 0.45;
+      p.body.position.y = Math.sin(sp * 1.5) * 0.02;
+      p.head.rotation.x = moving ? -0.3 : 0;
+      if (p.cape) p.cape.rotation.x = 1.2;
+    } else {
+      const amp = moving ? 0.7 : 0;
+      p.legL.rotation.x = s * amp;
+      p.legR.rotation.x = -s * amp;
+      p.armL.rotation.x = -s * amp * 0.8;
+      p.armR.rotation.x = s * amp * 0.8;
+      if (st.attackT > 0) {
+        // tajo: preparación (brazo atrás y arriba, torso gira) -> golpe en diagonal -> recuperación
+        const t = 1 - st.attackT / 0.32;
+        let ax, az, ty, lean;
+        if (t < 0.35) { const e = t / 0.35; ax = -2.8 * e; az = 0.7 * e; ty = 0.5 * e; lean = -0.08 * e; }
+        else if (t < 0.7) { const e = (t - 0.35) / 0.35; ax = -2.8 + 3.8 * e; az = 0.7 - 1.4 * e; ty = 0.5 - 1.1 * e; lean = -0.08 + 0.26 * e; }
+        else { const e = (t - 0.7) / 0.3; ax = 1.0 * (1 - e); az = -0.7 * (1 - e); ty = -0.6 * (1 - e); lean = 0.18 * (1 - e); }
+        p.armR.rotation.x = ax;
+        p.armR.rotation.z = az;
+        p.torso.rotation.y = ty;
+        p.torso.rotation.x = lean;
+        p.armL.rotation.x = 0.4 * Math.sin(t * Math.PI);
+        p.armL.rotation.z = -0.3 * Math.sin(t * Math.PI);
+      } else if (st.gather > 0) {
+        p.armR.rotation.x = -1.6 + Math.sin(st.gatherPhase || 0) * 1.0;
+      } else if (st.sit) {
+        p.armR.rotation.x = -0.6;
+      }
+      if (st.holdHand === 'L') { p.armL.rotation.z = -0.55; p.armL.rotation.x = -0.25; }
+      if (st.holdHand === 'R') { p.armR.rotation.z = 0.55; p.armR.rotation.x = -0.25; }
+      p.head.rotation.x = st.kiss ? 0.25 : 0;
+      p.body.position.y = moving ? Math.abs(Math.cos(st.phase)) * 0.04 : Math.sin(st.phase) * 0.008;
+      if (p.cape) p.cape.rotation.x = moving ? 0.35 + Math.abs(s) * 0.15 : 0.08;
     }
-    p.armR.rotation.x = ar;
-    p.armL.rotation.z = 0;
-    p.armR.rotation.z = 0;
-    if (st.holdHand === 'L') { p.armL.rotation.z = -0.55; p.armL.rotation.x = -0.25; }
-    if (st.holdHand === 'R') { p.armR.rotation.z = 0.55; p.armR.rotation.x = -0.25; }
-    p.head.rotation.x = st.kiss ? 0.25 : 0;
-    p.body.position.y = moving ? Math.abs(Math.cos(st.phase)) * 0.04 : Math.sin(st.phase) * 0.008;
-    if (p.cape) p.cape.rotation.x = moving ? 0.35 + Math.abs(s) * 0.15 : 0.08;
     p.head.rotation.y = st.lookYaw || 0;
   } else if (model.kind === 'quad') {
     const amp = moving ? 0.8 : 0;

@@ -48,7 +48,24 @@ const animeGirl = (i, extra = {}) => ({ ...buildLook({ gender: 'f', hair: 0, hai
   hairStyle: HAIR_AF[i % 6].id, hair: HAIR_COLORS_A[[1, 3, 7, 6, 4, 5][i % 6]], face: FACES_F[i % 4].id, eyeColor: [1, 2, 4, 0, 5, 7][i % 6], bust: [2, 1, 3, 2, 1, 2][i % 6], ...extra });
 const animeBoy = (i, extra = {}) => ({ ...buildLook({ gender: 'm', hair: 0, hairColor: 0, skin: [1, 2, 0, 3, 1, 0][i % 6], clothes: (i + 2) % 6 }, AW), anime: true, faceRes: 512, noAutoLegs: true,
   hairStyle: HAIR_AM[i % 6].id, hair: HAIR_COLORS_A[[0, 2, 5, 1, 8, 9][i % 6]], face: FACES_M[i % 4].id, eyeColor: [0, 1, 3, 6, 2, 4][i % 6], ...extra });
-const cast = ANIME === 1 ? HAIR_AF.map((h, i) => ({ name: `${h.name} · ${FACES_F[i % 4].name}`, model: makeHumanoid2(animeGirl(i)) }))
+const BODIES = new URLSearchParams(location.search).get('bodies');
+const bl = (ap) => ({ ...buildLook({ ...ap }, AW), noAutoLegs: true });
+const cast = BODIES === '1' ? [
+    ...['Normal', 'Atlético', 'Robusto', 'Delgado', 'Clásico'].map((n, i) => ({ name: '♂ ' + n, model: makeHumanoid2(bl({ gender: 'm', body: i, hair: [0, 1, 2, 4, 0][i], hairColor: [0, 2, 1, 5, 3][i], skin: [1, 2, 0, 3, 1][i], clothes: [2, 0, 5, 3, 0][i], eye: [0, 1, 3, 2, 1][i], face: i % 4, faceShape: i % 4, beard: i === 2 })) })),
+    ...['Normal', 'Atlética', 'Curvas', 'Delgada', 'Clásica'].map((n, i) => ({ name: '♀ ' + n, model: makeHumanoid2(bl({ gender: 'f', body: i, hair: [0, 2, 1, 4, 3][i], hairColor: [1, 4, 7, 3, 0][i], skin: [0, 2, 1, 0, 3][i], clothes: [3, 1, 2, 4, 5][i], eye: [1, 2, 4, 7, 0][i], face: i % 4, faceShape: (i + 1) % 4, bust: [2, 1, 3, 1, 2][i] })) })),
+  ]
+  : BODIES === '2' ? [
+    { name: 'Con todo', model: makeHumanoid2(bl({ gender: 'f', hair: 1, hairColor: 6, eye: 1 })) },
+    { name: 'Sin nariz', model: makeHumanoid2(bl({ gender: 'f', hair: 1, hairColor: 6, eye: 1, nose: false })) },
+    { name: 'Sin nariz ni boca', model: makeHumanoid2(bl({ gender: 'f', hair: 1, hairColor: 6, eye: 1, nose: false, mouth: false })) },
+    { name: 'Sin nada (ojos solo)', model: makeHumanoid2(bl({ gender: 'f', hair: 1, hairColor: 6, eye: 1, nose: false, mouth: false, blush: false })) },
+    { name: 'Ovalada', model: makeHumanoid2(bl({ gender: 'm', hair: 2, hairColor: 0, eye: 3, faceShape: 0 })) },
+    { name: 'Redonda', model: makeHumanoid2(bl({ gender: 'm', hair: 2, hairColor: 0, eye: 3, faceShape: 1 })) },
+    { name: 'Afilada', model: makeHumanoid2(bl({ gender: 'm', hair: 2, hairColor: 0, eye: 3, faceShape: 2 })) },
+    { name: 'Cuadrada', model: makeHumanoid2(bl({ gender: 'm', hair: 2, hairColor: 0, eye: 3, faceShape: 3 })) },
+    { name: 'Clásico sin cara', model: makeHumanoid2(bl({ gender: 'm', body: 4, hair: 0, hairColor: 1, nose: false, mouth: false, blush: false })) },
+  ]
+  : ANIME === 1 ? HAIR_AF.map((h, i) => ({ name: `${h.name} · ${FACES_F[i % 4].name}`, model: makeHumanoid2(animeGirl(i)) }))
   : ANIME === 2 ? HAIR_AM.map((h, i) => ({ name: `${h.name} · ${FACES_M[i % 4].name}`, model: makeHumanoid2(animeBoy(i)) }))
   : ANIME === 3 ? [
     ...[0, 1, 2, 3].map((b) => ({ name: `Busto ${['plano', 'pequeño', 'medio', 'grande'][b]}`, model: makeHumanoid2(animeGirl(0, { bust: b, hairStyle: 'melena', hair: HAIR_COLORS_A[1], eyeColor: 0 })) })),

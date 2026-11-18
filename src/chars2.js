@@ -6,6 +6,19 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { faceTexture, animeHeadGeo, animeHair, BUST, EYE_COLORS } from './anime.js';
 
+// Tipos de cuerpo: hombros, pecho, cintura, caderas, piernas, altura
+const BODY = {
+  normal: { sh: 1, ch: 1, wa: 1, hip: 1, leg: 1, h: 1 },
+  atletico: { sh: 1.24, ch: 1.22, wa: 0.92, hip: 1.02, leg: 1.16, h: 1.06 },
+  atletica: { sh: 1.12, ch: 1.08, wa: 0.88, hip: 1.06, leg: 1.1, h: 1.04 },
+  robusto: { sh: 1.16, ch: 1.2, wa: 1.38, hip: 1.22, leg: 1.22, h: 0.96 },
+  delgado: { sh: 0.84, ch: 0.82, wa: 0.78, hip: 0.86, leg: 0.8, h: 1.06 },
+  delgada: { sh: 0.82, ch: 0.8, wa: 0.76, hip: 0.9, leg: 0.8, h: 1.04 },
+  curvy: { sh: 0.95, ch: 1.0, wa: 0.84, hip: 1.38, leg: 1.14, h: 1 },
+  clasico: { sh: 1, ch: 1, wa: 1, hip: 1, leg: 1, h: 1 },
+  clasica: { sh: 1, ch: 1, wa: 1, hip: 1, leg: 1, h: 1 },
+};
+
 // ------------------------------------------------------------------ geometrías base (cacheadas)
 const G = new Map();
 function geo(key, make) {
@@ -227,18 +240,21 @@ export function makeHumanoid2(look = {}) {
   const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
 
   // ---------------- piernas (pivote en la cadera)
+  const BD = BODY[look.body] || BODY.normal;
+  body.scale.y = BD.h;
+  const LG = BD.leg;
   const legs = [];
   for (const s of [-1, 1]) {
-    const leg = P(body, s * 0.085, 0.42, 0);
+    const leg = P(body, s * 0.085 * BD.hip, 0.42, 0);
     if (bone) {
       leg.add(cyl(0.022, 0.02, 0.2), bone, 0, -0.1, 0);
       leg.add(sph(0.034), bone, 0, -0.205, 0);
       leg.add(cyl(0.02, 0.018, 0.16), bone, 0, -0.3, 0);
       leg.add(rbox(0.07, 0.04, 0.12, 0.015), bone, 0, -0.4, 0.02);
     } else {
-      leg.add(cyl(0.07, 0.06, 0.2), pants, 0, -0.1, 0);
-      leg.add(sph(0.06), pants, 0, -0.2, 0.005);
-      leg.add(cyl(0.058, 0.052, 0.12), pants, 0, -0.27, 0);
+      leg.add(cyl(0.07, 0.06, 0.2), pants, 0, -0.1, 0, 0, 0, 0, LG, 1, LG);
+      leg.add(sph(0.06), pants, 0, -0.2, 0.005, 0, 0, 0, LG, 1, LG);
+      leg.add(cyl(0.058, 0.052, 0.12), pants, 0, -0.27, 0, 0, 0, 0, LG, 1, LG);
       // bota
       leg.add(cyl(0.064, 0.068, 0.13), boots, 0, -0.335, 0);
       leg.add(cyl(0.072, 0.072, 0.025), shade(boots, 0.75), 0, -0.275, 0);
@@ -259,7 +275,7 @@ export function makeHumanoid2(look = {}) {
 
   // ---------------- caderas
   const hips = P(body, 0, 0, 0);
-  if (!bone) hips.add(cyl(0.13, 0.135, 0.11, 14), pants, 0, 0.44, 0, 0, 0, 0, 1, 1, 0.78);
+  if (!bone) hips.add(cyl(0.13, 0.135, 0.11, 14), pants, 0, 0.44, 0, 0, 0, 0, BD.hip, 1, 0.78 * Math.max(1, BD.hip * 0.92));
   else hips.add(rbox(0.2, 0.06, 0.1, 0.025), bone, 0, 0.44, 0);
 
   // ---------------- torso
@@ -271,7 +287,9 @@ export function makeHumanoid2(look = {}) {
   } else {
     const chest = look.armor ? armorC : shirt;
     const fx = look.female ? 0.92 : 1;
-    torso.add(lathe([[0.001, 0.0], [0.135, 0.0], [0.148, 0.08], [0.17, 0.2], [0.175, 0.29], [0.15, 0.35], [0.09, 0.385], [0.001, 0.39]]), chest, 0, 0, 0, 0, 0, 0, fx, 1, 0.74);
+    const r3 = (v) => Math.round(v * 1000) / 1000;
+    const prof = [[0.001, 0.0], [0.135 * BD.hip, 0.0], [0.148 * BD.wa, 0.08], [0.17 * (BD.wa + BD.ch) / 2, 0.2], [0.175 * BD.ch, 0.29], [0.15 * BD.sh, 0.35], [0.09, 0.385], [0.001, 0.39]].map(([a, b]) => [r3(a), b]);
+    torso.add(lathe(prof), chest, 0, 0, 0, 0, 0, 0, fx, 1, 0.74 * (BD.wa > 1.1 ? 1.15 : 1));
     if (look.female) {
       const bc = look.coat ? (look.vest ?? shirt) : chest;
       const bk = BUST[look.bust ?? 2];
@@ -381,7 +399,7 @@ export function makeHumanoid2(look = {}) {
   // ---------------- brazos (pivote en el hombro)
   const arms = [];
   for (const s of [-1, 1]) {
-    const arm = P(torso.g, s * 0.205, 0.32, 0);
+    const arm = P(torso.g, s * 0.205 * BD.sh, 0.32, 0);
     const sleeve = look.sleeve ?? (look.armor ? armorC : shirt);
     if (bone) {
       arm.add(sph(0.035), bone, 0, 0, 0);
@@ -472,14 +490,14 @@ export function makeHumanoid2(look = {}) {
     head.add(sph(0.032, 8, 6), skin, -0.15, 0.135, 0.0, 0, 0, 0, 0.55, 1.1, 0.85);
     head.add(sph(0.032, 8, 6), skin, 0.15, 0.135, 0.0, 0, 0, 0, 0.55, 1.1, 0.85);
     const fmat = new THREE.MeshPhongMaterial({
-      map: faceTexture({ skin, eye: EYE_COLORS[look.eyeColor ?? 0].c, face: look.face || (look.female ? 'dulce' : 'heroico'), female: !!look.female, hair: hairC ?? 0x3a2a1a, size: look.faceRes || 256 }),
+      map: faceTexture({ skin, eye: EYE_COLORS[look.eyeColor ?? 0].c, face: look.face || (look.female ? 'dulce' : 'heroico'), female: !!look.female, hair: hairC ?? 0x3a2a1a, size: look.faceRes || 256, noNose: !!look.noNose, noMouth: !!look.noMouth, noBlush: !!look.noBlush }),
       shininess: 10, specular: 0x111111,
     });
     fmat.userData.baseEmissive = new THREE.Color(0);
-    const fm = new THREE.Mesh(animeHeadGeo(), fmat);
+    const fm = new THREE.Mesh(animeHeadGeo(look.faceShape), fmat);
     fm.position.set(0, 0.15, 0);
     fm.castShadow = true;
-    const fo = new THREE.Mesh(animeHeadGeo(), OUTLINE);
+    const fo = new THREE.Mesh(animeHeadGeo(look.faceShape), OUTLINE);
     fo.position.copy(fm.position);
     fo.rotation.copy(fm.rotation);
     head.g.add(fm, fo);
@@ -489,16 +507,16 @@ export function makeHumanoid2(look = {}) {
     head.add(sph(0.045, 8, 6), skin, -0.136, 0.13, 0, 0, 0, 0, 0.5, 1, 0.8);
     head.add(sph(0.045, 8, 6), skin, 0.136, 0.13, 0, 0, 0, 0, 0.5, 1, 0.8);
     // cara
-    const eye = look.eyeColor ?? 0x1a1414;
+    const eye = look.classicEye ?? (typeof look.eyeColor === 'number' && look.eyeColor > 16 ? look.eyeColor : 0x1a1414);
     for (const s of [-1, 1]) {
       head.add(sph(0.022, 8, 6), eye, s * 0.055, 0.15, 0.124, 0, 0, 0, 1, 1.35, 0.5);
       head.add(sph(0.007, 4, 3), 0xffffff, s * 0.055 + 0.006, 0.16, 0.133);
       head.add(rbox(0.055, 0.014, 0.01, 0.005), hairC ?? shade(skin, 0.55), s * 0.056, 0.195, 0.125, 0, 0, s * -0.12);
     }
-    head.add(sph(0.022, 8, 6), shade(skin, 0.9), 0, 0.115, 0.128, 0, 0, 0, 0.9, 0.8, 0.8);
-    head.add(rbox(0.05, 0.01, 0.01, 0.004), look.female ? 0xc8505a : 0x7a3a30, 0, 0.068, 0.124);
+    if (!look.noNose) head.add(sph(0.022, 8, 6), shade(skin, 0.9), 0, 0.115, 0.128, 0, 0, 0, 0.9, 0.8, 0.8);
+    if (!look.noMouth) head.add(rbox(0.05, 0.01, 0.01, 0.004), look.female ? 0xc8505a : 0x7a3a30, 0, 0.068, 0.124);
     if (look.female) for (const sx of [-1, 1]) head.add(rbox(0.04, 0.008, 0.012, 0.003), 0x141010, sx * 0.062, 0.178, 0.129, 0, 0, sx * 0.25);
-    if (!look.beard) {
+    if (!look.beard && !look.noBlush) {
       head.add(sph(0.022, 6, 4), 0xf09a8a, -0.085, 0.1, 0.11, 0, 0, 0, 1, 0.6, 0.4);
       head.add(sph(0.022, 6, 4), 0xf09a8a, 0.085, 0.1, 0.11, 0, 0, 0, 1, 0.6, 0.4);
     }

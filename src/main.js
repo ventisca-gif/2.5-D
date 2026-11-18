@@ -14,7 +14,7 @@ import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
 import { makeIslets, makeInteriors, attachRegions } from './regions.js';
 import { buildRoom } from './interiors.js';
-import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop, crewGear, crewTier, HAIR_M as HAIRM, HAIR_F as HAIRF, HAIR_COLORS as HAIRC, SKINS as SKINC, CLOTHES as CLOTHC } from './items.js';
+import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop, crewGear, crewTier, HAIR_AM as HAIRM, HAIR_AF as HAIRF, HAIR_COLORS as HAIRC, SKINS as SKINC, CLOTHES as CLOTHC, BODY_M, BODY_F, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './items.js';
 import { npcLevel, RECRUITABLE, ROMANCE, MAX_CREW, friendLevel, heartsText, CHAT_LINES, CHAT_REPLIES, ROMANCE_LINES, CONFESS_YES, CONFESS_NO, DUEL_LINES, ANGRY_LINES, GIFT_LIKES } from './social.js';
 import { Panels, fmtTime } from './panels.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
@@ -26,7 +26,26 @@ const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'islabruma_save_v1';
 const SETTINGS_KEY = 'islabruma_settings_v1';
 const SLOT_KEY = (i) => 'thebruma_slot_' + i;
-const DEFAULT_AP = { gender: 'm', hair: 0, hairColor: 1, skin: 1, clothes: 0, beard: false };
+const DEFAULT_AP = { gender: 'm', hair: 0, hairColor: 1, skin: 1, clothes: 0, beard: false, body: 0, faceShape: 0, face: 0, eye: 0, bust: 2, nose: true, mouth: true, blush: true };
+// NPCs con cara anime: género, peinado, ojos, expresión, forma de cara y cuerpo deterministas por id
+const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara']);
+function hashId(id) { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
+function animeLook(def) {
+  const L = def.look;
+  if (L.bone || L.anime) return L;
+  const h = hashId(def.id || 'x');
+  const female = FEMALE_NPC.has(def.id) || !!L.dress;
+  const fh = def.small ? ['dosColetas', 'coleta'] : L.longHair ? ['largo', 'trenza', 'melena'] : ['melena', 'coleta', 'corto', 'largo'];
+  const mh = L.longHair ? ['melenaM', 'samurai'] : ['flequillo', 'despeinado', 'punta', 'lateral'];
+  const hairStyle = female ? fh[h % fh.length] : mh[h % mh.length];
+  const strong = ['ramiro', 'tito', 'tadeo', 'rufo', 'quino'].includes(def.id);
+  const body = female ? ['normal', 'curvy', 'atletica', 'delgada'][(h >>> 3) % 4] : strong ? (def.id === 'tadeo' ? 'robusto' : 'atletico') : ['normal', 'delgado', 'normal', 'robusto'][(h >>> 3) % 4];
+  return {
+    ...L, anime: true, female, hairStyle, body, eyeColor: h % 8,
+    face: (female ? FACES_F : FACES_M)[(h >>> 5) % 4].id, faceShape: FACE_SHAPES[(h >>> 7) % 4].id,
+    bust: female ? 1 + ((h >>> 9) % 3) : 0, faceRes: 256,
+  };
+}
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -69,7 +88,7 @@ class Actor {
   goTo(x, z, adjacent = false, maxIter = 6000, range = 1) {
     const moving = this.path.length > 0;
     const s = this.nextTile();
-    const p = findPath(this.g.W, s.x, s.z, x, z, { adjacent, maxIter, range });
+    const p = findPath(this.g.W, s.x, s.z, x, z, { adjacent, maxIter, range, walk: this.walkFn });
     if (!p) {
       this.path = moving ? [s] : [];
       return false;
@@ -107,7 +126,10 @@ class Actor {
   }
   sync(dt) {
     const r = this.model.root;
-    r.position.set(this.x, this.g.W.groundY(this.x, this.z) + this.yOff, this.z);
+    const gy = this.g.W.groundY(this.x, this.z);
+    this.vy = this.vy === undefined ? gy : this.vy + (gy - this.vy) * Math.min(1, dt * 7);
+    this.st.swim = gy < -0.5;
+    r.position.set(this.x, this.vy + this.yOff, this.z);
     r.rotation.y = this.face;
     if (this.st.attackT > 0) this.st.attackT -= dt;
     animateModel(this.model, this.st, dt);
@@ -140,6 +162,7 @@ class Player extends Actor {
     this.dead = false;
     this.regenAcc = 0;
     this.label = game.ui.makeLabel('player', this.name);
+    this.walkFn = (x, z) => game.W.walkable(x, z) || game.W.isWater(x, z);
   }
   refreshLook() {
     const old = this.model.root;
@@ -218,7 +241,8 @@ class Player extends Actor {
         const from = this.nextTile();
         const d = g.joyToGrid(joy);
         let step = null;
-        const ok = (dx, dz) => g.W.walkable(from.x + dx, from.z + dz) && (!(dx && dz) || (g.W.walkable(from.x + dx, from.z) && g.W.walkable(from.x, from.z + dz)));
+        const wk = this.walkFn;
+        const ok = (dx, dz) => wk(from.x + dx, from.z + dz) && (!(dx && dz) || (wk(from.x + dx, from.z) && wk(from.x, from.z + dz)));
         const door = !this.path.length && g.doorAt(from.x + d[0], from.z + d[1]);
         if (door && door.front.x === from.x && door.front.z === from.z) { g.enterRoom(door); return; }
         if (ok(d[0], d[1])) step = d;
@@ -239,11 +263,31 @@ class Player extends Actor {
     this.stepMove(dt);
     // correr y estamina
     const wantRun = this.running || g.keys.has('shift');
-    if (wantRun && this.st.moving && this.stamina > 0 && !this.exhausted) {
+    const swimming = g.W.groundY(this.x, this.z) < -0.5;
+    if (swimming) {
+      // nadar: lento y gasta estamina; sin estamina, te ahogas
+      this.speed = 2.3;
+      this.stamina = Math.max(0, this.stamina - 5 * dt);
+      if (this.stamina <= 0) {
+        this.drownT = (this.drownT || 0) + dt;
+        if (this.drownT >= 1) {
+          this.drownT = 0;
+          const d = Math.max(2, Math.round(this.maxHp * 0.06));
+          this.hp -= d;
+          g.ui.float('-' + d, 'dmg', this.x, 0.6, this.z);
+          g.ui.toast('🌊 ¡Te ahogas! Vuelve a tierra');
+          if (this.hp <= 0) { this.hp = 0; this.dead = true; this.deadT = 3; this.path = []; this.target = null; sfx('die'); g.ui.toast('💀 Te has ahogado… despertarás en Villarroca'); }
+        }
+      }
+      if (!this.wasSwimming) sfx('drink');
+      this.wasSwimming = true;
+    } else if (wantRun && this.st.moving && this.stamina > 0 && !this.exhausted) {
+      this.wasSwimming = false;
       this.speed = 5.6;
       this.stamina -= 16 * dt;
       if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; g.ui.toast('😮‍💨 Sin aliento'); }
     } else {
+      this.wasSwimming = false;
       this.speed = 3.4;
       this.stamina = Math.min(this.maxSt, this.stamina + (this.st.moving ? 9 : 16) * dt);
       if (this.exhausted && this.stamina > 25) this.exhausted = false;
@@ -349,6 +393,8 @@ class Player extends Actor {
   }
 
   attack(e) {
+    if (this.st.swim) { this.g.ui.toast('No puedes atacar nadando'); this.attackCd = 1; return; }
+    this.g.slash(this, 0xffffff);
     this.attackCd = 0.72;
     this.st.attackT = 0.32;
     this.pendingWeak = this.stamina < 6;
@@ -374,7 +420,9 @@ class Player extends Actor {
 
 class NPC extends Actor {
   constructor(game, def) {
-    super(game, HUM(def.look), def.x, def.z);
+    const look0 = animeLook(def);
+    super(game, HUM(look0), def.x, def.z);
+    this.look0 = look0;
     this.def = def;
     this.id = def.id;
     this.name = def.name;
@@ -445,6 +493,7 @@ class NPC extends Actor {
           if (this.attackCd <= 0) {
             this.attackCd = 1.1;
             this.st.attackT = 0.32;
+            g.slash(this, 0xbfe6ff);
             const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3));
             setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.damageEnemy(foe, dmg, false, this); }, 150);
           }
@@ -495,6 +544,7 @@ class NPC extends Actor {
       this.attackCd = 1.3;
       this.st.attackT = 0.32;
       this.pending = { t: 0.16 };
+      g.slash(this, 0xffd0a0);
     }
     if (dP <= 1.3 && !p.st.moving) {
       if (this.path.length > 1) this.path = [this.path[0]];
@@ -614,6 +664,7 @@ class Enemy extends Actor {
           this.attackCd = this.def.cd;
           this.st.attackT = 0.32;
           this.pending = { t: 0.16 };
+          if (this.model.kind === 'humanoid') g.slash(this, this.type === 'boss' ? 0xff5040 : 0xd0d8c0);
         }
         if (dP <= 1.3 && !p.st.moving) {
           if (this.path.length > 1) this.path = [this.path[0]];
@@ -908,7 +959,7 @@ class Game {
     }
     for (const t of W.towers) {
       if (!t.guard) continue;
-      const m = HUM({ shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', armor: true, spear: true, skin: 0xe0aa80 });
+      const m = HUM(animeLook({ id: 'vigia' + t.x + t.z, look: { shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', armor: true, spear: true, skin: 0xe0aa80, hair: 0x3a2a1a } }));
       m.root.position.set(t.x, 2.51, t.z);
       this.scene.add(m.root);
       this.guards.push({ m, st: {}, base: Math.random() * 6 });
@@ -1151,7 +1202,7 @@ class Game {
     }
     this.selection.visible = false;
     let gx = tx, gz = tz;
-    if (!this.W.walkable(gx, gz)) {
+    if (!p.walkFn(gx, gz)) {
       let found = null, fd = 99;
       for (let r = 1; r <= 2 && !found; r++) {
         for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
@@ -1343,6 +1394,49 @@ class Game {
     const cur = QUESTS[this.quest.stage];
     if (cur && cur.type === 'chest' && cur.target === c.id) this.advanceQuest();
     this.save();
+  }
+
+  // estela del tajo de espada
+  slash(actor, color) {
+    if (!this.fx) this.fx = [];
+    const g = new THREE.Group();
+    const geo = new THREE.RingGeometry(0.38, 0.66, 18, 1, -Math.PI / 2 - 1.15, 2.3);
+    geo.rotateX(-Math.PI / 2);
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending }));
+    g.add(m);
+    const s = actor.model.root.scale.x;
+    g.position.set(actor.x, (actor.vy || 0) + 0.62 * s, actor.z);
+    g.rotation.set(0, actor.face, 0.35);
+    g.scale.setScalar(s);
+    this.scene.add(g);
+    this.fx.push({ g, m, t: -0.1, life: 0.26 });
+  }
+  updateFx(dt) {
+    if (this.fx) for (let i = this.fx.length - 1; i >= 0; i--) {
+      const f = this.fx[i];
+      f.t += dt;
+      if (f.t < 0) continue;
+      const k = f.t / f.life;
+      f.m.material.opacity = 0.55 * Math.sin(Math.min(1, k) * Math.PI);
+      f.g.rotation.y += dt * 4;
+      f.g.scale.multiplyScalar(1 + dt * 0.8);
+      if (k >= 1) { this.scene.remove(f.g); f.m.geometry.dispose(); f.m.material.dispose(); this.fx.splice(i, 1); }
+    }
+    // ondas al nadar
+    const p = this.player;
+    if (!this.ripple) {
+      this.ripple = new THREE.Mesh(new THREE.RingGeometry(0.3, 0.38, 24), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, depthWrite: false }));
+      this.ripple.rotation.x = -Math.PI / 2;
+      this.scene.add(this.ripple);
+    }
+    const sw = p.st.swim && !this.sailing && !p.dead;
+    this.ripple.visible = sw;
+    if (sw) {
+      const k = (this.time * 1.3) % 1;
+      this.ripple.position.set(p.x, -0.1, p.z);
+      this.ripple.scale.setScalar(1 + k * 1.4);
+      this.ripple.material.opacity = 0.55 * (1 - k);
+    }
   }
 
   showCursor(x, z) {
@@ -1670,9 +1764,9 @@ class Game {
       const i = Number(b.dataset.slot);
       if (b.dataset.a === 'play') { this.slot = i; this.startGame(load(SLOT_KEY(i))); }
       if (b.dataset.a === 'del' && confirm(`¿Borrar la partida de la ranura ${i}?`)) { try { localStorage.removeItem(SLOT_KEY(i)); } catch (err) { /* nada */ } renderSlots(); }
-      if (b.dataset.a === 'new') { this.slot = i; $('scrSlots').classList.add('hidden'); $('scrCreate').classList.remove('hidden'); refresh(); }
+      if (b.dataset.a === 'new') { this.slot = i; $('scrSlots').classList.add('hidden'); $('scrCreate').classList.remove('hidden'); $('start').classList.add('creating'); this.viewTarget = 4.6; refresh(); }
     });
-    $('btnBack').addEventListener('click', () => { sfx('click'); $('scrCreate').classList.add('hidden'); $('scrSlots').classList.remove('hidden'); });
+    $('btnBack').addEventListener('click', () => { sfx('click'); $('scrCreate').classList.add('hidden'); $('scrSlots').classList.remove('hidden'); $('start').classList.remove('creating'); this.viewTarget = 6; });
     $('btnGuideMenu').addEventListener('click', () => this.panels.openGuide());
 
     // creador de personaje
@@ -1696,19 +1790,41 @@ class Game {
     const refresh = () => {
       const ap = this.ap;
       opt('genders', ['m', 'f'], 'genderIdx', (b, g) => { b.textContent = g === 'm' ? '♂ Chico' : '♀ Chica'; b.classList.toggle('sel', ap.gender === g); });
-      [...$('genders').children].forEach((b, i) => { b.onclick = () => { sfx('click'); ap.gender = i ? 'f' : 'm'; ap.hair = 0; ap.beard = false; refresh(); }; });
+      [...$('genders').children].forEach((b, i) => { b.onclick = () => { sfx('click'); ap.gender = i ? 'f' : 'm'; ap.hair = 0; ap.beard = false; ap.body = 0; ap.face = 0; refresh(); }; });
       const hairs = ap.gender === 'f' ? HAIRF : HAIRM;
+      opt('bodies', ap.gender === 'f' ? BODY_F : BODY_M, 'body', (b, it) => { b.textContent = it.name; });
+      opt('shapes', FACE_SHAPES, 'faceShape', (b, it) => { b.textContent = it.name; });
+      opt('faces', ap.gender === 'f' ? FACES_F : FACES_M, 'face', (b, it) => { b.textContent = it.name; });
+      opt('eyes', EYE_COLORS, 'eye', (b, it) => { b.classList.add('sw'); b.style.background = it.c; b.title = it.name; });
       opt('hairs', hairs, 'hair', (b, h) => { b.textContent = h.name; });
       opt('hairCols', HAIRC, 'hairColor', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
       opt('skins', SKINC, 'skin', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
       opt('clothes', CLOTHC, 'clothes', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
-      $('beardRow').classList.toggle('hidden', ap.gender === 'f');
-      $('btnBeard').textContent = ap.beard ? 'Con barba' : 'Sin barba';
+      opt('busts', ['Plano', 'Pequeño', 'Medio', 'Grande'], 'bust', (b, it) => { b.textContent = it; });
+      $('bustRow').classList.toggle('hidden', ap.gender !== 'f');
+      const det = $('details');
+      det.innerHTML = '';
+      const tg = (key, on, off) => {
+        const b = document.createElement('button');
+        b.className = 'copt' + (ap[key] !== false ? ' sel' : '');
+        b.textContent = ap[key] !== false ? on : off;
+        b.onclick = () => { sfx('click'); ap[key] = ap[key] === false; refresh(); };
+        det.appendChild(b);
+      };
+      tg('nose', 'Con nariz', 'Sin nariz');
+      tg('mouth', 'Con boca', 'Sin boca');
+      tg('blush', 'Con rubor', 'Sin rubor');
+      if (ap.gender !== 'f') {
+        const b = document.createElement('button');
+        b.className = 'copt' + (ap.beard ? ' sel' : '');
+        b.textContent = ap.beard ? 'Con barba' : 'Sin barba';
+        b.onclick = () => { sfx('click'); ap.beard = !ap.beard; refresh(); };
+        det.appendChild(b);
+      }
       this.player.ap = { ...ap };
       this.player.equip = { weapon: 'espada_madera', feet: 'botas_cuero' };
       this.player.refreshLook();
     };
-    $('btnBeard').addEventListener('click', () => { this.ap.beard = !this.ap.beard; sfx('click'); refresh(); });
     $('btnNew').addEventListener('click', () => {
       const name = ($('nameInput').value || 'Aventurero').trim().slice(0, 14) || 'Aventurero';
       const sp = this.W.landmarks.spawn;
@@ -2007,7 +2123,7 @@ class Game {
     const s = this.soc(n.id);
     s.crew = false;
     n.tier = -1;
-    n.rebuild(n.def.look);
+    n.rebuild(n.look0);
     n.x = n.home.x; n.z = n.home.z; n.path = [];
     this.ui.toast(`${n.name} vuelve a casa`);
   }
@@ -2021,7 +2137,7 @@ class Game {
     const tier = crewTier(n.level);
     if (tier === n.tier) return;
     n.tier = tier;
-    const look = { ...n.def.look, noAutoLegs: true };
+    const look = { ...n.look0, noAutoLegs: true };
     for (const id of Object.values(crewGear(n.level))) Object.assign(look, EQUIP[id].look);
     n.rebuild(look);
   }
@@ -2190,11 +2306,12 @@ class Game {
     if (!this.started) {
       // en el menú inicial, el personaje se ve por encima del panel
       const aspect = this.width / this.height;
-      const landShort = aspect >= 1 && this.height <= 500;
+      const landShort = aspect >= 1.2;
       const vh = aspect >= 1 ? this.viewSize : this.viewSize / aspect;
-      const a = landShort ? 0 : (0.2 * vh) / 0.66 / Math.SQRT2;
+      const creating = document.getElementById('start').classList.contains('creating');
+      const a = landShort ? 0 : ((creating ? 0.3 : 0.2) * vh) / 0.66 / Math.SQRT2;
       tgt.x += a; tgt.z += a;
-      if (landShort) { const b = (0.22 * this.viewSize * aspect) / Math.SQRT2; tgt.x += b; tgt.z -= b; }
+      if (landShort) { const b = (0.24 * this.viewSize * aspect) / Math.SQRT2; tgt.x += b; tgt.z -= b; }
     }
     this.camTarget.lerp(tgt, Math.min(1, dt * 6));
     this.camera.position.copy(this.camTarget).add(this.camOffset);
@@ -2324,6 +2441,7 @@ class Game {
       this.ui.placeLabel(e.label, e.x, e.model.height + 0.12 + e.yOff, e.z);
     }
     this.ui.updateFloats(dt);
+    this.updateFx(dt);
 
     if (this.started) {
       this.ui.updateHUD();

@@ -1,4 +1,5 @@
 // Objetos, equipo (visible en el personaje), recetas de forja/banco/cocina y botines.
+import { HAIR_AF, HAIR_AM, HAIR_COLORS_A, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './anime.js';
 
 export const MAX_LEVEL = 50;
 
@@ -163,21 +164,35 @@ export const HAIR_F = [
   { id: 'largo', name: 'Largo' }, { id: 'coleta', name: 'Coleta' }, { id: 'trenza', name: 'Trenza' },
   { id: 'mono', name: 'Moño' }, { id: 'melena', name: 'Melena' }, { id: 'rizos', name: 'Rizos' },
 ];
-export const HAIR_COLORS = [0x1a1210, 0x5a3a20, 0xb06a2a, 0xe0b050, 0xc83a2a, 0xd8d8d8];
+export const HAIR_COLORS = HAIR_COLORS_A;
+export const BODY_M = [{ id: 'normal', name: 'Normal' }, { id: 'atletico', name: 'Atlético' }, { id: 'robusto', name: 'Robusto' }, { id: 'delgado', name: 'Delgado' }, { id: 'clasico', name: 'Clásico' }];
+export const BODY_F = [{ id: 'normal', name: 'Normal' }, { id: 'atletica', name: 'Atlética' }, { id: 'curvy', name: 'Curvas' }, { id: 'delgada', name: 'Delgada' }, { id: 'clasica', name: 'Clásica' }];
+const CLASSIC_HAIR = { largo: 'largo', melena: 'melena', coleta: 'coleta', dosColetas: 'coleta', trenza: 'trenza', corto: 'corto', punta: 'punta', despeinado: 'rizado', flequillo: 'corto', samurai: 'coleta', lateral: 'cresta', melenaM: 'largo' };
+export { HAIR_AF, HAIR_AM, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS };
 export const CLOTHES = [0x3a6aa0, 0x9a2a2a, 0x3a7a3a, 0x6a3d8f, 0x8a6a3a, 0x2a2a30];
 export const SKINS = [0xf3cfaa, 0xe8b98f, 0xc68a5a, 0x8a5a3a];
 
 export function buildLook(ap, equip = {}) {
-  const hairList = ap.gender === 'f' ? HAIR_F : HAIR_M;
+  const female = ap.gender === 'f';
+  const body = (female ? BODY_F : BODY_M)[ap.body ?? 0]?.id || 'normal';
+  const classic = body === 'clasico' || body === 'clasica';
+  const hairId = (female ? HAIR_AF : HAIR_AM)[ap.hair ?? 0]?.id || 'corto';
   const look = {
-    female: ap.gender === 'f',
+    female, body, anime: !classic,
+    faceShape: FACE_SHAPES[ap.faceShape ?? 0].id,
+    face: (female ? FACES_F : FACES_M)[ap.face ?? 0].id,
+    eyeColor: ap.eye ?? 0,
+    classicEye: classic ? parseInt(EYE_COLORS[ap.eye ?? 0].c.slice(1), 16) : undefined,
+    bust: female ? (ap.bust ?? 2) : 0,
+    noNose: ap.nose === false, noMouth: ap.mouth === false, noBlush: ap.blush === false,
+    faceRes: 512,
     skin: SKINS[ap.skin ?? 1],
     shirt: CLOTHES[ap.clothes ?? 0],
-    pants: ap.gender === 'f' ? 0x3a2a3a : 0x3a2e24,
+    pants: female ? 0x3a2a3a : 0x3a2e24,
     boots: 0x3a2618,
-    hair: HAIR_COLORS[ap.hairColor ?? 1],
-    hairStyle: hairList[ap.hair ?? 0].id,
-    beard: ap.beard ? HAIR_COLORS[ap.hairColor ?? 1] : undefined,
+    hair: HAIR_COLORS_A[ap.hairColor ?? 1],
+    hairStyle: classic ? CLASSIC_HAIR[hairId] : hairId,
+    beard: ap.beard && !female ? HAIR_COLORS_A[ap.hairColor ?? 1] : undefined,
   };
   for (const s of SLOTS) {
     const id = equip[s.id];

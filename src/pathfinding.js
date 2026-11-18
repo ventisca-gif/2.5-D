@@ -46,8 +46,8 @@ const DIRS = [
 
 // walkable(x,z) -> bool; goal: {x,z}; adjacent: si true basta con llegar al lado del objetivo.
 export function findPath(W, sx, sz, gx, gz, opts = {}) {
-  const { adjacent = false, range = 1, maxIter = 6000, extraBlocked = null } = opts;
-  const walk = (x, z) => W.walkable(x, z) && !(extraBlocked && extraBlocked(x, z));
+  const { adjacent = false, range = 1, maxIter = 6000, extraBlocked = null, walk: walkFn = null } = opts;
+  const walk = (x, z) => (walkFn ? walkFn(x, z) : W.walkable(x, z)) && !(extraBlocked && extraBlocked(x, z));
   const isGoal = adjacent
     ? (x, z) => Math.max(Math.abs(x - gx), Math.abs(z - gz)) <= range && !(x === gx && z === gz)
     : (x, z) => x === gx && z === gz;

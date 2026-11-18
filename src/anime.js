@@ -20,8 +20,8 @@ export const HAIR_AM = [
 
 // ------------------------------------------------------------------ cara (textura equirectangular)
 const faceCache = new Map();
-export function faceTexture({ skin, eye, face, female, hair, size = 512 }) {
-  const key = [skin, eye, face, female, hair, size].join('|');
+export function faceTexture({ skin, eye, face, female, hair, size = 512, noNose = false, noMouth = false, noBlush = false }) {
+  const key = [skin, eye, face, female, hair, size, noNose, noMouth, noBlush].join('|');
   if (faceCache.has(key)) return faceCache.get(key);
   const W = size, H = size / 2, k = size / 512;
   const c = document.createElement('canvas');
@@ -41,7 +41,7 @@ export function faceTexture({ skin, eye, face, female, hair, size = 512 }) {
   const ew = female ? 16 : 14, eh = female ? 20 : (face === 'serio' ? 13 : 16);
 
   // rubor
-  if (female || face === 'alegre' || shy) {
+  if (!noBlush && (female || face === 'alegre' || shy)) {
     x.fillStyle = shy ? 'rgba(240,90,110,0.45)' : 'rgba(240,110,120,0.28)';
     for (const s of [-1, 1]) { x.beginPath(); x.ellipse(cx + s * 44, ey + 24, 15, 7, 0, 0, Math.PI * 2); x.fill(); }
     x.strokeStyle = 'rgba(200,60,80,0.55)';
@@ -104,12 +104,14 @@ export function faceTexture({ skin, eye, face, female, hair, size = 512 }) {
     x.stroke();
   }
   // nariz
-  x.strokeStyle = 'rgba(120,60,40,0.55)'; x.lineWidth = 2;
-  x.beginPath(); x.moveTo(cx + 1, ey + 18); x.lineTo(cx - 2, ey + 24); x.stroke();
+  if (!noNose) {
+    x.strokeStyle = 'rgba(120,60,40,0.55)'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(cx + 1, ey + 18); x.lineTo(cx - 2, ey + 24); x.stroke();
+  }
   // boca
   x.strokeStyle = '#7a2a28'; x.lineWidth = 2.6; x.lineCap = 'round';
   const my = ey + 37;
-  if (face === 'alegre') {
+  if (noMouth) { /* sin boca */ } else if (face === 'alegre') {
     x.fillStyle = '#9a2a30';
     x.beginPath(); x.moveTo(cx - 10, my - 2); x.quadraticCurveTo(cx, my + 14, cx + 10, my - 2); x.closePath(); x.fill(); x.stroke();
     x.fillStyle = '#f07a80'; x.beginPath(); x.ellipse(cx, my + 6, 5, 3, 0, 0, Math.PI * 2); x.fill();
@@ -132,9 +134,17 @@ export function faceTexture({ skin, eye, face, female, hair, size = 512 }) {
 }
 
 // ------------------------------------------------------------------ cabeza con barbilla
-let headGeoCache = null;
-export function animeHeadGeo() {
-  if (headGeoCache) return headGeoCache;
+export const FACE_SHAPES = [{ id: 'ovalada', name: 'Ovalada' }, { id: 'redonda', name: 'Redonda' }, { id: 'afilada', name: 'Afilada' }, { id: 'cuadrada', name: 'Cuadrada' }];
+const SHAPE = {
+  ovalada: { taper: 0.38, pow: 1.4, sx: 1, sy: 0.92, chin: 0.018 },
+  redonda: { taper: 0.2, pow: 1.8, sx: 1.06, sy: 0.86, chin: 0.006 },
+  afilada: { taper: 0.55, pow: 1.1, sx: 0.97, sy: 1.0, chin: 0.026 },
+  cuadrada: { taper: 0.16, pow: 3.0, sx: 1.05, sy: 0.9, chin: 0.01 },
+};
+const headGeoCache = new Map();
+export function animeHeadGeo(shape = 'ovalada') {
+  if (headGeoCache.has(shape)) return headGeoCache.get(shape);
+  const P = SHAPE[shape] || SHAPE.ovalada;
   const r = 0.155;
   const g = new THREE.SphereGeometry(r, 28, 20);
   const p = g.attributes.position;
@@ -142,16 +152,17 @@ export function animeHeadGeo() {
     let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
     if (y < 0) {
       const t = -y / r;
-      x *= 1 - 0.38 * Math.pow(t, 1.4);
+      x *= 1 - P.taper * Math.pow(t, P.pow);
       z *= 1 - 0.18 * t;
-      if (z > 0) z += 0.018 * t * t;
-      y *= 0.92;
+      if (z > 0) z += P.chin * t * t;
+      y *= P.sy;
     }
+    x *= P.sx;
     z *= 0.96;
     p.setXYZ(i, x, y, z);
   }
   g.computeVertexNormals();
-  headGeoCache = g;
+  headGeoCache.set(shape, g);
   return g;
 }
 

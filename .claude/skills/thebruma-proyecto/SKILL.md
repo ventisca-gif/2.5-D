@@ -32,7 +32,7 @@ Juego del usuario (ventisca-gif). Es **independiente de su otro juego "The Bound
 - `quests.js` 10 misiones y tiendas · `main.js` bucle, combate, barco, guardado en 3 ranuras (`thebruma_slot_N`) con tiempo jugado.
 
 ## Sistemas ya hechos
-Combate (enemigos atacan en movimiento), correr con estamina, recursos y menas por isla, forja/banco/cocina, comer para curar, mochila y equipo (todo visible), amistad (charlar, regalar), duelos y peleas con NPCs (nadie muere), tripulación que sigue, lucha, sube de nivel y mejora armadura, barco navegable con bodega, romance (declararse, besar, pasear de la mano), día/noche, interiores, 2 islas extra, menú pirata con creador (chico/chica, 6 peinados cada uno).
+Combate (enemigos atacan en movimiento), correr con estamina, recursos y menas por isla, forja/banco/cocina, comer para curar, mochila y equipo (todo visible), amistad (charlar, regalar), duelos y peleas con NPCs (nadie muere), tripulación que sigue, lucha, sube de nivel y mejora armadura, barco navegable con bodega, romance (declararse, besar, pasear de la mano), día/noche, interiores, 2 islas extra, menú pirata con creador. Personajes estilo anime (`src/anime.js`): cara pintada en textura (4 expresiones por género, 8 colores de ojos, nariz/boca/rubor opcionales), 4 formas de cara, pelo de mechones 3D (6 peinados por género, 10 colores), 5 cuerpos por género (incluido "Clásico" de bloques), busto en 4 tamaños; los NPCs reciben cara anime determinista por id (`animeLook` en main.js). Nadar (brazadas, gasta estamina, ahogo) y tajo de espada con estela (`slash`).
 
 ## Ideas pendientes que el usuario mencionó
 Cubierta del barco caminable, más islas/misiones, interacción más rica de la tripulación en tiendas, más armaduras únicas.
