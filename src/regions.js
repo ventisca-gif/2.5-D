@@ -115,7 +115,7 @@ export function makeIslets() {
   tprop('barrel', tc.x - 3, tc.z + 2); tprop('barrel', tc.x - 3, tc.z + 3); tprop('crate', tc.x + 3, tc.z + 2);
   tprop('tent', tc.x + 3, tc.z + 4, 0.6);
   tprop('chest', tc.x - 1, tc.z - 1, 0, true, { id: 'tortuga_cofre', loot: { gold: 60, potion: 1 } });
-  tor.npcs.push({ id: 'mara', name: 'Contrabandista Mara', x: tc.x + 1, z: tc.z + 1, wander: 2, look: { shirt: 0x2a5a5a, pants: 0x3a2a1a, hair: 0x1a1a1a, longHair: true, hat: 'bandana', capColor: 0x6a2a8a, skin: 0xa86a3a, coat: true, sword: true } });
+  tor.npcs.push({ id: 'mara', name: 'Contrabandista Mara', x: tc.x + 1, z: tc.z + 1, wander: 2, look: { shirt: 0x2a5a5a, pants: 0x3a2a1a, hair: 0x1a1a1a, longHair: true, hat: 'bandana', capColor: 0x6a2a8a, skin: 0xa86a3a, coat: true, sash: 0x6a2a8a, baldric: 0x3a2414, earring: true, bootCuff: true, sword: true } });
   tor.npcs.push({ id: 'pepe', name: 'Grumete Pepe', x: tc.x - 2, z: tc.z + 2, wander: 3, small: true, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0xd8a040, skin: 0xf0c49a, hat: 'bandana', capColor: 0x2a6ab0 } });
   populate(tor, 1);
   tor.spawns.push({ type: 'crab', count: 4, area: [tor.ox, tor.oz, tor.ox + tor.N - 1, tor.oz + tor.N - 1], lvl: [3, 5], sand: true });
@@ -164,7 +164,7 @@ export const ROOMS = [
     npcs: [
       { id: 'rosa', name: 'Tabernera Rosa', x: 2, z: 0, wander: 1, look: { shirt: 0xb83a3a, pants: 0x5a2a2a, hair: 0x8a3a1a, skin: 0xf0c49a, dress: true, apron: 0xf0ead8, longHair: true } },
       { id: 'ines', name: 'Aldeana Inés', x: 2, z: 5, wander: 0, look: { shirt: 0x5a8aba, pants: 0x3a3a4a, hair: 0x3a2a1a, skin: 0xe8b98f, dress: true, dressColor: 0x3a5a8a } },
-      { id: 'telmo', name: 'Bardo Telmo', x: 7, z: 2, wander: 1, look: { shirt: 0x8a3a8a, pants: 0x3a2a4a, hair: 0xd8a040, hat: 'cap', capColor: 0x6a2a6a, skin: 0xf0c49a, cape: 0x5a2a5a } },
+      { id: 'telmo', name: 'Bardo Telmo', x: 7, z: 2, wander: 1, look: { shirt: 0x8a3a8a, pants: 0x3a2a4a, hair: 0xd8a040, hat: 'cap', capColor: 0x6a2a6a, skin: 0xf0c49a, cape: 0x5a2a5a, vest: 0xd8b060, backpack: 0x7a5232 } },
     ],
   },
   {
@@ -184,9 +184,9 @@ export const ROOMS = [
       ['table', 6, 4], ['stool', 5, 4, 0, 1, 1, false], ['stool', 7, 4, 0, 1, 1, false], ['crate', 8, 6],
     ],
     npcs: [
-      { id: 'coral', name: 'Tabernera Coral', x: 5, z: 0, wander: 1, look: { shirt: 0x2a6a7a, pants: 0x2a2a2a, hair: 0xb03a2a, longHair: true, skin: 0xe0aa80, hat: 'bandana', capColor: 0x1a1a1a, eyepatch: true } },
-      { id: 'quino', name: 'Marinero Quino', x: 1, z: 5, wander: 1, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0x2a1a10, beard: 0x2a1a10, skin: 0xc68a5a, hat: 'cap', capColor: 0x1a2a4a } },
-      { id: 'olga', name: 'Pirata Olga', x: 7, z: 5, wander: 1, look: { shirt: 0x6a1a1a, pants: 0x1a1a1a, hair: 0xe0d0b0, longHair: true, skin: 0xf0c49a, hat: 'tricorn', coat: true, sword: true } },
+      { id: 'coral', name: 'Tabernera Coral', x: 5, z: 0, wander: 1, look: { shirt: 0x2a6a7a, pants: 0x2a2a2a, hair: 0xb03a2a, longHair: true, skin: 0xe0aa80, hat: 'bandana', capColor: 0x1a1a1a, eyepatch: true, apron: 0xe8e0d0, earring: true } },
+      { id: 'quino', name: 'Marinero Quino', x: 1, z: 5, wander: 1, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0x2a1a10, beard: 0x2a1a10, skin: 0xc68a5a, hat: 'cap', capColor: 0x1a2a4a, vest: 0x2a3a5a, scarf: 0xc8302a } },
+      { id: 'olga', name: 'Pirata Olga', x: 7, z: 5, wander: 1, look: { shirt: 0x6a1a1a, pants: 0x1a1a1a, hair: 0xe0d0b0, longHair: true, skin: 0xf0c49a, hat: 'tricorn', feather: 0xe8e0d0, coat: true, cravat: true, sash: 0x1a1a1a, bootCuff: true, earring: true, sword: true } },
     ],
   },
   {

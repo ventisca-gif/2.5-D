@@ -1,6 +1,6 @@
 // Escaparate de personajes v2 (para revisar el estilo antes de integrarlo en el juego).
 import * as THREE from 'three';
-import { makeHumanoid2, makeBeast2, OUTFITS2 } from './chars2.js';
+import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 import { animateModel } from './characters.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -40,14 +40,15 @@ scene.add(ground);
 
 const cast = [
   ...OUTFITS2.map((o) => ({ name: o.name, model: makeHumanoid2(o.look) })),
-  { name: 'Capitana Nerea', model: makeHumanoid2({ shirt: 0x9a1f24, pants: 0x1e1a1a, hair: 0x1a1210, hat: 'tricorn', feather: 0xd83a3a, skin: 0xc68a5a, coat: true, longHair: true, sleeve: 0xf0ead8, sword: true }) },
-  { name: 'Guardia', model: makeHumanoid2({ shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xe0aa80, armor: true, spear: true }) },
+  { name: 'Capitana Nerea', model: makeHumanoid2({ shirt: 0x9a1f24, pants: 0x1e1a1a, hair: 0x1a1210, hat: 'tricorn', feather: 0xd83a3a, skin: 0xc68a5a, coat: true, cravat: true, sash: 0x1a1a1a, baldric: 0x3a2414, bootCuff: true, earring: true, longHair: true, sleeve: 0xf0ead8, sword: true }) },
+  { name: 'Guardia', model: makeHumanoid2({ shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xe0aa80, armor: true, tabard: 0x3a5a8a, spear: true }) },
   { name: 'Alcaldesa Marisol', model: makeHumanoid2({ shirt: 0x6a3d8f, pants: 0x3b2a4a, hair: 0xb8b8b8, hat: 'circlet', skin: 0xe8b98f, dress: true, longHair: true }) },
   { name: 'Herrero Tadeo', model: makeHumanoid2({ shirt: 0x7a3a2a, pants: 0x2e2a28, beard: 0x2a1a10, skin: 0xb8784a, apron: 0x2a2a2a, gloves: 0x3a2a1a }) },
   { name: 'Granjera Lucía', model: makeHumanoid2({ shirt: 0x6a9a3a, pants: 0x5a4a3a, hair: 0xd8a040, hat: 'straw', skin: 0xf0c49a, dress: true, dressColor: 0x8a6a3a }) },
   { name: 'Pirata esqueleto', model: makeHumanoid2({ bone: 0xe8e2cc, hat: 'bandana', capColor: 0xb02a2a, sword: true, blade: 0x9a8a7a }) },
   { name: 'Lobo', model: makeBeast2('wolf') },
   { name: 'Jabalí', model: makeBeast2('boar') },
+  { name: 'Cangrejo', model: makeCrab2() },
 ];
 const labels = [];
 cast.forEach((ch, i) => {
@@ -69,6 +70,7 @@ cast.forEach((ch, i) => {
   labels.push(el);
 });
 
+const params0 = new URLSearchParams(location.search);
 const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
 let view = Number(new URLSearchParams(location.search).get('zoom') || 5.2);
 function resize() {
@@ -82,6 +84,8 @@ addEventListener('resize', resize);
 resize();
 camera.position.set(0.5, 0, 0.75).add(new THREE.Vector3(1, 1.25, 1).normalize().multiplyScalar(30));
 camera.lookAt(0.5, 0.55, 0.75);
+OUTLINE.uniforms.thick.value = ((camera.top - camera.bottom) / innerHeight) * 1.6;
+if (params0.get('nooutline') === '1') OUTLINE.visible = false;
 
 const params = new URLSearchParams(location.search);
 const walk = params.get('walk') === '1';

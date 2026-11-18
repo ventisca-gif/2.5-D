@@ -274,19 +274,19 @@ export function generateWorld() {
 
   // ---------- 11. NPCs ----------
   const npc = (d) => { W.npcs.push(d); blocked[idx(d.x, d.z)] = 0; };
-  npc({ id: 'marisol', name: 'Alcaldesa Marisol', x: 43, z: 44, wander: 2, look: { shirt: 0x6a3d8f, pants: 0x3b2a4a, hair: 0xb8b8b8, hat: 'circlet', skin: 0xe8b98f, dress: true } });
-  npc({ id: 'bruno', name: 'Carpintero Bruno', x: 44, z: 53, wander: 2, look: { shirt: 0x8a6a3a, pants: 0x4a3a28, hair: 0x5a3a20, beard: 0x5a3a20, skin: 0xd9a066, apron: 0xb08a5a } });
+  npc({ id: 'marisol', name: 'Alcaldesa Marisol', x: 43, z: 44, wander: 2, look: { shirt: 0x6a3d8f, pants: 0x3b2a4a, hair: 0xb8b8b8, hat: 'circlet', skin: 0xe8b98f, dress: true, longHair: true, cape: 0x4a2a6a, trim: 0xe0b040 } });
+  npc({ id: 'bruno', name: 'Carpintero Bruno', x: 44, z: 53, wander: 2, look: { shirt: 0x8a6a3a, pants: 0x4a3a28, hair: 0x5a3a20, beard: 0x5a3a20, skin: 0xd9a066, apron: 0xb08a5a, bracers: true, bracerColor: 0x6a4a2a } });
   npc({ id: 'tadeo', name: 'Herrero Tadeo', x: 58, z: 44, wander: 1, look: { shirt: 0x7a3a2a, pants: 0x2e2a28, hair: null, beard: 0x2a1a10, skin: 0xb8784a, apron: 0x2a2a2a } });
-  npc({ id: 'nerea', name: 'Capitana Nerea', x: 50, z: 88, wander: 1, look: { shirt: 0x9a1f24, pants: 0x1e1a1a, hair: 0x1a1210, hat: 'tricorn', skin: 0xc68a5a, coat: true, longHair: true } });
-  npc({ id: 'ilyas', name: 'Mercader Ilyas', x: 58, z: 82, wander: 1, look: { shirt: 0x1f7a7a, pants: 0xd8c8a0, hair: 0x1a1a1a, hat: 'turban', skin: 0xa86a3a, beard: 0x1a1a1a } });
-  npc({ id: 'lucia', name: 'Granjera Lucía', x: 27, z: 58, wander: 3, look: { shirt: 0x6a9a3a, pants: 0x5a4a3a, hair: 0xd8a040, hat: 'straw', skin: 0xf0c49a, dress: true } });
-  npc({ id: 'ramiro', name: 'Guardia Ramiro', x: 47, z: 37, wander: 0, look: { shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xe0aa80, armor: true, spear: true } });
-  npc({ id: 'elvira', name: 'Guardia Elvira', x: 53, z: 63, wander: 0, look: { shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xc68a5a, armor: true, spear: true, longHair: true, hair: 0x2a1a10 } });
-  npc({ id: 'pio', name: 'Aldeano Pío', x: 52, z: 47, wander: 5, look: { shirt: 0x4a7a3a, pants: 0x5a4030, hair: 0x6a4a2a, hat: 'cap', capColor: 0x2e5a9a, skin: 0xe8b98f } });
+  npc({ id: 'nerea', name: 'Capitana Nerea', x: 50, z: 88, wander: 1, look: { shirt: 0x9a1f24, pants: 0x1e1a1a, hair: 0x1a1210, hat: 'tricorn', feather: 0xd83a3a, skin: 0xc68a5a, coat: true, cravat: true, sash: 0x1a1a1a, baldric: 0x3a2414, bootCuff: true, earring: true, sleeve: 0xf0ead8, longHair: true, sword: true } });
+  npc({ id: 'ilyas', name: 'Mercader Ilyas', x: 58, z: 82, wander: 1, look: { shirt: 0x1f7a7a, pants: 0xd8c8a0, hair: 0x1a1a1a, hat: 'turban', skin: 0xa86a3a, beard: 0x1a1a1a, vest: 0xc89a3a, sash: 0xb03a2a, earring: true } });
+  npc({ id: 'lucia', name: 'Granjera Lucía', x: 27, z: 58, wander: 3, look: { shirt: 0x6a9a3a, pants: 0x5a4a3a, hair: 0xd8a040, hat: 'straw', skin: 0xf0c49a, dress: true, dressColor: 0x8a6a3a, apron: 0xf0ead8 } });
+  npc({ id: 'ramiro', name: 'Guardia Ramiro', x: 47, z: 37, wander: 0, look: { shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xe0aa80, armor: true, tabard: 0x3a5a8a, spear: true } });
+  npc({ id: 'elvira', name: 'Guardia Elvira', x: 53, z: 63, wander: 0, look: { shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xc68a5a, armor: true, tabard: 0x3a5a8a, spear: true, longHair: true, hair: 0x2a1a10 } });
+  npc({ id: 'pio', name: 'Aldeano Pío', x: 52, z: 47, wander: 5, look: { shirt: 0x4a7a3a, pants: 0x5a4030, hair: 0x6a4a2a, hat: 'cap', capColor: 0x2e5a9a, skin: 0xe8b98f, vest: 0x7a5232 } });
   npc({ id: 'clara', name: 'Niña Clara', x: 47, z: 50, wander: 5, small: true, look: { shirt: 0xe07a9a, pants: 0x4a3a5a, hair: 0xe0b050, skin: 0xf3cfaa, dress: true } });
-  npc({ id: 'gaspar', name: 'Pescador Gaspar', x: 46, z: 98, wander: 0, look: { shirt: 0x3a6a9a, pants: 0x3a3a3a, hair: 0xcccccc, beard: 0xdddddd, hat: 'bandana', capColor: 0xc9a23a, skin: 0xc68a5a, rod: true } });
-  npc({ id: 'rufo', name: 'Pirata Rufo', x: 41, z: 82, wander: 2, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0x8a2a10, beard: 0x8a2a10, hat: 'bandana', capColor: 0xb02a2a, skin: 0xe0aa80, eyepatch: true } });
-  npc({ id: 'tomasa', name: 'Vigía Tomasa', x: 37, z: 86, wander: 1, look: { shirt: 0x2a4a6a, pants: 0x2a2a2a, hair: 0x9a9a9a, hat: 'cap', capColor: 0x1a2a3a, skin: 0xe8b98f } });
+  npc({ id: 'gaspar', name: 'Pescador Gaspar', x: 46, z: 98, wander: 0, look: { shirt: 0x3a6a9a, pants: 0x3a3a3a, hair: 0xcccccc, beard: 0xdddddd, hat: 'bandana', capColor: 0xc9a23a, skin: 0xc68a5a, rod: true, vest: 0xc8b878, boots: 0x2a3a2a } });
+  npc({ id: 'rufo', name: 'Pirata Rufo', x: 41, z: 82, wander: 2, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0x8a2a10, beard: 0x8a2a10, hat: 'bandana', capColor: 0xb02a2a, skin: 0xe0aa80, eyepatch: true, vest: 0x3a2a1a, sash: 0xb02a2a, earring: true, bootCuff: true } });
+  npc({ id: 'tomasa', name: 'Vigía Tomasa', x: 37, z: 86, wander: 1, look: { shirt: 0x2a4a6a, pants: 0x2a2a2a, hair: 0x9a9a9a, hat: 'cap', capColor: 0x1a2a3a, skin: 0xe8b98f, coat: true, scarf: 0xc8302a } });
 
   // ---------- 12. Zonas de enemigos ----------
   W.spawns.push({ type: 'wolf', count: 9, area: [28, 6, 72, 32], lvl: [2, 4] });

@@ -14,7 +14,7 @@ import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
 import { makeIslets, makeInteriors, attachRegions } from './regions.js';
 import { buildRoom } from './interiors.js';
-import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2 } from './chars2.js';
+import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
 const OUTF = OUTFITS2;
@@ -1602,6 +1602,8 @@ class Game {
     this.camTarget.lerp(tgt, Math.min(1, dt * 6));
     this.camera.position.copy(this.camTarget).add(this.camOffset);
     this.camera.lookAt(this.camTarget);
+    // contorno de ~1.6 px en pantalla, sea cual sea el zoom
+    OUTLINE.uniforms.thick.value = clamp(((this.camera.top - this.camera.bottom) / Math.max(1, this.height)) * 1.6, 0.004, 0.035);
     this.sun.position.copy(this.camTarget).addScaledVector(this.sunDir, 50);
     this.sun.target.position.copy(this.camTarget);
     this.torch.position.set(p.x, 2.2, p.z);
