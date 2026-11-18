@@ -1,9 +1,19 @@
 package com.islabruma.juego;
 
 import android.app.Activity;
+import android.app.DownloadManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import java.io.File;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
@@ -16,6 +26,10 @@ import android.webkit.WebViewClient;
 /** Contenedor Android del juego: un WebView a pantalla completa que carga www/ desde assets. */
 public class MainActivity extends Activity {
     private WebView web;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private long downloadId = -1;
+    private boolean installPending = false;
+    private static final String APK_MIME = "application/vnd.android.package-archive";
 
     @Override
     protected void onCreate(Bundle state) {
@@ -91,6 +105,118 @@ public class MainActivity extends Activity {
         super.onResume();
         web.onResume();
         hideSystemUi();
+        // volvió de los ajustes de "instalar apps desconocidas": continuar la instalación
+        if (installPending && canInstall()) {
+            installPending = false;
+            installDownloaded();
+        }
+    }
+
+    // ------------------------------------------------------------------ actualizador
+    private void js(final String code) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                web.evaluateJavascript(code, null);
+            }
+        });
+    }
+
+    private boolean canInstall() {
+        if (Build.VERSION.SDK_INT < 26) return true;
+        try {
+            Object pm = getPackageManager();
+            return (Boolean) pm.getClass().getMethod("canRequestPackageInstalls").invoke(pm);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private void startDownload(String url, String version) {
+        try {
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            String name = "TheBruma-" + version.replaceAll("[^A-Za-z0-9._-]", "") + ".apk";
+            File old = new File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), name);
+            if (old.exists()) old.delete();
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+            req.setTitle("TheBruma " + version);
+            req.setDescription("Descargando actualización");
+            req.setMimeType(APK_MIME);
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+            req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, name);
+            downloadId = dm.enqueue(req);
+            pollDownload();
+        } catch (Exception e) {
+            js("window.onUpdateError && window.onUpdateError('" + e.getClass().getSimpleName() + "')");
+            openInBrowser(url);
+        }
+    }
+
+    private void pollDownload() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                Cursor c = dm.query(new DownloadManager.Query().setFilterById(downloadId));
+                if (c == null || !c.moveToFirst()) {
+                    if (c != null) c.close();
+                    js("window.onUpdateError && window.onUpdateError('cancelada')");
+                    return;
+                }
+                int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                long done = c.getLong(c.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                long total = c.getLong(c.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                c.close();
+                if (status == DownloadManager.STATUS_SUCCESSFUL) {
+                    js("window.onUpdateProgress && window.onUpdateProgress(100, 'listo')");
+                    if (canInstall()) installDownloaded();
+                    else {
+                        installPending = true;
+                        js("window.onUpdateProgress && window.onUpdateProgress(100, 'permiso')");
+                        try {
+                            Intent i = new Intent("android.settings.MANAGE_UNKNOWN_APP_SOURCES", Uri.parse("package:" + getPackageName()));
+                            startActivity(i);
+                        } catch (Exception e) {
+                            installDownloaded();
+                        }
+                    }
+                } else if (status == DownloadManager.STATUS_FAILED) {
+                    js("window.onUpdateError && window.onUpdateError('descarga')");
+                } else {
+                    int pct = total > 0 ? (int) (done * 100 / total) : 0;
+                    js("window.onUpdateProgress && window.onUpdateProgress(" + pct + ", 'bajando')");
+                    pollDownload();
+                }
+            }
+        }, 400);
+    }
+
+    private void installDownloaded() {
+        try {
+            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+            Uri uri;
+            if (Build.VERSION.SDK_INT >= 24) {
+                uri = dm.getUriForDownloadedFile(downloadId);
+            } else {
+                Cursor c = dm.query(new DownloadManager.Query().setFilterById(downloadId));
+                c.moveToFirst();
+                uri = Uri.parse(c.getString(c.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI)));
+                c.close();
+            }
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setDataAndType(uri, APK_MIME);
+            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+        } catch (Exception e) {
+            js("window.onUpdateError && window.onUpdateError('instalar')");
+        }
+    }
+
+    private void openInBrowser(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Exception ignored) {
+        }
     }
 
     @Override
@@ -101,6 +227,45 @@ public class MainActivity extends Activity {
 
     /** Puente JS -> Android (window.AndroidBridge). */
     public class Bridge {
+        @JavascriptInterface
+        public int getVersionCode() {
+            try {
+                PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
+                return pi.versionCode;
+            } catch (Exception e) {
+                return 0;
+            }
+        }
+
+        @JavascriptInterface
+        public String getVersionName() {
+            try {
+                return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        @JavascriptInterface
+        public void downloadUpdate(final String url, final String version) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    startDownload(url, version);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openUrl(final String url) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    openInBrowser(url);
+                }
+            });
+        }
+
         @JavascriptInterface
         public void exit() {
             runOnUiThread(new Runnable() {

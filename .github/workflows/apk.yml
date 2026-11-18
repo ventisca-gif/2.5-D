@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -20,5 +23,23 @@ jobs:
       - run: ./android/build-apk.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: IslaBruma-apk
+          name: TheBruma-apk
           path: dist/TheBruma.apk
+
+      # Publica la APK como Release de GitHub: el actualizador del juego la descarga.
+      # Para sacar una versión nueva, sube versionCode y versionName en android/AndroidManifest.xml.
+      - name: Publicar Release
+        if: github.ref == 'refs/heads/claude/rpg-medieval-pirata-2d5-wruege' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NAME=$(grep -o 'versionName="[^"]*"' android/AndroidManifest.xml | cut -d'"' -f2)
+          CODE=$(grep -o 'versionCode="[^"]*"' android/AndroidManifest.xml | cut -d'"' -f2)
+          TAG="v$NAME"
+          { echo "versionCode=$CODE"; echo; git log -1 --pretty=%B; } > notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/TheBruma.apk --clobber
+            gh release edit "$TAG" --notes-file notes.md --latest
+          else
+            gh release create "$TAG" dist/TheBruma.apk --title "TheBruma $NAME" --notes-file notes.md --target "$GITHUB_SHA" --latest
+          fi

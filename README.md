@@ -51,6 +51,11 @@ npm run build        # genera www/ (index.html + game.js)
 npm run serve        # http://localhost:8080
 ```
 
+### Actualizaciones automáticas
+
+El juego busca nuevas versiones en las **Releases de GitHub** al abrirse (y desde el menú: «🔄 Buscar actualización»), descarga la APK dentro de la app y abre el instalador.
+Para publicar una versión nueva: sube `versionCode` y `versionName` en `android/AndroidManifest.xml` y haz push; GitHub Actions compila y publica la Release `vX.Y` con `TheBruma.apk`.
+
 ### Compilar la APK
 
 Sin Gradle ni Android Studio, con las herramientas de Ubuntu/Debian:

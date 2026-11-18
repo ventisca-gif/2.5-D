@@ -17,6 +17,7 @@ import { buildRoom } from './interiors.js';
 import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop, crewGear, crewTier, HAIR_AM as HAIRM, HAIR_AF as HAIRF, HAIR_COLORS as HAIRC, SKINS as SKINC, CLOTHES as CLOTHC, BODY_M, BODY_F, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './items.js';
 import { npcLevel, RECRUITABLE, ROMANCE, MAX_CREW, friendLevel, heartsText, CHAT_LINES, CHAT_REPLIES, ROMANCE_LINES, CONFESS_YES, CONFESS_NO, DUEL_LINES, ANGRY_LINES, GIFT_LIKES } from './social.js';
 import { Panels, fmtTime } from './panels.js';
+import { Updater } from './updater.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -751,6 +752,7 @@ class Game {
     this.chatT = 8;
     this.ui = new UI(this);
     this.panels = new Panels(this);
+    this.updater = new Updater(this);
     this.buildWorld();
     this.buildMarkers();
     this.applyQuality();
@@ -1768,6 +1770,10 @@ class Game {
     });
     $('btnBack').addEventListener('click', () => { sfx('click'); $('scrCreate').classList.add('hidden'); $('scrSlots').classList.remove('hidden'); $('start').classList.remove('creating'); this.viewTarget = 6; });
     $('btnGuideMenu').addEventListener('click', () => this.panels.openGuide());
+    $('btnUpdateMenu').addEventListener('click', () => this.updater.check(true));
+    const cur = this.updater.current();
+    $('footVer').textContent = `TheBruma v${cur.name} · RPG medieval y pirata 2.5D`;
+    setTimeout(() => this.updater.check(false), 2500);
 
     // creador de personaje
     const opt = (boxId, list, key, render) => {
@@ -1856,6 +1862,7 @@ class Game {
         this.refreshMenu();
       }
       if (act === 'help') { this.toggleMenu(false); this.panels.openGuide(); }
+      if (act === 'update') { this.toggleMenu(false); this.updater.check(true); }
       if (act === 'title') { this.save(); location.reload(); }
       if (act === 'reset') {
         if (confirm('¿Borrar esta partida y volver al menú?')) {
