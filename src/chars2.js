@@ -470,6 +470,12 @@ export function makeHumanoid2(look = {}) {
       a.add(torus(0.17, 0.016), sh.rim, -0.09, -0.2, 0.03, 0, Math.PI / 2, 0);
       a.add(sph(0.045, 10, 8), sh.boss, -0.1, -0.2, 0.03, 0, 0, 0, 0.6, 1, 1);
       for (let i = 0; i < 6; i++) { const t = (i / 6) * Math.PI * 2; a.add(sph(0.01, 4, 3), sh.rim, -0.096, -0.2 + Math.sin(t) * 0.13, 0.03 + Math.cos(t) * 0.13); }
+    } else if (sh.type === 'tower') {
+      a.add(rbox(0.03, 0.62, 0.32, 0.04), sh.rim, -0.072, -0.2, 0.03);
+      a.add(rbox(0.032, 0.57, 0.28, 0.035), sh.color, -0.082, -0.2, 0.03);
+      a.add(rbox(0.02, 0.14, 0.14, 0.02), sh.boss, -0.1, -0.18, 0.03, Math.PI / 4, 0, 0);
+      a.add(rbox(0.02, 0.5, 0.03, 0.008), shade(sh.rim, 1.2), -0.1, -0.2, 0.03);
+      a.add(rbox(0.02, 0.03, 0.24, 0.008), shade(sh.rim, 1.2), -0.1, -0.12, 0.03);
     } else {
       a.add(rbox(0.03, 0.4, 0.29, 0.04), sh.rim, -0.072, -0.21, 0.03);
       a.add(rbox(0.032, 0.36, 0.25, 0.035), sh.color, -0.082, -0.21, 0.03);
@@ -686,12 +692,13 @@ export function makeHumanoid2(look = {}) {
   shadow.position.y = 0.012;
   root.add(shadow);
 
+  if (look.bulk) root.scale.setScalar(look.bulk);
   return {
     root,
     parts: { body, torso: torso.g, head: head.g, legL: legs[0].g, legR: legs[1].g, armL: arms[0].g, armR: arms[1].g, weapon: weapon && weapon.g, cape: cape && cape.g, wings: wingL ? [wingL.g, wingR.g] : null },
     mats: allMats,
     kind: 'humanoid',
-    height: 1.18,
+    height: 1.18 * (look.bulk || 1),
     look,
   };
 }

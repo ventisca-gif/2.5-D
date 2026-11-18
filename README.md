@@ -44,6 +44,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **v3.8**: pestaña Guía en la Bitácora con todo lo nuevo, arqueología y reliquias, gremio de aventureros, mar helado en invierno, tu propio puerto pirata, concurso de barcos, amuletos de gemas e historia secreta de tu pareja.
 - **v3.9**: islas conquistadas por piratas famosos, alquimia y joyería, Halloween, Navidad y Carnaval, pecios hundidos con tiburones, defensa del puerto con cañones, rasgos de la tripulación, mapa del mundo que se revela y la Leyenda de la Bruma con el jefe final.
 - **v4.0**: Pueblo de Marea con tritones aliados, clanes rivales, Gran Regata de las Islas, domar tigres y lobos de las nieves, la Gaceta de la Bruma, Cueva de Cristal con puzle de espejos y cumpleaños de la tripulación.
+- **v5.0 (gran expansión)**: nivel máximo 350, Ciudad Celeste, Isla Bruma de hace 100 años y Abismo Ardiente, 13 enemigos y 3 jefes nuevos, 12 conjuntos de armadura nuevos (72 piezas, algunas colosales, escudos pavés), 9 minerales nuevos, misiones con planos, rival personal, tienda propia, cartas, monstruos marinos con arpón, mascotas que evolucionan y negocio de la pareja.
 - **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.

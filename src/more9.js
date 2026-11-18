@@ -208,13 +208,13 @@ export function installMore9(Game, D) {
     this.beastT = (this.beastT ?? 420) - dt;
     if (this.beastT > 0 || !this.started) return;
     this.beastT = 700 + Math.random() * 500;
-    const isles = this.islets.filter((r) => !r.ghost && r.spawns.length);
+    const isles = this.islets.filter((r) => !r.ghost && !r.portal && r.spawns.length);
     const R = isles[Math.floor(Math.random() * isles.length)];
     let sp = null;
     for (let i = 0; i < 60 && !sp; i++) { const x = R.center.x + Math.round((Math.random() - 0.5) * 20), z = R.center.z + Math.round((Math.random() - 0.5) * 20); if (R.walkable(x, z)) sp = { x, z }; }
     if (!sp) return;
     const type = BEASTS[Math.floor(Math.random() * BEASTS.length)];
-    const e = this.spawnTemp(type, sp.x, sp.z, Math.min(100, this.player.level + 5));
+    const e = this.spawnTemp(type, sp.x, sp.z, Math.min(350, this.player.level + 5));
     e.beast = true;
     this.beast = { e, t: 600, isle: R.name };
     const msg = `🐾 ¡${e.def.name} ha aparecido en ${R.name}! El primero en cazarla se lleva un trofeo (10 min)`;
@@ -274,7 +274,7 @@ export function installMore9(Game, D) {
     if (V.day !== this.day) { this.vision = null; return; }
     if (V.spawned || this.isleOf(this.player.x, this.player.z) !== V.isle) return;
     const R = this.islets.find((r) => r.id === V.isle), p = this.player;
-    for (let i = 0; i < 40; i++) { const x = p.tx + Math.round((Math.random() - 0.5) * 10), z = p.tz + Math.round((Math.random() - 0.5) * 10); if (R.walkable(x, z) && Math.hypot(x - p.x, z - p.z) > 4) { this.spawnTemp('sombra_abismo', x, z, Math.min(100, p.level + 5)); V.spawned = true; this.toast('🌑 ¡La Sombra del Abismo surge de tu sueño!', 'area'); sfx('hurt'); break; } }
+    for (let i = 0; i < 40; i++) { const x = p.tx + Math.round((Math.random() - 0.5) * 10), z = p.tz + Math.round((Math.random() - 0.5) * 10); if (R.walkable(x, z) && Math.hypot(x - p.x, z - p.z) > 4) { this.spawnTemp('sombra_abismo', x, z, Math.min(350, p.level + 5)); V.spawned = true; this.toast('🌑 ¡La Sombra del Abismo surge de tu sueño!', 'area'); sfx('hurt'); break; } }
   };
 
   // ============================================================ torneo de tripulaciones
@@ -367,7 +367,7 @@ export function installMore9(Game, D) {
     if (R.guard && !R.guard.dead && !R.guard.removed) return;
     if (R.guardDay === this.day) return;
     R.guardDay = this.day;
-    R.guard = this.spawnTemp('guardian_errante', c.x - 1, c.z - 1, Math.min(100, p.level + 4));
+    R.guard = this.spawnTemp('guardian_errante', c.x - 1, c.z - 1, Math.min(350, p.level + 4));
     R.guard.provoked = true; R.guard.state = 'chase';
     this.toast('🗿 ¡El Guardián de la Isla Errante despierta!', 'area');
     sfx('hurt');

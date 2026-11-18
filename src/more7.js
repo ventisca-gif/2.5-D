@@ -19,7 +19,7 @@ export function installMore7(Game, D) {
   const comp = (g, n) => { const s = g.soc(n.id); return (s.crew || s.partner) && !s.role; };
 
   // ============================================================ vida propia de tripulación y pareja
-  P.compLevel = function (n) { return Math.min(100, n.level + ((this.soc(n.id).gearB || 0) * 10)); };
+  P.compLevel = function (n) { return Math.min(350, n.level + ((this.soc(n.id).gearB || 0) * 10)); };
   P.crewGearLevel = function (n) { return this.compLevel(n); };
   P.compStats = function (n) {
     const L = this.compLevel(n), key = n.level + ':' + L;
@@ -255,7 +255,7 @@ export function installMore7(Game, D) {
     for (let i = 0; i < 30 && !sp; i++) { const x = p.tx + Math.round((Math.random() - 0.5) * 6), z = p.tz + Math.round((Math.random() - 0.5) * 6); if (this.W.walkable(x, z) && Math.hypot(x - p.x, z - p.z) > 1.5) sp = { x, z }; }
     if (!sp) return;
     const n = new D.NPC(this, { id: 'rival', name: R.name, x: sp.x, z: sp.z, wander: 0, look: R.look });
-    n.baseLevel = Math.min(100, p.level + 2); n.setStats(n.baseLevel);
+    n.baseLevel = Math.min(350, p.level + 2); n.setStats(n.baseLevel);
     this.npcs.push(n);
     this.rival = n;
     this.ui.openDialog(R.name, `¡Eh, tú! ${pt.name} se merece a alguien mejor que tú. Te reto a un duelo: si gano, que lo sepa todo el puerto.`, [
@@ -301,7 +301,7 @@ export function installMore7(Game, D) {
     if (!this.child) return;
     RECRUITABLE.add('hijo');
     let n = this.npcById('hijo');
-    const lvl = Math.min(100, 1 + (this.day - this.child.born) * 4);
+    const lvl = Math.min(350, 1 + (this.day - this.child.born) * 4);
     if (!n) {
       const ap = this.player.ap || {};
       n = new D.NPC(this, { id: 'hijo', name: `${this.child.name} (${this.child.female ? 'hija' : 'hijo'})`, x: 52, z: 50, wander: 3, small: true, look: { shirt: 0x5a8ad8, pants: 0x3a3a4a, hair: [0x1a1a1a, 0x6a3a1a, 0xd8a040, 0xb04a2a][ap.hairColor % 4 || 0], longHair: this.child.female, skin: 0xf0c49a, female: this.child.female } });

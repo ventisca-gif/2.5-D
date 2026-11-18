@@ -1,7 +1,8 @@
 // Objetos, equipo (visible en el personaje), recetas de forja/banco/cocina y botines.
 import { HAIR_AF, HAIR_AM, HAIR_COLORS_A, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './anime.js';
 
-export const MAX_LEVEL = 100;
+import { addExpansion, crewGearX, crewTierX, NEW_TIER_NAMES } from './sets.js';
+export const MAX_LEVEL = 350;
 
 // ----------------------------------------------------------------- objetos simples
 export const ITEMS = {
@@ -30,6 +31,7 @@ export const ITEMS = {
   elixir_piel: { name: 'Elixir de piel de piedra', icon: '🪨', type: 'elixir', value: 40, desc: '+35% de defensa durante 3 min.' },
   elixir_sabio: { name: 'Elixir del sabio', icon: '📘', type: 'elixir', value: 40, desc: '+30% de experiencia durante 3 min.' },
   caramelo: { name: 'Caramelo de Halloween', icon: '🍬', type: 'mat', value: 0, desc: 'Cámbialos con Marisol por disfraces.' },
+  ambar_gris: { name: 'Ámbar gris', icon: '🟤', type: 'mat', value: 500, desc: 'Lo sueltan los monstruos marinos cazados con arpón. Muy valioso.' },
   pala: { name: 'Pala de arqueólogo', icon: '⛏', type: 'tool', value: 0, desc: 'Excava los montículos con una X roja.' },
   reliquia_colmillo: { name: 'Colmillo del Kraken', icon: '🦷', type: 'relic', value: 0, desc: 'Reliquia: +8% de daño. Actívala (máx. 2).' },
   reliquia_escudo: { name: 'Escudo del Rey Hundido', icon: '🛡', type: 'relic', value: 0, desc: 'Reliquia: +10% de defensa.' },
@@ -250,6 +252,7 @@ export const EQUIP = {
   c_corona_bruma: { name: 'Corona de la Bruma', slot: 'cosHead', tier: 6, cos: true, icon: '👑', src: 'evento', look: { hat: 'circlet', hatColor: 0xd8a838, halo: 0x8a5aff } },
   c_corona_marea: { name: 'Corona de Marea', slot: 'cosHead', tier: 5, cos: true, icon: '🔱', src: 'evento', look: { hat: 'circlet', hatColor: 0x7af0ff, halo: 0x3ad8ff } },
   c_capa_marea: { name: 'Capa de algas de Marea', slot: 'cosCape', tier: 4, cos: true, icon: '🌊', src: 'tienda', look: { cape: 0x2a8a7a } },
+  c_capa_rival: { name: 'Capa de Kael', slot: 'cosCape', tier: 6, cos: true, icon: '⚔️', src: 'evento', look: { cape: 0x2a1a2a } },
   c_capa_burbuja: { name: 'Capa de pompas', slot: 'cosCape', tier: 3, cos: true, icon: '🫧', src: 'tienda', look: { cape: 0x9ae0f8 } },
   // ---- armaduras de superjefe (cosméticas)
   c_dragon: { name: 'Armadura del Dragón Carmesí', slot: 'cosBody', tier: 6, cos: true, icon: '🐉', src: 'dragon', look: { armor: true, armorColor: 0x1a1418, trim: 0xd8a838, pauldron: 0x8a1010, tabard: 0x8a1010, gem: 0xff6020, emblem: 0xff6020, gloves: 0x1a1418, legArmor: 0x8a1010, boots: 0x1a1418, hat: 'horned', hatColor: 0x1a1418, hornColor: 0xd8a838, gem2: 0xff6020, dragonHorns: 0xd8a838, tail: 0x2a2026, tailSpike: 0xd8a838, visorGlow: 0xff8030, hair: 0x8a1010 } },
@@ -370,10 +373,27 @@ export const RECIPES = [
   { out: 'f_pie', station: 'fuego', need: { apple: 2, wheat: 1 }, gold: 0 },
   { out: 'f_stew', station: 'fuego', need: { meat: 1, fish: 1, mushroom: 1 }, gold: 0 },
 ];
+addExpansion(EQUIP, ITEMS, RECIPES);
+for (const [id, e] of Object.entries(EQUIP)) if (e.set && !ITEMS[id]) ITEMS[id] = { ...e, type: 'equip', value: 15 + e.tier * 40, desc: `${e.atk ? '+' + e.atk + ' de ataque' : '+' + e.def + ' de defensa'}${e.hp ? ', +' + e.hp + ' de vida' : ''}. Nivel ${e.lvl}.${e.look.bulk ? ' Armadura colosal: te hace más grande.' : ''}` };
+
 
 // ----------------------------------------------------------------- botines
 export const DROPS = {
   wolf: [['meat', 0.6], ['leather', 0.5]],
+  grifo: [['polvo_estelar', 0.35], ['leather', 0.6]],
+  caballero_celeste: [['polvo_estelar', 0.4], ['plata_lunar', 0.3]],
+  golem_nube: [['oro_solar', 0.5], ['plata_lunar', 0.4]],
+  rey_celeste: [['esencia_titan', 1], ['polvo_estelar', 1], ['polvo_estelar', 1], ['oro_solar', 1]],
+  lobo_ancestral: [['leather', 1], ['meat', 0.8], ['mithril', 0.2]],
+  caballero_antiguo: [['mithril', 0.45], ['adamantita', 0.12]],
+  wyrm_antiguo: [['escama_wyrm', 0.7], ['escama_wyrm', 0.3]],
+  espectro_tiempo: [['adamantita', 0.2], ['mithril', 0.3]],
+  cronos: [['esencia_titan', 1], ['adamantita', 1], ['adamantita', 1], ['escama_wyrm', 1]],
+  demonio_alado: [['sangre_dragon', 0.35], ['piedra_infernal', 0.3]],
+  caballero_infernal: [['piedra_infernal', 0.5], ['sangre_dragon', 0.2]],
+  dragon_menor: [['sangre_dragon', 0.7], ['escama_wyrm', 0.4]],
+  titan_magma: [['esencia_titan', 0.25], ['piedra_infernal', 0.6]],
+  senor_infernal: [['esencia_titan', 1], ['esencia_titan', 1], ['sangre_dragon', 1], ['sangre_dragon', 1]],
   reina_hielo: [['cristal', 1], ['cristal', 1], ['cristal', 1], ['c_corona_hielo', 0.5], ['perla', 1]],
   gran_automata: [['meteorito', 1], ['meteorito', 1], ['meteorito', 1], ['c_capa_vapor', 0.5], ['iron', 1]],
   rey_pastel: [['azucar', 1], ['azucar', 1], ['f_tarta', 1], ['c_corona_pastel', 0.5], ['goldore', 1]],
@@ -410,6 +430,9 @@ DROPS.skeleton.push(['bandana_roja', 0.02]);
 // menas al picar rocas, según la zona
 export function oreDrop(area) {
   const r = Math.random();
+  if (area === 'Ciudad Celeste' || area === 'Jardines Celestes') return r < 0.2 ? 'oro_solar' : r < 0.4 ? 'plata_lunar' : null;
+  if (area === 'Isla Bruma (hace 100 años)' || area === 'Villarroca Antigua') return r < 0.22 ? 'mithril' : r < 0.3 ? 'adamantita' : null;
+  if (area === 'Abismo Ardiente' || area === 'Fortaleza Infernal') return r < 0.28 ? 'piedra_infernal' : r < 0.33 ? 'adamantita' : null;
   if (area === 'Isla Duna' || area === 'Oasis de Sal') return r < 0.22 ? 'ambar' : r < 0.45 ? 'iron' : null;
   if (area === 'Isla Selva' || area === 'Aldea Liana') return r < 0.2 ? 'jade' : r < 0.35 ? 'silver' : null;
   if (area === 'Isla Escarcha' || area === 'Monasterio del Pico') return r < 0.22 ? 'cristal' : r < 0.4 ? 'silver' : null;
@@ -490,6 +513,7 @@ export function gearStats(equip = {}) {
 
 // equipo automático de la tripulación según su nivel (todo visible)
 export function crewGear(level) {
+  if (level >= 110) return crewGearX(level);
   if (level >= 98) return { weapon: 'espada_estelar', shield: 'escudo_estelar', head: 'casco_estelar', chest: 'peto_estelar', hands: 'guantes_estelar', feet: 'botas_estelar' };
   if (level >= 90) return { weapon: 'espada_escarcha', shield: 'escudo_escarcha', head: 'casco_escarcha', chest: 'peto_escarcha', hands: 'guantes_escarcha', feet: 'botas_escarcha' };
   if (level >= 80) return { weapon: 'hacha_obsidiana', shield: 'escudo_obsidiana', head: 'yelmo_obsidiana', chest: 'peto_obsidiana', hands: 'guantes_obsidiana', feet: 'botas_obsidiana' };
@@ -500,5 +524,5 @@ export function crewGear(level) {
   if (level >= 10) return { weapon: 'espada_hierro', shield: 'escudo_hierro', chest: 'peto_hierro', feet: 'botas_hierro' };
   return { weapon: 'espada_madera', chest: 'peto_cuero', feet: 'botas_cuero' };
 }
-export const TIER_NAMES = ['Cuero', 'Hierro', 'Plata', 'Oro', 'Ámbar', 'Jade', 'Obsidiana', 'Escarcha', 'Estelar'];
-export function crewTier(level) { return level >= 98 ? 8 : level >= 90 ? 7 : level >= 80 ? 6 : level >= 65 ? 5 : level >= 50 ? 4 : level >= 35 ? 3 : level >= 20 ? 2 : level >= 10 ? 1 : 0; }
+export const TIER_NAMES = ['Cuero', 'Hierro', 'Plata', 'Oro', 'Ámbar', 'Jade', 'Obsidiana', 'Escarcha', 'Estelar', ...NEW_TIER_NAMES];
+export function crewTier(level) { if (level >= 110) return crewTierX(level); return level >= 98 ? 8 : level >= 90 ? 7 : level >= 80 ? 6 : level >= 65 ? 5 : level >= 50 ? 4 : level >= 35 ? 3 : level >= 20 ? 2 : level >= 10 ? 1 : 0; }

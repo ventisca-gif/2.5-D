@@ -9,6 +9,7 @@ import { JOBS, JOB_MAX, DECOR } from './extra.js';
 import { PETS } from './more.js';
 import { LOGROS, CREW_JOBS, MOUNTS } from './more2.js';
 import { friendLevel, heartsText, MAX_CREW } from './social.js';
+import { NEW_SETS, NEW_MATS } from './sets.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
@@ -226,12 +227,13 @@ export class Panels {
         const have = p.inv[id] || 0;
         return `<span class="${have >= n ? 'ok' : 'no'}">${ITEMS[id].icon} ${have}/${n}</span>`;
       }).join(' ');
-      const can = Object.entries(r.need).every(([id, n]) => (p.inv[id] || 0) >= n) && p.gold >= r.gold;
+      const locked = (r.plan && !g.flags['plan_' + r.plan]) ? '📜 Necesitas el plano (misión)' : (r.lvl && p.level < r.lvl) ? `🔒 Nivel ${r.lvl}` : '';
+      const can = !locked && Object.entries(r.need).every(([id, n]) => (p.inv[id] || 0) >= n) && p.gold >= r.gold;
       const owned = (p.inv[r.out] || 0) + (Object.values(p.equip).includes(r.out) ? 1 : 0);
       return `<div class="rec ${it.type === 'equip' ? 't' + it.tier : ''}">
         <div class="ricon">${it.icon}</div>
         <div class="rinfo"><div class="rname">${esc(it.name)} ${owned ? `<small class="muted">(tienes ${owned})</small>` : ''}</div>
-          <div class="rdesc">${esc(it.desc || '')}</div><div class="rneed">${needs}${r.gold ? ` <span class="${p.gold >= r.gold ? 'ok' : 'no'}">🪙 ${r.gold}</span>` : ''}</div></div>
+          <div class="rdesc">${esc(it.desc || '')}</div><div class="rneed">${needs}${r.gold ? ` <span class="${p.gold >= r.gold ? 'ok' : 'no'}">🪙 ${r.gold}</span>` : ''}${locked ? ` <span class="no">${locked}</span>` : ''}</div></div>
         <button class="pbtn" data-p="craft" data-i="${i}" ${can ? '' : 'disabled'}>${station === 'fuego' ? 'Cocinar' : 'Fabricar'}</button>
       </div>`;
     }).join('');
@@ -540,6 +542,19 @@ export class Panels {
       ['📰 La Gaceta de la Bruma', 'El periódico semanal cuenta tus hazañas, los rumores de las islas y esconde una pista con un mapa del tesoro cada semana. Cómprala a Pepe o léela desde ⚡ Atajos › Gaceta.'],
       ['💎 Cueva de Cristal', 'En el Archipiélago Burbuja hay una cueva entre cristales. Dentro, gira los espejos («Girar») para que el rayo de luz llegue al cristal grande y se abra la puerta del tesoro. Cambia cada día.'],
       ['🎂 Cumpleaños', 'Cada tripulante y tu pareja tienen su cumpleaños (lo ves al hablar con ellos). Si ese día les haces un regalo, ganan mucha amistad y lo recordarán; si te olvidas, se ponen tristes.'],
+      ['⭐ Nivel máximo 350', 'El nivel máximo sube de 100 a 350. Tu tripulación también puede llegar a 350 y se viste sola con las armaduras nuevas a partir del nivel 110. Las tres zonas de la expansión tienen enemigos de nivel 110 a 350.'],
+      ['🎈 Ciudad Celeste (Nv. 110-180)', 'Habla con la Inventora Volta (Isla Engranaje) para subir en globo. Isla sobre las nubes con grifos, caballeros celestes y gólems de nube. Jefe: Rey Celeste Aurion. Rocas: oro solar y plata lunar. La Sacerdotisa Aurelia da 3 misiones (plano del Templario Carmesí, oro solar y vencer al rey) y tiene forja. Para volver, ve al globo.'],
+      ['⏳ Isla Bruma de hace 100 años (Nv. 160-250)', 'El Maestro Ishvar abre el portal del tiempo. Villarroca Antigua, bosques viejos, lobos ancestrales, caballeros antiguos, wyrms y espectros del tiempo. Jefe: Cronos, Guardián del Tiempo. Rocas: mithril y adamantita (rara). El Capitán Fundador Aldric da 3 misiones (plano de la Guardia Negra, escamas de wyrm y vencer a Cronos).'],
+      ['🔥 Abismo Ardiente (Nv. 230-350)', 'La Herrera Brasa abre el portal desde Isla Ceniza. Mar de lava, demonios alados, caballeros infernales, dragones menores y titanes de magma. Jefe final: Malakor, Señor Infernal (nivel 350). Rocas: piedra infernal. El Ermitaño Vulcan da 3 misiones (plano del Tirano Violeta, sangre de dragón y vencer a Malakor). Al vencer a los 3 jefes ganas el plano de la Armadura Celestial Suprema.'],
+      ['🛡 Armaduras de la expansión', `12 conjuntos nuevos de 6 piezas (arma, escudo, casco, coraza, guantes y botas): 72 piezas, todas distintas. Se forjan en cualquier forja (también en las de las zonas nuevas). Necesitas el nivel indicado para forjarlas y llevarlas.<br>${NEW_SETS.map((s) => `• <b>${s.ch[0]}</b> · Nv. ${s.lvl} · ${s.w[0]} · ${Object.keys(s.mats).map((m) => (NEW_MATS[m] || (ITEMS[m] || {})).name).join(', ')}${s.plan ? ' · 📜 plano de misión' : ''}${s.bulk ? ' · 🗿 colosal (te hace más grande)' : ''}`).join('<br>')}`],
+      ['💎 Minerales nuevos', `${Object.values(NEW_MATS).map((m) => `${m.icon} <b>${m.name}</b>: ${m.desc}`).join('<br>')}<br>🟤 <b>Ámbar gris</b>: lo sueltan los monstruos marinos cazados con arpón.`],
+      ['🏰 Escudos y armaduras colosales', 'Hay tres tipos de escudo: rodela (redondo), escudo de cometa y pavés (escudo torre, muy alto). Las armaduras del Coloso Bárbaro, el Tirano Violeta, el Coloso Titánico y la Celestial Suprema son colosales: tu personaje se ve más grande.'],
+      ['⚔️ Rival personal', 'Kael el Implacable aparece de vez en cuando (desde nivel 20) y te reta a duelo. Sube de nivel contigo y lleva siempre armadura de tu nivel. Vencerle da oro; a las 5 victorias, su capa.'],
+      ['🏪 Tienda propia', 'Con tu puerto a nivel 3, junto al mercado tienes tu tienda: pon materiales, comida o elixires a la venta. Vende uno cada minuto a un 50% más de su valor aunque no estés.'],
+      ['🃏 Cartas piratas', 'En las tabernas (Rosa, Coral, Berta, Mara) puedes jugar a la siete y media: acércate a 7,5 sin pasarte; las figuras valen medio punto. Apuesta 50, 200 o 1000 oro.'],
+      ['🎯 Monstruos marinos', 'Compra un arpón a la Astillera Marga. Por aguas profundas (desde nivel 40) emergen krakens menores y ballenas abisales que embisten el barco: pulsa «Arpón» para cazarlos (oro, carne y ámbar gris).'],
+      ['✨ Mascotas que evolucionan', 'Tu mascota crece al nivel 15 y vuelve a evolucionar al 35 (brilla y es mucho más grande): loro → guacamayo real → fénix, gato → pantera → tigre fantasma, mono → gorila → simio dorado, dragón → joven → anciano.'],
+      ['💼 Negocio de tu pareja', 'Habla con tu pareja para que abra una panadería, herrería, taberna o sastrería (5000 oro). Cada día te da oro y productos.'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],

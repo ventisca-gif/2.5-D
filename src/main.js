@@ -39,6 +39,7 @@ import { installMore9, makeWanderIslets } from './more9.js';
 import { installMore10, makeOwnPort, makeIceBridge } from './more10.js';
 import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
+import { installMore13, makeExpansionIslets } from './more13.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -121,6 +122,20 @@ const ENEMY_DEF = {
   guardian_errante: { name: 'Guardián de la Isla Errante', hp: () => 18000, atk: () => 250, speed: 2.0, xp: () => 20000, gold: () => 5000, aggro: 9, cd: 1.7, boss: true, super: 'errante', sCol: 0x7af0e0, sTxt: '¡Ira de las ruinas!', sMin: 'golem', bounty: 2500 },
   tiburon: { name: 'Tiburón del pecio', hp: (L) => 50 + 15 * L, atk: (L) => 7 + 2.5 * L, speed: 3.4, xp: (L) => 20 + 8 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 6, cd: 1.2, fly: true },
   rey_bruma: { name: 'El Rey de la Bruma', hp: () => 60000, atk: () => 320, speed: 2.8, xp: () => 50000, gold: () => 10000, aggro: 12, cd: 1.3, boss: true, super: 'bruma', sCol: 0x6a3aaa, sTxt: '¡Abrazo de la bruma!', sMin: 'skull', bounty: 10000 },
+  grifo: { name: 'Grifo celeste', hp: (L) => 60 + 18 * L, atk: (L) => 8 + 2.6 * L, speed: 3.4, xp: (L) => 40 + 14 * L, gold: (L) => 15 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.1 },
+  caballero_celeste: { name: 'Caballero celeste', hp: (L) => 80 + 20 * L, atk: (L) => 9 + 2.8 * L, speed: 2.8, xp: (L) => 45 + 15 * L, gold: (L) => 18 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.2 },
+  golem_nube: { name: 'Gólem de nube', hp: (L) => 110 + 24 * L, atk: (L) => 10 + 3 * L, speed: 1.9, xp: (L) => 50 + 16 * L, gold: (L) => 20 + Math.floor(Math.random() * (10 + L)), aggro: 5, cd: 1.8 },
+  rey_celeste: { name: 'Rey Celeste Aurion', hp: () => 60000, atk: () => 650, speed: 2.8, xp: () => 150000, gold: () => 20000, aggro: 9, cd: 1.3, boss: true, super: 'celeste', sCol: 0xffe080, sTxt: '¡Juicio celeste!', sMin: 'caballero_celeste', bounty: 6000 },
+  lobo_ancestral: { name: 'Lobo ancestral', hp: (L) => 70 + 19 * L, atk: (L) => 9 + 2.8 * L, speed: 3.5, xp: (L) => 45 + 15 * L, gold: (L) => 18 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.0 },
+  caballero_antiguo: { name: 'Caballero antiguo', hp: (L) => 90 + 21 * L, atk: (L) => 10 + 3 * L, speed: 2.7, xp: (L) => 50 + 16 * L, gold: (L) => 20 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.2 },
+  wyrm_antiguo: { name: 'Wyrm antiguo', hp: (L) => 120 + 24 * L, atk: (L) => 11 + 3.1 * L, speed: 2.4, xp: (L) => 55 + 17 * L, gold: (L) => 22 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.5 },
+  espectro_tiempo: { name: 'Espectro del tiempo', hp: (L) => 70 + 18 * L, atk: (L) => 11 + 3 * L, speed: 3.2, xp: (L) => 50 + 16 * L, gold: (L) => 20 + Math.floor(Math.random() * (10 + L)), aggro: 7, cd: 1.1, fly: true },
+  cronos: { name: 'Cronos, Guardián del Tiempo', hp: () => 120000, atk: () => 900, speed: 2.6, xp: () => 300000, gold: () => 40000, aggro: 9, cd: 1.4, boss: true, super: 'cronos', sCol: 0xd8b040, sTxt: '¡Arena del tiempo!', sMin: 'espectro_tiempo', bounty: 8000 },
+  demonio_alado: { name: 'Demonio alado', hp: (L) => 90 + 22 * L, atk: (L) => 12 + 3.2 * L, speed: 3.6, xp: (L) => 55 + 18 * L, gold: (L) => 25 + Math.floor(Math.random() * (10 + L)), aggro: 7, cd: 1.0, fly: true },
+  caballero_infernal: { name: 'Caballero infernal', hp: (L) => 110 + 24 * L, atk: (L) => 13 + 3.4 * L, speed: 2.8, xp: (L) => 60 + 19 * L, gold: (L) => 28 + Math.floor(Math.random() * (10 + L)), aggro: 7, cd: 1.2 },
+  dragon_menor: { name: 'Dragón menor', hp: (L) => 140 + 28 * L, atk: (L) => 14 + 3.6 * L, speed: 2.6, xp: (L) => 70 + 21 * L, gold: (L) => 30 + Math.floor(Math.random() * (10 + L)), aggro: 7, cd: 1.5 },
+  titan_magma: { name: 'Titán de magma', hp: (L) => 180 + 32 * L, atk: (L) => 15 + 3.8 * L, speed: 1.8, xp: (L) => 80 + 24 * L, gold: (L) => 35 + Math.floor(Math.random() * (10 + L)), aggro: 6, cd: 1.9 },
+  senor_infernal: { name: 'Malakor, Señor Infernal', hp: () => 250000, atk: () => 1400, speed: 2.8, xp: () => 700000, gold: () => 100000, aggro: 10, cd: 1.3, boss: true, super: 'infernal', sCol: 0xff3a10, sTxt: '¡Llamas del abismo!', sMin: 'caballero_infernal', bounty: 15000 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -716,7 +731,21 @@ class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
     const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
-    if (type === 'tiburon') model = makeSharkModel();
+    if (type === 'grifo') model = tintModel(makeBeast2('tiger'), 0xe8c060, 0.65);
+    else if (type === 'caballero_celeste') model = HUM({ ...EQUIP.peto_templario.look, cape: 0xf4f4f8, tabard: 0x5a8ad8, hat: 'helmet', hatColor: 0xf4f4f8, plume: 0xffffff, sword: true, blade: 0xfff4c0, shield: { type: 'kite', color: 0xf4f4f8, rim: 0xffd040, boss: 0x5a8ad8 }, wings: 0xffffff, skin: 0xf0d8c0 });
+    else if (type === 'golem_nube') model = tintModel(makeGolem('stone'), 0xf4f8ff, 0.85);
+    else if (type === 'rey_celeste') model = HUM({ ...EQUIP.peto_celestial.look, ...EQUIP.casco_celestial.look, ...EQUIP.arma_celestial.look, skin: 0xf0d8c0, anime: true, eyeColor: 3 });
+    else if (type === 'lobo_ancestral') model = tintModel(makeBeast2('wolf'), 0x4a3a2a, 0.6);
+    else if (type === 'caballero_antiguo') model = HUM({ ...EQUIP.peto_torre.look, ...EQUIP.casco_torre.look, ...EQUIP.arma_torre.look, shield: EQUIP.escudo_torre.look.shield, skin: 0xe0aa80 });
+    else if (type === 'wyrm_antiguo') model = tintModel(makeScorpion(), 0x5a8a3a, 0.7);
+    else if (type === 'espectro_tiempo') model = HUM({ bone: 0xd8c890, cape: 0x8a7a3a, hat: 'hood', hatColor: 0x6a5a2a, sword: true, blade: 0xffe080, eyeGlow: 0xffe080 });
+    else if (type === 'cronos') model = HUM({ armor: true, armorColor: 0xb8903a, trim: 0xffe080, pauldron: 0xd8a838, hat: 'horned', hatColor: 0xb8903a, hornColor: 0xffe080, halo: 0xffe080, cape: 0x6a4a1a, axe: true, skin: 0xc68a5a, beard: 0xf0f0f0, eyeGlow: 0xffe080 });
+    else if (type === 'demonio_alado') model = tintModel(makeBat(), 0xc82a1a, 0.7);
+    else if (type === 'caballero_infernal') model = HUM({ ...EQUIP.peto_infernal.look, ...EQUIP.casco_infernal.look, ...EQUIP.arma_infernal.look, shield: EQUIP.escudo_infernal.look.shield, skin: 0x8a5a3a, eyeGlow: 0xff3a10 });
+    else if (type === 'dragon_menor') model = HUM({ ...EQUIP.c_dragon.look, axe: true, skin: 0x8a3a2a, eyeColor: 1 });
+    else if (type === 'titan_magma') model = tintModel(makeGolem('obs'), 0xff5a10, 0.55);
+    else if (type === 'senor_infernal') model = HUM({ ...EQUIP.peto_tirano.look, ...EQUIP.casco_tirano.look, ...EQUIP.arma_tirano.look, skin: 0x6a3a5a, eyeGlow: 0xff3aff });
+    else if (type === 'tiburon') model = makeSharkModel();
     else if (type === 'rey_bruma') model = HUM({ bone: 0x8a8aa8, cape: 0x3a2a5a, hat: 'horned', hatColor: 0x2a1a3a, hornColor: 0xd8a838, sword: true, blade: 0xb08aff, bladeLen: 0.8, guard: 0xd8a838, eyeGlow: 0xb08aff, pauldron: 0x3a2a5a, trim: 0xd8a838, halo: 0x8a5aff });
     else if (type === 'bestia_lobo') model = tintModel(makeBeast2('wolf'), 0xd8e0f0, 0.7);
     else if (type === 'bestia_tigre') model = tintModel(makeBeast2('tiger'), 0x2a2030, 0.75);
@@ -762,6 +791,14 @@ class Enemy extends Actor {
     if (type === 'reina_hielo') model_scale(model, 1.55);
     if (type === 'bestia_lobo' || type === 'bestia_tigre') model_scale(model, 2.0);
     if (type === 'bestia_golem' || type === 'guardian_errante') model_scale(model, 2.1);
+    if (type === 'grifo' || type === 'lobo_ancestral') model_scale(model, 1.6);
+    if (type === 'golem_nube' || type === 'wyrm_antiguo') model_scale(model, 1.7);
+    if (type === 'demonio_alado') model_scale(model, 2.2);
+    if (type === 'dragon_menor') model_scale(model, 1.5);
+    if (type === 'titan_magma') model_scale(model, 2.3);
+    if (type === 'rey_celeste' || type === 'cronos') model_scale(model, 2.0);
+    if (type === 'senor_infernal') model_scale(model, 2.4);
+    if (type === 'espectro_tiempo') { for (const m of model.mats) { m.transparent = true; m.opacity = 0.7; } }
     if (type === 'rey_bruma') { model_scale(model, 2.2); for (const m of model.mats) { m.transparent = true; m.opacity = 0.9; } }
     if (type === 'tiburon') model_scale(model, 1.3);
     if (type === 'sombra_abismo') { model_scale(model, 1.7); for (const m of model.mats) { m.transparent = true; m.opacity = 0.85; } }
@@ -1005,7 +1042,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort()];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets()];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -1019,7 +1056,7 @@ class Game {
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
       { id: 'salitre', name: 'Puerto Salitre', shipX: this.W.ship.x, shipZ: this.W.ship.z, heading: 0, land: { x: 51, z: 92 } },
-      ...this.islets.filter((r) => !r.ghost).map((r) => r.dock),
+      ...this.islets.filter((r) => !r.ghost && !r.portal).map((r) => r.dock),
     ];
     this.boat = { x: this.W.ship.x, z: this.W.ship.z, heading: 0, speed: 0, docked: 'salitre', waypoint: null };
     this.shipUp = { hull: 0, cannons: 0, sails: 0, size: 0 };
@@ -1842,6 +1879,8 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      const s13 = this.sailAction13 && this.sailAction13();
+      if (s13) return s13;
       const s12 = this.sailAction12 && this.sailAction12();
       if (s12) return s12;
       const s11 = this.sailAction11 && this.sailAction11();
@@ -1855,6 +1894,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c13 = this.contextAction13 && this.contextAction13();
+    if (c13) return c13;
     const c12 = this.contextAction12 && this.contextAction12();
     if (c12) return c12;
     const c11 = this.contextAction11 && this.contextAction11();
@@ -2334,6 +2375,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
+      zq: this.zq || {}, zqBase: this.zqBase || {}, nem: this.nem || null, myShop: this.myShop || null,
       rvc: this.rvc || null, gz: this.gz || null,
       conq: Object.fromEntries(Object.entries(this.conq || {}).map(([k, v]) => [k, { fid: v.fid, name: v.name, isle: v.isle }])), owned: this.owned || {}, legend: this.legend || {}, wmap: (this.wmap || []).join(''),
       relics: this.relics || [], amulets: this.amulets || [], amuletEq: this.amuletEq ?? null, adv: this.adv || null,
@@ -2535,6 +2577,7 @@ class Game {
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
+    this.zq = data.zq || {}; this.zqBase = data.zqBase || {}; this.nem = data.nem || null; this.myShop = data.myShop || null;
     this.rvc = data.rvc || null; this.gz = data.gz || null; this.bdayChecked = null;
     this.conq = data.conq || {}; this.owned = data.owned || {}; this.legend = data.legend || {}; this.wmap = data.wmap ? data.wmap.split('').map(Number) : null; this.festCur = undefined; this.portCannons = null;
     this.relics = data.relics || []; this.amulets = data.amulets || []; this.amuletEq = data.amuletEq ?? undefined; this.adv = data.adv || null; this.portBuilt = false;
@@ -2599,6 +2642,7 @@ class Game {
   equip(id) {
     const p = this.player, e = EQUIP[id];
     if (!e || !p.inv[id]) return;
+    if (e.lvl && p.level < e.lvl) return this.ui.toast(`🔒 Necesitas nivel ${e.lvl} para llevar ${e.name}`);
     const prev = p.equip[e.slot];
     p.inv[id]--;
     if (prev) p.inv[prev] = (p.inv[prev] || 0) + 1;
@@ -2631,6 +2675,8 @@ class Game {
   craft(i) {
     const r = RECIPES[i], p = this.player;
     if (!r) return;
+    if (r.plan && !this.flags['plan_' + r.plan]) return this.ui.toast('📜 Necesitas el plano de esa armadura (se gana en una misión)');
+    if (r.lvl && p.level < r.lvl) return this.ui.toast(`🔒 Necesitas nivel ${r.lvl}`);
     if (p.gold < r.gold || !Object.entries(r.need).every(([id, n]) => (p.inv[id] || 0) >= n)) return this.ui.toast('Te faltan materiales');
     p.gold -= r.gold;
     for (const [id, n] of Object.entries(r.need)) p.inv[id] -= n;
@@ -3046,6 +3092,7 @@ class Game {
       this.updateMore10(dt);
       this.updateMore11(dt);
       this.updateMore12(dt);
+      this.updateMore13(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3281,6 +3328,14 @@ installMore9(Game, { sfx, NPC });
 installMore10(Game, { sfx, NPC });
 installMore11(Game, { sfx });
 installMore12(Game, { sfx, NPC });
+installMore13(Game, { sfx, NPC, crewGear });
+LOGROS.push(
+  { id: 'nivel200', name: 'Semidiós', title: 'Semidiós', desc: 'Llega al nivel 200', ok: (g) => g.player.level >= 200 },
+  { id: 'nivel350', name: 'Inmortal', title: 'Inmortal de la Bruma', desc: 'Llega al nivel 350', ok: (g) => g.player.level >= 350 },
+  { id: 'tres_mundos', name: 'Señor de los tres mundos', title: 'Señor de los tres mundos', desc: 'Completa las misiones de las 3 zonas de la expansión', ok: (g) => ['celeste', 'pasado', 'abismo'].every((k) => ((g.zq || {})[k] || 0) >= 3) },
+  { id: 'celestial', name: 'Armadura suprema', title: 'Celestial', desc: 'Forja la Armadura Celestial Suprema', ok: (g) => !!(g.player.inv.peto_celestial || Object.values(g.player.equip).includes('peto_celestial')) },
+  { id: 'kael', name: 'Rival vencido', title: 'Sombra de Kael', desc: 'Vence a Kael 5 veces', ok: (g) => g.nem && g.nem.w >= 5 },
+);
 LOGROS.push(
   { id: 'marea', name: 'Amigo de Marea', title: 'Amigo de los tritones', desc: 'Completa las misiones de la Reina de Marea', ok: (g) => (g.flags.mareaQ || 0) >= 3 },
   { id: 'gran_regata', name: 'Rey de los mares', title: 'Rey de los mares', desc: 'Gana la Gran Regata de las Islas', ok: (g) => (g.stats.regattas || 0) >= 1 },
