@@ -174,7 +174,7 @@ export function installNaval(Game, D) {
     if (N.cd > 0) return;
     N.cd = st.reload;
     const fx = Math.sin(b.heading), fz = Math.cos(b.heading), rx = Math.cos(b.heading), rz = -Math.sin(b.heading);
-    const targets = [...N.ships.filter((s) => !s.sinking), ...N.serpents.filter((s) => !s.dead), ...(this.pvpShips ? this.pvpShips() : [])];
+    const targets = [...N.ships.filter((s) => !s.sinking), ...N.serpents.filter((s) => !s.dead), ...(this.pvpShips ? this.pvpShips() : []), ...(this.balloonTargets ? this.balloonTargets() : [])];
     let fired = false;
     for (const side of [1, -1]) {
       let best = null, bd = 17;
@@ -409,6 +409,7 @@ export function installNaval(Game, D) {
           this.ui.float(String(Math.round(bl.dmg * 0.6)), 'pdmg', s.x, 2.2, s.z);
           break;
         }
+        if (!hit && this.balloonHit) hit = this.balloonHit(bl);
         if (!hit) for (const s of N.serpents) if (!s.dead && Math.hypot(bl.x - s.x, bl.z - s.z) < 2.2 && bl.y < 2) {
           s.hp -= bl.dmg; hit = true;
           this.ui.float(String(Math.round(bl.dmg)), 'pdmg', s.x, 2, s.z);

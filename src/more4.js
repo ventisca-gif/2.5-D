@@ -30,6 +30,7 @@ export function makeIslands4() {
     populate(R, 1);
     const { ox, oz, N } = R;
     R.spawns.push({ type: 'lobo_nieve', count: 6, area: [ox + 6, oz + 6, ox + N - 7, cz - 8], lvl: [80, 88] });
+    R.spawns.push({ type: 'reina_hielo', count: 1, area: [cx + 10, cz - 5, cx + 14, cz - 4], lvl: [97, 97] });
     R.spawns.push({ type: 'yeti', count: 4, area: [ox + 6, cz + 8, ox + N - 7, oz + N - 7], lvl: [85, 94] });
     out.push(R);
   }
@@ -47,6 +48,7 @@ export function makeIslands4() {
     npc({ id: 'bombon', name: 'Niño Bombón', x: cx - 1, z: cz + 2, wander: 3, small: true, look: { shirt: 0x8a5a3a, pants: 0xf060b0, hair: 0x5a3a20, skin: 0xe0aa80 } });
     populate(R, 1);
     const { ox, oz, N } = R;
+    R.spawns.push({ type: 'rey_pastel', count: 1, area: [cx - 4, cz + 9, cx + 4, cz + 13], lvl: [90, 90] });
     R.spawns.push({ type: 'galleta', count: 7, area: [ox + 6, oz + 6, ox + N - 7, oz + N - 7], lvl: [70, 80] });
     out.push(R);
   }
@@ -79,6 +81,7 @@ export function makeIslands4() {
     npc({ id: 'tornillo', name: 'Mecánico Tornillo', x: cx + 1, z: cz + 2, wander: 1, look: { shirt: 0x3a5a7a, pants: 0x3a5a7a, hair: 0x2a2a2a, beard: 0x2a2a2a, skin: 0xc68a5a, bracers: true, bracerColor: 0x8a8c94 } });
     populate(R, 1);
     const { ox, oz, N } = R;
+    R.spawns.push({ type: 'gran_automata', count: 1, area: [cx - 4, cz + 9, cx + 4, cz + 13], lvl: [99, 99] });
     R.spawns.push({ type: 'automata', count: 6, area: [ox + 6, oz + 6, ox + N - 7, oz + N - 7], lvl: [90, 99] });
     out.push(R);
   }
@@ -158,14 +161,15 @@ export function installMore4(Game, D) {
     if (on && !o) {
       o = m.espFx = { meshes: [] };
       const dark = new THREE.MeshPhongMaterial({ color: 0x050408, emissive: 0x0c0414, shininess: 140, specular: 0xb08aff });
-      const glow = new THREE.MeshBasicMaterial({ color: 0xff3a8a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false });
+      const glow = new THREE.MeshBasicMaterial({ color: 0xff3a8a, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide });
       o.glow = glow;
       for (const arm of [m.parts.armL, m.parts.armR]) {
         const a = new THREE.Mesh(new THREE.CapsuleGeometry(0.062, 0.2, 4, 8), dark); a.position.y = -0.16; arm.add(a); o.meshes.push(a);
-        const g2 = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), glow); g2.position.y = -0.25; arm.add(g2); o.meshes.push(g2);
+        const fist = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), dark); fist.position.set(0, -0.3, 0.01); arm.add(fist); o.meshes.push(fist);
+        const g2 = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), glow); g2.position.y = -0.26; g2.scale.set(1, 1.5, 1); arm.add(g2); o.meshes.push(g2);
       }
       if (m.parts.weapon) { const ks = []; m.parts.weapon.traverse((k) => { if (k.isMesh && !k.userData.espCopy && k.material !== D.OUTLINE) ks.push(k); }); ks.forEach((k) => { const c = new THREE.Mesh(k.geometry, dark); c.userData.espCopy = true; c.position.copy(k.position); c.rotation.copy(k.rotation); c.scale.copy(k.scale).multiplyScalar(1.04); k.parent.add(c); o.meshes.push(c); }); }
-      if (this.esp.l >= 30) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.z = 0.78; m.parts.torso.add(t); o.meshes.push(t); }
+      if (this.esp.l >= 30) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.set(1.04, 1, 1.02); m.parts.torso.add(t); o.meshes.push(t); }
     } else if (!on && o) {
       for (const k of o.meshes) k.parent && k.parent.remove(k);
       m.espFx = null;
@@ -333,6 +337,7 @@ export function installMore4(Game, D) {
         this.fishDex[id] = (this.fishDex[id] || 0) + 1;
         this.jobXp('pescador', { fish: 10, atun: 18, pez_espada: 35, pez_luna: 60, pez_dorado: 200 }[id]);
         this.contractTick('fish', 'fish');
+        if (this.fishScore) this.fishScore(id);
         this.toast(`🎣 ¡${ITEMS[id].icon} ${ITEMS[id].name}!${first ? ' (nueva especie)' : ''}`, id === 'pez_dorado' ? 'area' : undefined);
         sfx(id === 'pez_dorado' ? 'level' : 'coin');
       } else this.toast('🎣 El pez se escapó...');
@@ -415,6 +420,9 @@ export function installMore4(Game, D) {
 
   // ============================================================ diálogos de los NPC nuevos
   P.npcDialog4 = function (id, opts, sell) {
+    const t5 = this.npcDialog5 ? this.npcDialog5(id, opts, sell) : null;
+    if (t5 && id !== 'maestro') return t5;
+    if (t5 && this.esp) return t5;
     const sellCos = (cid) => { if (!this.ownCos(cid)) sell(cid, this.cosPrice(cid).gold); };
     if (id === 'maestro') {
       if (!this.esp) {
@@ -505,20 +513,21 @@ export function installMore4(Game, D) {
       <div class="sub">🎣 Acuario (pesca con minijuego)</div><p>${fishRows}</p>
       <p class="muted small">Cuando pica un pez, mantén pulsada la barra para que la zona verde siga al pez hasta llenar el medidor.</p>
       <div class="sub">🛠 Oficios</div><p>Niveles totales: <b>${jobsT}</b> · daño +${jobsT}% · vida +${(jobsT * 0.3).toFixed(1)}%. Hitos en los niveles 10, 20 y 30 de cada oficio (oro, fichas y ropa). Ahora hay 4 trabajos al día y pagan el doble.</p>
+      ${this.newsHtml5 ? this.newsHtml5() : ''}
       ${rank}`;
   };
 
   // ============================================================ Armamento Espiritual de los enemigos
   // Los enemigos fuertes (nivel 90+, autómatas, yetis, galletas, piratas famosos de nivel 70+, jefes y superjefes)
   // también lo usan: se cubren de negro unos segundos, pegan +20% y aguantan más golpes.
-  const ESP_TYPES = new Set(['yeti', 'automata', 'galleta', 'serafin', 'dragon', 'abyss_queen', 'ghost_captain', 'crypt_king', 'marine_boss', 'golem_boss']);
+  const ESP_TYPES = new Set(['yeti', 'automata', 'galleta', 'serafin', 'dragon', 'abyss_queen', 'ghost_captain', 'crypt_king', 'marine_boss', 'golem_boss', 'reina_hielo', 'gran_automata', 'rey_pastel']);
   P.enemyHasEsp = function (e) {
     if (e.isNPC || e.isRemote || !e.def) return false;
     return ESP_TYPES.has(e.type) || e.level >= 90 || (!!e.def.famous && e.level >= 70) || !!e.def.super;
   };
   // daño que recibe un enemigo con el Armamento activo: sin el tuyo haces un 40% menos; con el tuyo, cada nivel lo compensa
   P.enemyEspDef = function (e, dmg, killerId = 0, byCrew = false) {
-    if (!e.espOn) return dmg;
+    if (!e.espOn || this._pierce) return dmg;
     let k = 0.6;
     if (!byCrew && killerId === 0 && this.esp) k = Math.min(1, 0.75 + this.esp.l * 0.01);
     else if (!byCrew && killerId !== 0) k = 0.75;
@@ -551,17 +560,18 @@ export function installMore4(Game, D) {
     if (!on) { if (e.espFx) { for (const k of e.espFx.meshes) k.parent && k.parent.remove(k); e.espFx = null; } if (e.label) e.label.el.classList.remove('esp'); return; }
     if (e.espFx) return;
     const dark = new THREE.MeshPhongMaterial({ color: 0x050408, emissive: 0x0c0414, shininess: 140, specular: 0xb08aff });
-    const glow = new THREE.MeshBasicMaterial({ color: 0xff3a8a, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false });
+    const glow = new THREE.MeshBasicMaterial({ color: 0xff3a8a, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.BackSide });
     const F = e.espFx = { meshes: [], glow };
     const pa = m.parts || {};
     if (m.kind === 'humanoid' && pa.armL && pa.armR) {
       const big = /golem|yeti|automata/.test(e.type);
       for (const arm of [pa.armL, pa.armR]) {
         const a = new THREE.Mesh(new THREE.CapsuleGeometry(big ? 0.11 : 0.062, big ? 0.3 : 0.2, 4, 8), dark); a.position.y = big ? -0.24 : -0.16; arm.add(a); F.meshes.push(a);
-        const g2 = new THREE.Mesh(new THREE.SphereGeometry(big ? 0.17 : 0.11, 10, 8), glow); g2.position.y = big ? -0.38 : -0.25; arm.add(g2); F.meshes.push(g2);
+        const fist = new THREE.Mesh(big ? new THREE.BoxGeometry(0.2, 0.2, 0.2) : new THREE.SphereGeometry(0.06, 12, 10), dark); fist.position.set(0, big ? -0.36 : -0.3, big ? 0.02 : 0.01); arm.add(fist); F.meshes.push(fist);
+        const g2 = new THREE.Mesh(new THREE.SphereGeometry(big ? 0.17 : 0.1, 10, 8), glow); g2.position.y = big ? -0.32 : -0.26; g2.scale.set(1, 1.5, 1); arm.add(g2); F.meshes.push(g2);
       }
       if (pa.weapon) { const ks = []; pa.weapon.traverse((k) => { if (k.isMesh && k.material !== D.OUTLINE) ks.push(k); }); ks.forEach((k) => { const c = new THREE.Mesh(k.geometry, dark); c.position.copy(k.position); c.rotation.copy(k.rotation); c.scale.copy(k.scale).multiplyScalar(1.04); k.parent.add(c); F.meshes.push(c); }); }
-      if (pa.torso && !big && (e.def.boss || e.level >= 95)) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.z = 0.78; pa.torso.add(t); F.meshes.push(t); }
+      if (pa.torso && !big && (e.def.boss || e.level >= 95)) { const t = new THREE.Mesh(new THREE.CapsuleGeometry(0.175, 0.24, 4, 12), dark); t.position.y = 0.18; t.scale.set(1.04, 1, 1.02); pa.torso.add(t); F.meshes.push(t); }
     } else {
       // bestias y gólems: aura oscura alrededor del cuerpo
       const s = m.root.scale.x || 1, h = (m.height || 1) / s;

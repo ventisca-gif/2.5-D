@@ -127,7 +127,7 @@ export class UI {
     this.dialogOpen = true;
     $('dialog').classList.remove('hidden');
     $('dname').textContent = name;
-    $('dtext').textContent = text;
+    $('dtext').textContent = String(text ?? '').replace(/<br\s*\/?>/g, '\n').replace(/<\/?(b|small)>/g, '');
     const box = $('dopts');
     box.innerHTML = '';
     options.forEach((o, i) => {

@@ -183,9 +183,9 @@ export function installExtra(Game, D) {
       this.sAtk = this.def.super === 'leviathan' ? 5 : 6.5;
       // ataque de área anunciado: aparece el círculo y estalla al segundo
       const x = p.x, z = p.z, r = this.def.super === 'dragon' ? 2.8 : 2.4;
-      const col = { dragon: 0xff4010, serafin: 0xffe060, leviathan: 0x3a2a6a, crypt: 0x7aff8a, ghost: 0x7af0e0, abyss: 0x3ad8ff }[this.def.super];
+      const col = { dragon: 0xff4010, serafin: 0xffe060, leviathan: 0x3a2a6a, crypt: 0x7aff8a, ghost: 0x7af0e0, abyss: 0x3ad8ff }[this.def.super] ?? this.def.sCol;
       g.ring(x, z, r * 0.8, col);
-      g.ui.float({ dragon: '¡Aliento de fuego!', serafin: '¡Juicio de luz!', leviathan: '¡Tinta abisal!', crypt: '¡Maldición de la cripta!', ghost: '¡Lamento espectral!', abyss: '¡Remolino abisal!' }[this.def.super], 'crit', this.x, this.model.height + 0.6, this.z);
+      g.ui.float({ dragon: '¡Aliento de fuego!', serafin: '¡Juicio de luz!', leviathan: '¡Tinta abisal!', crypt: '¡Maldición de la cripta!', ghost: '¡Lamento espectral!', abyss: '¡Remolino abisal!' }[this.def.super] || this.def.sTxt, 'crit', this.x, this.model.height + 0.6, this.z);
       this.st.attackT = 0.32;
       setTimeout(() => {
         if (this.dead) return;
@@ -199,7 +199,7 @@ export function installExtra(Game, D) {
     if (!this.enraged && this.hp < this.maxHp * 0.5) {
       this.enraged = true;
       this.speed *= 1.25;
-      const minion = { dragon: 'skull', serafin: 'skeleton', leviathan: null, crypt: 'skeleton', ghost: 'skull', abyss: 'jelly' }[this.def.super];
+      const minion = { dragon: 'skull', serafin: 'skeleton', leviathan: null, crypt: 'skeleton', ghost: 'skull', abyss: 'jelly' }[this.def.super] ?? this.def.sMin;
       g.toast(`⚠️ ¡${this.def.name} se enfurece!`, 'area');
       if (minion) for (let i = 0; i < 3; i++) {
         const a = (i / 3) * Math.PI * 2, x = Math.round(this.x + Math.cos(a) * 2.5), z = Math.round(this.z + Math.sin(a) * 2.5);

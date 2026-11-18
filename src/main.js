@@ -31,6 +31,7 @@ import { DECOR } from './extra.js';
 import { installMore3, makeCoralia, makeJellyModel } from './more3.js';
 import { LOGROS } from './more2.js';
 import { installMore4, makeIslands4, makeGrotto } from './more4.js';
+import { installMore5, makeNewbornIslet } from './more5.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -103,6 +104,9 @@ const ENEMY_DEF = {
   galleta: { name: 'Soldado galleta', hp: (L) => 34 + 11 * L, atk: (L) => 5 + 2.1 * L, speed: 2.9, xp: (L) => 14 + 6 * L, gold: (L) => 6 + Math.floor(Math.random() * (4 + L)), aggro: 5, cd: 1.2 },
   cangrejo_burbuja: { name: 'Cangrejo burbuja', hp: (L) => 36 + 11 * L, atk: (L) => 4 + 2 * L, speed: 2.2, xp: (L) => 12 + 6 * L, gold: (L) => 5 + Math.floor(Math.random() * (4 + L)), aggro: 4, cd: 1.4 },
   automata: { name: 'Autómata de engranajes', hp: (L) => 75 + 18 * L, atk: (L) => 8 + 2.6 * L, speed: 2.0, xp: (L) => 24 + 9 * L, gold: (L) => 12 + Math.floor(Math.random() * (6 + L)), aggro: 5, cd: 1.6 },
+  reina_hielo: { name: 'Reina de Hielo Glacia', hp: () => 15000, atk: () => 230, speed: 2.6, xp: () => 18000, gold: () => 4500, aggro: 8, cd: 1.3, boss: true, super: 'hielo', sCol: 0x9ae8ff, sTxt: '¡Tormenta de hielo!', sMin: 'lobo_nieve', bounty: 3500 },
+  gran_automata: { name: 'Gran Autómata Ferrum', hp: () => 19000, atk: () => 250, speed: 2.0, xp: () => 21000, gold: () => 5000, aggro: 8, cd: 1.7, boss: true, super: 'ferrum', sCol: 0xffc040, sTxt: '¡Lluvia de remaches!', sMin: 'automata', bounty: 4000 },
+  rey_pastel: { name: 'Rey Pastel Bizcochón', hp: () => 12000, atk: () => 200, speed: 2.4, xp: () => 15000, gold: () => 4000, aggro: 8, cd: 1.4, boss: true, super: 'pastel', sCol: 0xff6ab0, sTxt: '¡Glaseado explosivo!', sMin: 'galleta', bounty: 3000 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -520,6 +524,13 @@ class NPC extends Actor {
   update(dt) {
     const g = this.g, p = g.player, s = g.soc(this.id);
     this.st.holdHand = null;
+    if (s.role === 'jail' && g.jailSpot) {
+      // preso en la celda del Bastión: se le ve tras los barrotes
+      const j = g.jailSpot;
+      this.x = j.x; this.z = j.z; this.path = []; this.st.moving = false;
+      this.model.root.visible = true; this.model.root.position.set(j.x, 0.1, j.z); this.label._vis = true; this.label.el.style.display = '';
+      return;
+    }
     if (s.role && (s.crew || s.partner) && !g.boarding) {
       // en el barco o recolectando: no se ve por la isla
       if (this.model.root.visible) { this.model.root.visible = false; this.label.el.style.display = 'none'; this.label._vis = false; }
@@ -671,7 +682,10 @@ class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
     const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
-    if (type === 'lobo_nieve') model = tintModel(makeBeast2('wolf'), 0xf4f8fc, 0.75);
+    if (type === 'reina_hielo') model = HUM(animeLook({ id: 'glacia', look: { skin: 0xdcecf8, hair: 0xf4fbff, longHair: true, dress: true, dressColor: 0x8ad0f0, shirt: 0xbfe8f8, hat: 'circlet', hatColor: 0xe8f8ff, halo: 0x9ae8ff, cape: 0xe0f4ff, spear: true, trident: true } }));
+    else if (type === 'gran_automata') model = tintModel(makeGolem('stone'), 0xd8a838, 0.85);
+    else if (type === 'rey_pastel') model = HUM({ skin: 0xb8743a, shirt: 0xf8d8e8, pants: 0xf060b0, trim: 0xffffff, hat: 'circlet', hatColor: 0xffd040, halo: 0xff8ac8, cape: 0xf060b0, axe: true, beard: 0xffffff, bootCuff: true });
+    else if (type === 'lobo_nieve') model = tintModel(makeBeast2('wolf'), 0xf4f8fc, 0.75);
     else if (type === 'yeti') { model = tintModel(makeGolem('stone'), 0xeef4fa, 0.8); }
     else if (type === 'automata') model = tintModel(makeGolem('stone'), 0xc8903a, 0.7);
     else if (type === 'cangrejo_burbuja') model = tintModel(makeCrab2(), 0x5ad0f0, 0.6);
@@ -704,6 +718,9 @@ class Enemy extends Actor {
     if (type === 'boss') model_scale(model, 1.5);
     if (type === 'golem_boss') model_scale(model, 1.7);
     if (type === 'yeti') model_scale(model, 1.3);
+    if (type === 'reina_hielo') model_scale(model, 1.55);
+    if (type === 'gran_automata') model_scale(model, 2.0);
+    if (type === 'rey_pastel') model_scale(model, 1.7);
     if (type === 'marine_boss') model_scale(model, 1.3);
     if (type.startsWith('famous_')) model_scale(model, 1.18);
     if (type === 'serafin') model_scale(model, 1.6);
@@ -941,7 +958,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet()];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -1072,8 +1089,9 @@ class Game {
       const tex = TX.makeGroundTexture(r, 20);
       const t = buildTerrain(r, tex);
       this.scene.add(t.ground, t.sides);
-      if (r.ghost) { r.hidden = true; t.ground.visible = t.sides.visible = false; t.ground.material.color.set(0x8a9aa8); r.meshes = [t.ground, t.sides]; }
+      if (r.ghost) { r.hidden = true; t.ground.visible = t.sides.visible = false; if (!r.newborn) t.ground.material.color.set(0x8a9aa8); r.meshes = [t.ground, t.sides]; }
       if (t.lava) { this.scene.add(t.lava); this.lavaMeshes = [...(this.lavaMeshes || []), t.lava]; }
+      if (r.ghost && t.lava) { t.lava.visible = false; r.meshes.push(t.lava); }
     }
 
     const batch = new StaticBatcher();
@@ -1699,6 +1717,7 @@ class Game {
     const p = this.player;
     if (this.flags[c.id]) return this.ui.toast('El cofre está vacío');
     this.flags[c.id] = true;
+    if (c.id === 'naciente_cofre') { this.give('obsidiana', 3, c.x, c.z); this.give('meteorito', 2, c.x, c.z); if (Math.random() < 0.3) this.give('huevo_dragon', 1); }
     if (c.id.startsWith('gruta_')) { this.flags[c.id + '_day'] = this.day; this.give('cristal', 2, c.x, c.z); }
     if (c.id.startsWith('coralia_')) { this.flags[c.id + '_day'] = this.day; this.give('coral', 2, c.x, c.z); }
     if (Math.random() < 0.5) setTimeout(() => this.addTreasureMap(), 1200);
@@ -1778,6 +1797,7 @@ class Game {
       if (ls) return { icon: '🏝', label: 'Desembarcar', fn: () => this.disembark(ls) };
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
+    if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
     const cap = this.canCapture && this.canCapture();
     if (cap) return { icon: '⛓️', label: 'Capturar', fn: () => this.capture(cap) };
     const inRoom = this.roomAt(p.x, p.z);
@@ -2077,6 +2097,7 @@ class Game {
       this.selection.visible = false;
       sfx('die');
       if (e.isRemote && this.huntDeath) this.huntDeath(e.id);
+      if (this.onPlayerDeath5) this.onPlayerDeath5(e);
       this.ui.toast('💀 Has caído… despertarás en Villarroca');
     }
   }
@@ -2583,6 +2604,7 @@ class Game {
   setCrewRole(id, role) {
     const n = this.npcById(id), s = this.soc(id);
     if (!role && s.role && this.activeCrew().length >= 3) return this.ui.toast('Solo pueden acompañarte 3 a la vez. Manda a otro al barco.');
+    if (s.role === 'jail') return this.ui.toast(`⛓️ ${n.name} está preso en el Bastión. Ve a rescatarle`);
     if (s.role === 'farm' && role !== 'farm') this.collectFarm(n);
     if (role === 'farm') {
       if (this.W.isInterior(this.player.x) || this.sailing) return this.ui.toast('Tienes que estar en una isla para mandarles a recolectar');
@@ -2909,7 +2931,7 @@ class Game {
     }
     this.updateWeather(dt);
     this.updateLighting();
-    if (this.started) this.updateAmbience();
+    if (this.started) { this.updateAmbience(); this.updateIsleWeather(dt); }
     this.updateRings(dt);
     const p = this.player;
     if (this.started) {
@@ -2937,6 +2959,12 @@ class Game {
       this.updateGrotto();
       this.updateEsp(dt);
       this.updateEnemyEsp(dt);
+      this.updateBalloons(dt);
+      this.updateEspShots(dt);
+      this.updateNewborn(dt);
+      this.updateRescue();
+      this.jailInit();
+      this.addEspSkillBtn();
       this.updateEruption(dt);
       this.updateVelaria();
       this.updateFishGame(dt);
@@ -3146,6 +3174,12 @@ installExtra(Game, { sfx, Enemy, NPC, ITEMS, EQUIP, T });
 installMore2(Game, { sfx, audio });
 installMore3(Game, { sfx });
 installMore4(Game, { sfx, EQUIP, ITEMS, OUTLINE });
+installMore5(Game, { sfx });
+LOGROS.push(
+  { id: 'islas', name: 'Señor de las islas', title: 'Señor de las islas', desc: 'Derrota a Glacia, Ferrum y Bizcochón', ok: (g) => (g.stats.k_reina_hielo || 0) >= 1 && (g.stats.k_gran_automata || 0) >= 1 && (g.stats.k_rey_pastel || 0) >= 1 },
+  { id: 'pesca', name: 'Campeón de pesca', title: 'Rey del anzuelo', desc: 'Gana el torneo de pesca', ok: (g) => (g.stats.fishCups || 0) >= 1 },
+  { id: 'rescate', name: 'Nadie se queda atrás', title: 'Libertador', desc: 'Rescata a tu tripulación de la prisión', ok: (g) => (g.stats.rescues || 0) >= 1 },
+);
 LOGROS.push(
   { id: 'coralia', name: 'Reina del abismo', title: 'Señor de las mareas', desc: 'Derrota a la Reina Abisal en Coralia', ok: (g) => (g.stats.k_abyss_queen || 0) >= 1 },
   { id: 'parada', name: 'Maestro esgrimista', title: 'Maestro esgrimista', desc: 'Haz 25 paradas perfectas', ok: (g) => (g.stats.parries || 0) >= 25 },

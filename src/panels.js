@@ -275,7 +275,7 @@ export class Panels {
       const pt = g.partner();
       const rows = crew.map((n) => {
         const s = g.soc(n.id);
-        const role = s.role === 'farm' ? `⛏ Recolectando en ${esc(s.farm ? s.farm.isle : '?')}` : s.role === 'ship' ? '⚓ En el barco' : s.wait ? '⏸ Esperando' : '▶ Te acompaña';
+        const role = s.role === 'jail' ? '⛓ Preso en el Bastión' : s.role === 'farm' ? `⛏ Recolectando en ${esc(s.farm ? s.farm.isle : '?')}` : s.role === 'ship' ? '⚓ En el barco' : s.wait ? '⏸ Esperando' : '▶ Te acompaña';
         const y = s.role === 'farm' ? g.farmYield(n) : null;
         const btn = (r, label) => `<button class="pbtn small" data-p="crewrole" data-id="${n.id}" data-role="${r}">${label}</button>`;
         const job = s.cjob ? CREW_JOBS[s.cjob] : null;
@@ -474,6 +474,13 @@ export class Panels {
       ['🚣 Gruta y Velaria', 'Navega cerca de los puntos azules del minimapa y pulsa «Gruta» para entrar remando a la Gruta de los Cristales. El punto morado es Velaria, la ciudad flotante de mercaderes: cambia de lugar cada semana.'],
       ['🎣 Pesca con minijuego', 'Cuando pica un pez, mantén pulsada la barra (o Espacio) para que la zona verde siga al pez hasta llenar el medidor. Hay atunes, peces espada, peces luna y el legendario pez dorado. Tu colección está en Novedades.'],
       ['🧙 Vudú y capturas', 'La Bruja Mambé (Aldea Liana) vende hechizos: se lanzan desde la Mochila. Ferro y Mara dan contratos para capturar vivos a piratas famosos: déjalos por debajo del 15% de vida y pulsa «Capturar».'],
+      ['👑 Jefes de las islas', 'Reina de Hielo Glacia (Isla Escarcha, junto al castillo de hielo), Gran Autómata Ferrum (Isla Engranaje) y Rey Pastel Bizcochón (Isla Merengue). Usan Armamento Espiritual, ataques en área y llaman refuerzos a media vida. Sueltan coronas y capas únicas.'],
+      ['🛷 Trineo y globos', 'La Herrera Helga vende el trineo de perros (5000 oro): corre más sobre la nieve. Cerca de Isla Engranaje te atacan fragatas de globo que lanzan bombas; derríbalas con los cañones.'],
+      ['🏆 Torneo de pesca', 'Cada 7 días el Pescador Gaspar organiza un torneo. Inscríbete, pesca hasta medianoche y al día siguiente recoge tu premio.'],
+      ['🖤 Puño espiritual', 'Con el Armamento Espiritual a nivel 40 aparece el botón 🖤 junto a las habilidades: un puño de energía negra que vuela 8 casillas. A nivel 50 es el Puño del Rey: aturde y atraviesa el Armamento de los enemigos.'],
+      ['🌋 Isla Naciente', 'Durante la erupción nace una isla al oeste de Isla Ceniza con monstruos de lava y un cofre de obsidiana. Desaparece cuando el volcán se calma.'],
+      ['⛓️ Prisión de la Marina', 'Si la Marina te derrota puede llevarse a un tripulante a la celda del Bastión. Ve allí, pulsa «Liberar» y vence a los carceleros.'],
+      ['🌦 Clima de cada isla', 'Ventisca en Escarcha, lluvia de azúcar en Merengue, marea de pompas en Burbuja y nubes de vapor en Engranaje.'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],

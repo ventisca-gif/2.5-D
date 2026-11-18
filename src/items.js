@@ -224,6 +224,10 @@ export const EQUIP = {
   c_gorro_pastelero: { name: 'Gorro de cocinero', slot: 'cosHead', tier: 1, cos: true, icon: '👨‍🍳', src: 'tienda', look: { hat: 'hood', hatColor: 0xfaf8f4 } },
   c_gafas_inventor: { name: 'Gafas de inventor', slot: 'cosHead', tier: 2, cos: true, icon: '🥽', src: 'tienda', look: { hat: 'cap', capColor: 0x6a4a2a, visorGlow: 0xffd040 } },
   c_mono_mecanico: { name: 'Mono de mecánico', slot: 'cosBody', tier: 1, cos: true, icon: '🔧', src: 'tienda', look: { shirt: 0x3a5a7a, pants: 0x3a5a7a, sash: 0x6a4a2a, bracers: true, bracerColor: 0x8a8c94 } },
+  c_corona_hielo: { name: 'Corona de escarcha', slot: 'cosHead', tier: 6, cos: true, icon: '👑', src: 'jefe', look: { hat: 'circlet', hatColor: 0xe8f8ff, halo: 0x9ae8ff } },
+  c_capa_vapor: { name: 'Capa de vapor', slot: 'cosCape', tier: 5, cos: true, icon: '♨️', src: 'jefe', look: { cape: 0xb8862a } },
+  c_corona_pastel: { name: 'Corona de caramelo', slot: 'cosHead', tier: 5, cos: true, icon: '🍬', src: 'jefe', look: { hat: 'circlet', hatColor: 0xffd040, halo: 0xff8ac8 } },
+  c_gorro_pescador: { name: 'Gorro del campeón de pesca', slot: 'cosHead', tier: 4, cos: true, icon: '🎣', src: 'evento', look: { hat: 'straw', capColor: 0x3a6a8a } },
   c_capa_burbuja: { name: 'Capa de pompas', slot: 'cosCape', tier: 3, cos: true, icon: '🫧', src: 'tienda', look: { cape: 0x9ae0f8 } },
   // ---- armaduras de superjefe (cosméticas)
   c_dragon: { name: 'Armadura del Dragón Carmesí', slot: 'cosBody', tier: 6, cos: true, icon: '🐉', src: 'dragon', look: { armor: true, armorColor: 0x1a1418, trim: 0xd8a838, pauldron: 0x8a1010, tabard: 0x8a1010, gem: 0xff6020, emblem: 0xff6020, gloves: 0x1a1418, legArmor: 0x8a1010, boots: 0x1a1418, hat: 'horned', hatColor: 0x1a1418, hornColor: 0xd8a838, gem2: 0xff6020, dragonHorns: 0xd8a838, tail: 0x2a2026, tailSpike: 0xd8a838, visorGlow: 0xff8030, hair: 0x8a1010 } },
@@ -348,6 +352,9 @@ export const RECIPES = [
 // ----------------------------------------------------------------- botines
 export const DROPS = {
   wolf: [['meat', 0.6], ['leather', 0.5]],
+  reina_hielo: [['cristal', 1], ['cristal', 1], ['cristal', 1], ['c_corona_hielo', 0.5], ['perla', 1]],
+  gran_automata: [['meteorito', 1], ['meteorito', 1], ['meteorito', 1], ['c_capa_vapor', 0.5], ['iron', 1]],
+  rey_pastel: [['azucar', 1], ['azucar', 1], ['f_tarta', 1], ['c_corona_pastel', 0.5], ['goldore', 1]],
   lobo_nieve: [['meat', 0.6], ['leather', 0.7], ['cristal', 0.25]],
   yeti: [['leather', 1], ['cristal', 0.6], ['c_gorro_nieve', 0.02]],
   galleta: [['azucar', 0.8], ['f_bread', 0.4]],

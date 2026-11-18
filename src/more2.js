@@ -9,10 +9,12 @@ export const MOUNTS = {
   caballo: { name: 'Caballo de la granja', icon: '🐴', price: 800, seller: 'lucia', speed: 1.75, col: 0x7a4a2a, mane: 0x2a1a10 },
   camello: { name: 'Camello del desierto', icon: '🐫', price: 1400, seller: 'zaid', speed: 1.7, col: 0xc89a5a, mane: 0x8a6a3a, hump: true },
   salamandra: { name: 'Salamandra de lava', icon: '🦎', price: 4000, seller: 'brasa', speed: 2.0, col: 0x3a2a2a, mane: 0xff6020, lizard: true },
+  trineo: { name: 'Trineo de perros', icon: '🛷', price: 5000, seller: 'helga', speed: 1.85, col: 0x8a8a90, mane: 0xf4f4f4, sled: true },
 };
 export function mountModel(type) {
   const d = MOUNTS[type];
   if (d.lizard) return lizardModel(d);
+  if (d.sled) return sledModel(d);
   const camel = !!d.hump;
   const g = new THREE.Group();
   const body = new THREE.Group(); g.add(body);
@@ -69,6 +71,37 @@ export function mountModel(type) {
     mesh(new THREE.BoxGeometry(0.01, 0.01, 0.62), 0x3a2414, sx * 0.06, H + 0.36, 0.44, -0.55, 0, 0);
   }
   g.userData = { legs, body, neck, tail, h: H + (camel ? 0.48 : 0.25) };
+  return g;
+}
+function sledModel(d) {
+  // trineo de madera con dos perros de nieve tirando delante
+  const g = new THREE.Group();
+  const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+  const body = new THREE.Group(); g.add(body);
+  const add = (geo, c, x, y, z, rx = 0, parent = body, rz = 0) => { const m = new THREE.Mesh(geo, M(c)); m.position.set(x, y, z); m.rotation.x = rx; m.rotation.z = rz; m.castShadow = true; parent.add(m); return m; };
+  for (const s of [-1, 1]) { add(new THREE.BoxGeometry(0.04, 0.04, 1.3), 0x5a3a1a, s * 0.28, 0.04, -0.35); add(new THREE.BoxGeometry(0.04, 0.2, 0.04), 0x5a3a1a, s * 0.28, 0.14, -0.7); add(new THREE.BoxGeometry(0.04, 0.2, 0.04), 0x5a3a1a, s * 0.28, 0.14, 0); add(new THREE.BoxGeometry(0.04, 0.05, 0.2), 0x5a3a1a, s * 0.28, 0.08, 0.32, -0.6); }
+  add(new THREE.BoxGeometry(0.62, 0.06, 0.95), 0x8a5a2a, 0, 0.26, -0.35);
+  add(new THREE.BoxGeometry(0.62, 0.35, 0.06), 0x7a4a22, 0, 0.42, -0.8);
+  add(new THREE.BoxGeometry(0.5, 0.05, 0.5), 0xb82a2a, 0, 0.3, -0.4);
+  const legs = [];
+  for (const dx of [-0.22, 0.22]) {
+    const dog = new THREE.Group(); dog.position.set(dx, 0, 0.75); body.add(dog);
+    add(new THREE.CapsuleGeometry(0.1, 0.3, 4, 8), d.col, 0, 0.32, 0, Math.PI / 2, dog);
+    add(new THREE.CapsuleGeometry(0.095, 0.24, 4, 8), d.mane, 0, 0.29, 0.02, Math.PI / 2, dog).scale.set(0.9, 1, 1.05);
+    add(new THREE.SphereGeometry(0.1, 10, 8), d.col, 0, 0.43, 0.27, 0, dog);
+    add(new THREE.BoxGeometry(0.08, 0.07, 0.12), d.mane, 0, 0.4, 0.38, 0, dog);
+    add(new THREE.SphereGeometry(0.022, 6, 5), 0x1a1a1a, 0, 0.42, 0.44, 0, dog);
+    for (const s of [-1, 1]) { add(new THREE.ConeGeometry(0.035, 0.09, 4), d.col, s * 0.05, 0.53, 0.25, 0, dog); add(new THREE.SphereGeometry(0.014, 6, 5), 0x3aa8ff, s * 0.045, 0.46, 0.35, 0, dog); }
+    add(new THREE.ConeGeometry(0.04, 0.2, 6), d.mane, 0, 0.42, -0.24, -0.9, dog);
+    add(new THREE.TorusGeometry(0.1, 0.015, 4, 10), 0xb82a2a, 0, 0.36, 0.18, 0, dog);
+    for (const [x, z] of [[-0.06, 0.13], [0.06, 0.13], [-0.06, -0.13], [0.06, -0.13]]) {
+      const lg = new THREE.Group(); lg.position.set(x, 0.25, z); dog.add(lg);
+      add(new THREE.CapsuleGeometry(0.03, 0.16, 4, 6), d.col, 0, -0.12, 0, 0, lg);
+      legs.push(lg);
+    }
+  }
+  for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.01, 0.01, 0.75), 0x3a2414, s * 0.2, 0.32, 0.25);
+  g.userData = { legs, body, h: 0.42 };
   return g;
 }
 function lizardModel(d) {
@@ -184,7 +217,7 @@ export function installMore2(Game, D) {
     p.st.ride = true;
     sfx('click');
   };
-  P.mountSpeed = function () { return this.mounted ? MOUNTS[this.mounted].speed : 1; };
+  P.mountSpeed = function () { const b = this.mounted ? MOUNTS[this.mounted].speed : 1; return this.mountSpeed5 ? this.mountSpeed5(b) : b; };
   P.updateMount = function (dt) {
     const p = this.player, m = this.mountObj;
     const btn = document.getElementById('btnMount');
@@ -199,7 +232,7 @@ export function installMore2(Game, D) {
     const ph = (this.time * (p.st.moving ? 14 : 2));
     const run = p.speed > 7;
     u.legs.forEach((l, i) => {
-      const off = run ? [0, 0.4, Math.PI, Math.PI + 0.4][i] : (i % 3 === 0 ? 0 : Math.PI);
+      const off = run ? [0, 0.4, Math.PI, Math.PI + 0.4][i % 4] : (i % 3 === 0 ? 0 : Math.PI);
       const sw = p.st.moving ? Math.sin(ph + off) : 0;
       l.rotation.x = sw * (run ? 0.7 : 0.45);
       if (l.userData.knee) l.userData.knee.rotation.x = p.st.moving ? Math.max(0, -Math.cos(ph + off)) * (run ? 1.1 : 0.7) : 0;
