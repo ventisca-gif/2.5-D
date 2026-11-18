@@ -35,6 +35,9 @@ Juego del usuario (ventisca-gif). Es **independiente de su otro juego "The Bound
 ## Sistemas ya hechos
 Combate (enemigos atacan en movimiento), correr con estamina, recursos y menas por isla, forja/banco/cocina, comer para curar, mochila y equipo (todo visible), amistad (charlar, regalar), duelos y peleas con NPCs (nadie muere), tripulación que sigue, lucha, sube de nivel y mejora armadura, barco navegable con bodega, romance (declararse, besar, pasear de la mano), día/noche, interiores, 2 islas extra, menú pirata con creador. Personajes estilo anime (`src/anime.js`): cara pintada en textura (4 expresiones por género, 8 colores de ojos, nariz/boca/rubor opcionales), 4 formas de cara, pelo de mechones 3D (6 peinados por género, 10 colores), 5 cuerpos por género (incluido "Clásico" de bloques), busto en 4 tamaños; los NPCs reciben cara anime determinista por id (`animeLook` en main.js). Nadar (brazadas, gasta estamina, ahogo) y tajo de espada con estela (`slash`).
 
+## Multijugador local
+`src/net.js` + `android/.../NetHub.java`: relé WebSocket en el móvil anfitrión (puerto 47800, UDP 47801 para buscar partidas). Anfitrión = autoridad de enemigos (`enemyTarget`, `hurtRemote`); clientes mandan su estado a 10 Hz y los golpes (`hitEnemy` → `hit`). Equipos y XP compartida (`killRecipients` → `grantKill`), PvP opcional del anfitrión. Para probar en PC: `node tools/hub.mjs` y `game.net.host('ws://127.0.0.1:47800/host')` / `game.net.join('127.0.0.1')` en varios contextos de Playwright.
+
 ## Ideas pendientes que el usuario mencionó
 Cubierta del barco caminable, más islas/misiones, interacción más rica de la tripulación en tiendas, más armaduras únicas.
 

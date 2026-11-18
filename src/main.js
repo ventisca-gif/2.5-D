@@ -18,6 +18,7 @@ import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop,
 import { npcLevel, RECRUITABLE, ROMANCE, MAX_CREW, friendLevel, heartsText, CHAT_LINES, CHAT_REPLIES, ROMANCE_LINES, CONFESS_YES, CONFESS_NO, DUEL_LINES, ANGRY_LINES, GIFT_LIKES } from './social.js';
 import { Panels, fmtTime } from './panels.js';
 import { Updater } from './updater.js';
+import { Net } from './net.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -48,6 +49,7 @@ function animeLook(def) {
   };
 }
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const r2 = (v) => Math.round(v * 100) / 100;
 const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -228,7 +230,8 @@ class Player extends Actor {
         if (!e.dead && this.dist(e) < 2.2) {
           const crit = Math.random() < 0.12;
           const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1)));
-          if (e.isNPC) g.damageNPC(e, dmg, crit); else g.damageEnemy(e, dmg, crit);
+          if (e.isRemote) { if (g.net.pvpHit(e, dmg)) g.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, 1.4, e.z); }
+          else if (e.isNPC) g.damageNPC(e, dmg, crit); else g.hitEnemy(e, dmg, crit);
         }
       }
     }
@@ -393,9 +396,23 @@ class Player extends Actor {
     }
   }
 
+  // tajo al aire (sin objetivo)
+  swingAir() {
+    if (this.dead || this.g.sailing) return;
+    if (this.st.swim) { this.g.ui.toast('No puedes atacar nadando'); return; }
+    if (this.attackCd > 0) return;
+    this.attackCd = 0.6;
+    this.st.attackT = 0.32;
+    this.stamina = Math.max(0, this.stamina - 3);
+    this.lastSwing = this.g.time;
+    this.g.slash(this, 0xffffff);
+    this.g.net.attackAnim();
+    sfx('swing');
+  }
   attack(e) {
     if (this.st.swim) { this.g.ui.toast('No puedes atacar nadando'); this.attackCd = 1; return; }
     this.g.slash(this, 0xffffff);
+    this.g.net.attackAnim();
     this.attackCd = 0.72;
     this.st.attackT = 0.32;
     this.pendingWeak = this.stamina < 6;
@@ -496,7 +513,7 @@ class NPC extends Actor {
             this.st.attackT = 0.32;
             g.slash(this, 0xbfe6ff);
             const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3));
-            setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.damageEnemy(foe, dmg, false, this); }, 150);
+            setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.hitEnemy(foe, dmg, false, this); }, 150);
           }
         } else {
           this.repathT -= dt;
@@ -618,13 +635,55 @@ class Enemy extends Actor {
     this.g.ui.setHp(this.label, 1);
     this.updateColor();
   }
+  // cliente: aplica el estado que manda el anfitrión
+  netUpdate(dt) {
+    const g = this.g, a = this.net;
+    if (!a) return;
+    const [x, z, f, hp, dead, mv, seq, lvl, mhp] = a;
+    if (lvl !== this.level || mhp !== this.maxHp) {
+      this.level = lvl; this.maxHp = mhp;
+      this.label.nm.textContent = `${this.def.name} · Nv. ${this.level}`;
+      this.updateColor();
+    }
+    if (dead && !this.dead) {
+      this.dead = true; this.deadT = 0; this.path = [];
+      this.label.el.style.display = 'none'; this.label._vis = false;
+      if (g.selTarget === this) g.selection.visible = false;
+    } else if (!dead && this.dead) {
+      this.dead = false; this.model.root.visible = true; this.model.root.rotation.z = 0; this.yOff = 0;
+      this.x = x; this.z = z;
+      this.label.el.style.display = ''; this.label._vis = true;
+    }
+    if (this.dead) {
+      this.deadT += dt;
+      if (this.deadT < 1.2) {
+        this.model.root.rotation.z = Math.min(Math.PI / 2, this.deadT * 5);
+        this.yOff = -Math.max(0, this.deadT - 0.6) * 0.6;
+      } else this.model.root.visible = false;
+      return;
+    }
+    if (Math.hypot(x - this.x, z - this.z) > 6) { this.x = x; this.z = z; }
+    const k = Math.min(1, dt * 10);
+    this.x += (x - this.x) * k;
+    this.z += (z - this.z) * k;
+    this.face = lerpAngle(this.face, f, k);
+    this.st.moving = !!mv;
+    if (this.hp !== hp) { this.hp = hp; g.ui.setHp(this.label, Math.max(0, hp) / this.maxHp); }
+    if (seq !== this.lastSeq) {
+      if (this.lastSeq !== undefined) { this.st.attackT = 0.32; if (this.model.kind === 'humanoid') g.slash(this, this.type === 'boss' ? 0xff5040 : 0xd0d8c0); }
+      this.lastSeq = seq;
+    }
+    this.path = [];
+  }
   updateColor() {
     const d = this.level - (this.g.player ? this.g.player.level : 1);
     const c = this.type === 'boss' ? '#ff5ad0' : d >= 3 ? '#ff5a4a' : d >= 1 ? '#ffb84a' : d >= -2 ? '#7aff8a' : '#c8c8c8';
     if (this.label._c !== c) { this.label._c = c; this.label.nm.style.color = c; }
   }
   update(dt) {
-    const g = this.g, p = g.player;
+    const g = this.g;
+    if (g.net.isClient && g.net.active) { this.netUpdate(dt); return; }
+    const p = g.enemyTarget(this);
     if (this.dead) {
       this.deadT += dt;
       if (this.deadT < 1.2) {
@@ -641,7 +700,10 @@ class Enemy extends Actor {
       this.pending.t -= dt;
       if (this.pending.t <= 0) {
         this.pending = null;
-        if (!p.dead && this.dist(p) < 2.0) g.damagePlayer(this, this.atk);
+        if (!p.dead && this.dist(p) < 2.0) {
+          if (p.isRemote) g.net.hurtRemote(p.id, this.atk, this.idx);
+          else g.damagePlayer(this, this.atk);
+        }
       }
     }
     const fromHome = Math.hypot(this.x - this.home.x, this.z - this.home.z);
@@ -665,6 +727,7 @@ class Enemy extends Actor {
           this.attackCd = this.def.cd;
           this.st.attackT = 0.32;
           this.pending = { t: 0.16 };
+          this.atkSeq = ((this.atkSeq || 0) + 1) % 1000;
           if (this.model.kind === 'humanoid') g.slash(this, this.type === 'boss' ? 0xff5040 : 0xd0d8c0);
         }
         if (dP <= 1.3 && !p.st.moving) {
@@ -753,6 +816,7 @@ class Game {
     this.ui = new UI(this);
     this.panels = new Panels(this);
     this.updater = new Updater(this);
+    this.net = new Net(this);
     this.buildWorld();
     this.buildMarkers();
     this.applyQuality();
@@ -783,7 +847,7 @@ class Game {
   // ------------------------------------------------------------- mundo
   buildWorld() {
     const W = this.W;
-    const tx = {
+    const tx = this.texSet = {
       stone: TX.makeStoneTexture(), plank: TX.makePlankTexture(), shingle: TX.makeShingleTexture(),
       thatch: TX.makeThatchTexture(), plaster: TX.makePlasterTexture(), flag: TX.makeFlagTexture(),
       clock: TX.makeClockTexture(), sail: TX.makeSailTexture(),
@@ -953,7 +1017,7 @@ class Game {
       n.setStats(n.baseLevel);
     }
     for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns)]) {
-      for (let i = 0; i < s.count; i++) this.enemies.push(new Enemy(this, s.type, s, s.lvl));
+      for (let i = 0; i < s.count; i++) { const e = new Enemy(this, s.type, s, s.lvl); e.idx = this.enemies.length; this.enemies.push(e); }
     }
     for (const r of this.rooms) {
       r.doorLabel = this.ui.makeLabel('door', r.front ? '🚪 ' + r.name : '');
@@ -1076,6 +1140,7 @@ class Game {
     $('btnBag').addEventListener('click', () => { if (this.started) this.panels.openInventory(); });
     $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
     $('btnGuide').addEventListener('click', () => this.panels.openGuide());
+    $('btnNet').addEventListener('click', () => { if (this.started) this.panels.openNet(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1142,6 +1207,13 @@ class Game {
     };
     for (const e of this.enemies) if (!e.dead && e.model.root.visible && e.dist(p) < 25) consider(e, 'enemy');
     for (const n of this.npcs) if (n.dist(p) < 25) consider(n, 'npc');
+    for (const r of this.net.remotes.values()) if (r.model && !r.dead && Math.hypot(r.x - p.x, r.z - p.z) < 25) consider(r, 'remote');
+    if (best && best.kind === 'remote') {
+      const r = best.a;
+      if (this.net.room.pvp && !this.net.sameTeam(this.net.myId, r.id)) { p.setTarget({ kind: 'enemy', ref: r }); this.selection.visible = true; this.selTarget = r; }
+      else this.remoteMenu(r);
+      return;
+    }
     if (best) {
       if (best.kind === 'enemy') {
         p.setTarget({ kind: 'enemy', ref: best.a });
@@ -1498,7 +1570,7 @@ class Game {
     }
     const a = this.contextAction();
     if (a.fn) a.fn();
-    else this.ui.toast('No hay nada cerca');
+    else this.player.swingAir();
   }
 
   talkTo(n) {
@@ -1561,7 +1633,18 @@ class Game {
     }
   }
 
-  damageEnemy(e, dmg, crit, byCrew) {
+  // golpe a un enemigo: en un cliente se lo manda al anfitrión
+  hitEnemy(e, dmg, crit, byCrew) {
+    if (this.net.isClient && this.net.active) {
+      this.net.hit(e, dmg, crit);
+      e.st.flash = 0.18;
+      this.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, e.model.height + 0.2, e.z);
+      sfx('hit');
+      return;
+    }
+    this.damageEnemy(e, dmg, crit, byCrew, 0);
+  }
+  damageEnemy(e, dmg, crit, byCrew, killerId = 0) {
     const g = this;
     e.hp -= dmg;
     e.st.flash = 0.18;
@@ -1575,22 +1658,70 @@ class Game {
       e.path = [];
       e.label.el.style.display = 'none';
       e.label._vis = false;
-      const p = this.player;
-      const gold = e.def.gold(e.level);
       const xp = Math.round(e.def.xp(e.level));
-      p.gold += gold;
-      setTimeout(() => this.ui.float(`+${gold} oro`, 'gold', e.x, 0.8, e.z), 200);
-      this.ui.float(`+${xp} XP`, 'info', e.x, 1.2, e.z);
-      sfx('coin');
-      if (Math.random() < (e.type === 'boss' ? 1 : 0.08)) { p.inv.potion++; this.ui.toast('🍶 ¡Encontraste ron curativo!'); }
-      let k = 0;
-      for (const [id, ch] of DROPS[e.type] || []) if (Math.random() < ch) setTimeout(() => this.give(id, 1, e.x, e.z), 350 + 250 * k++);
-      this.stats.kills = (this.stats.kills || 0) + 1;
-      p.gainXp(xp);
-      this.crewGainXp(xp);
       if (this.selTarget === e) this.selection.visible = false;
-      this.onKill(e.type);
+      if (this.net.isHost && this.net.active) {
+        // la experiencia se comparte con el equipo cercano
+        for (const id of this.net.killRecipients(killerId, e)) {
+          if (id === 0) this.grantKill(e.type, e.level, e.x, e.z, killerId === 0, xp);
+          else this.net.hsend(id, { t: 'kill', et: e.type, lvl: e.level, x: r2(e.x), z: r2(e.z), killer: id === killerId, xp });
+        }
+      } else this.grantKill(e.type, e.level, e.x, e.z, true, xp);
     }
+  }
+  // recompensa de una muerte: el que la mata se lleva oro y botín; el equipo, experiencia y misión
+  grantKill(type, level, x, z, isKiller, xp) {
+    const p = this.player, def = ENEMY_DEF[type];
+    if (isKiller) {
+      const gold = def.gold(level);
+      p.gold += gold;
+      setTimeout(() => this.ui.float(`+${gold} oro`, 'gold', x, 0.8, z), 200);
+      sfx('coin');
+      if (Math.random() < (type === 'boss' ? 1 : 0.08)) { p.inv.potion++; this.ui.toast('🍶 ¡Encontraste ron curativo!'); }
+      let k = 0;
+      for (const [id, ch] of DROPS[type] || []) if (Math.random() < ch) setTimeout(() => this.give(id, 1, x, z), 350 + 250 * k++);
+      this.stats.kills = (this.stats.kills || 0) + 1;
+      this.ui.float(`+${xp} XP`, 'info', x, 1.2, z);
+    } else {
+      this.ui.float(`+${xp} XP 🤝`, 'info', p.x, 1.5, p.z);
+    }
+    p.gainXp(xp);
+    this.crewGainXp(xp);
+    this.onKill(type);
+  }
+  // el anfitrión elige a quién persigue cada enemigo (el jugador vivo más cercano)
+  enemyTarget(e) {
+    const p = this.player;
+    if (!(this.net.isHost && this.net.active) || !this.net.remotes.size) return p;
+    let best = p.dead ? null : p, bd = best ? e.dist(p) : Infinity;
+    for (const r of this.net.remotes.values()) {
+      if (r.dead || !r.tgt || r.tgt.sl) continue;
+      const d = e.dist(r);
+      if (d < bd) { bd = d; best = r; }
+    }
+    return best || p;
+  }
+  netHurtByPlayer(from, dmg) {
+    const r = this.net.remotes.get(from) || { isRemote: true, id: from, x: this.player.x, z: this.player.z, dead: false, name: '?' };
+    this.damagePlayer(r, dmg);
+  }
+  netInvite(from, name) {
+    this.ui.openDialog('👥 Invitación de equipo', `${name} te invita a formar equipo. La experiencia de los enemigos se compartirá.`, [
+      { label: '🤝 Aceptar', action: () => this.net.accept(from) },
+      { label: 'Rechazar', action: null },
+    ]);
+    sfx('quest');
+  }
+  remoteMenu(r) {
+    const team = this.net.sameTeam(this.net.myId, r.id);
+    const crew = r.crew && r.crew.length ? r.crew.join(', ') : 'sin tripulación';
+    const txt = `Nivel ${r.lv}. Tripulación: ${crew}. ${r.partner ? 'Pareja: ' + r.partner + '. ' : ''}${team ? 'Es de tu equipo.' : ''}`;
+    const opts = [];
+    if (!team) opts.push({ label: '🤝 Invitar a mi equipo', action: () => this.net.invite(r.id) });
+    else opts.push({ label: '🚪 Salir del equipo', action: () => this.net.leaveTeam() });
+    if (this.net.room.pvp && !team) opts.push({ label: '⚔️ Atacar (PvP)', action: () => { this.player.setTarget({ kind: 'enemy', ref: r }); this.selection.visible = true; this.selTarget = r; } });
+    opts.push({ label: 'Cerrar', action: null });
+    this.ui.openDialog(`👤 ${r.name}`, txt, opts);
   }
 
   damagePlayer(e, atk) {
@@ -1863,6 +1994,7 @@ class Game {
       }
       if (act === 'help') { this.toggleMenu(false); this.panels.openGuide(); }
       if (act === 'update') { this.toggleMenu(false); this.updater.check(true); }
+      if (act === 'net') { this.toggleMenu(false); this.panels.openNet(); }
       if (act === 'title') { this.save(); location.reload(); }
       if (act === 'reset') {
         if (confirm('¿Borrar esta partida y volver al menú?')) {
@@ -2248,7 +2380,8 @@ class Game {
     requestAnimationFrame((tt) => this.loop(tt));
     const dt = Math.min(0.05, (t - this.last) / 1000);
     this.last = t;
-    if (!this.paused) this.update(dt);
+    // en multijugador el mundo no se pausa (los demás siguen jugando)
+    if (!this.paused || this.net.active) this.update(dt);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -2448,6 +2581,7 @@ class Game {
       this.ui.placeLabel(e.label, e.x, e.model.height + 0.12 + e.yOff, e.z);
     }
     this.ui.updateFloats(dt);
+    this.net.update(dt);
     this.updateFx(dt);
 
     if (this.started) {

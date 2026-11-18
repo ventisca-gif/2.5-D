@@ -30,6 +30,31 @@ public class MainActivity extends Activity {
     private long downloadId = -1;
     private boolean installPending = false;
     private static final String APK_MIME = "application/vnd.android.package-archive";
+    private final NetHub hub = new NetHub();
+    private Object multicastLock = null;
+
+    // permite recibir los paquetes de difusión del descubrimiento de partidas
+    private void lockMulticast(boolean on) {
+        try {
+            if (on && multicastLock == null) {
+                android.net.wifi.WifiManager wm = (android.net.wifi.WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+                android.net.wifi.WifiManager.MulticastLock l = wm.createMulticastLock("thebruma");
+                l.setReferenceCounted(false);
+                l.acquire();
+                multicastLock = l;
+            } else if (!on && multicastLock != null) {
+                ((android.net.wifi.WifiManager.MulticastLock) multicastLock).release();
+                multicastLock = null;
+            }
+        } catch (Exception ignored) { }
+    }
+
+    @Override
+    protected void onDestroy() {
+        hub.stop();
+        lockMulticast(false);
+        super.onDestroy();
+    }
 
     @Override
     protected void onCreate(Bundle state) {
@@ -254,6 +279,37 @@ public class MainActivity extends Activity {
                     startDownload(url, version);
                 }
             });
+        }
+
+        // ---------------- multijugador local
+        @JavascriptInterface
+        public String startHub(String name) {
+            if (!hub.start(name)) return "[]";
+            lockMulticast(true);
+            return NetHub.localIps();
+        }
+
+        @JavascriptInterface
+        public void stopHub() {
+            hub.stop();
+            lockMulticast(false);
+        }
+
+        @JavascriptInterface
+        public String localIps() {
+            return NetHub.localIps();
+        }
+
+        @JavascriptInterface
+        public void discover() {
+            lockMulticast(true);
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final String found = NetHub.discover();
+                    js("window.onHostsFound && window.onHostsFound(" + found + ")");
+                }
+            }).start();
         }
 
         @JavascriptInterface

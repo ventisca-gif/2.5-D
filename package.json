@@ -21,7 +21,8 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "esbuild": "^0.24.0"
+    "esbuild": "^0.24.0",
+    "ws": "^8.18.0"
   },
   "type": "module"
 }

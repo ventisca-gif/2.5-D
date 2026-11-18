@@ -59,6 +59,7 @@ export class Panels {
     if (act === 'gift') { const n = this.giftTo; this.close(); g.giveGift(n, b.dataset.id); return; }
     if (act === 'crewtoggle') { g.toggleCrewWait(b.dataset.id); return this.openBitacora('crew'); }
     if (act === 'guide') { b.parentElement.classList.toggle('openg'); }
+    if (act === 'net') this.netAction(b.dataset.a, b.dataset.id);
   }
 
   // ------------------------------------------------------------------ equipo + mochila
@@ -241,7 +242,7 @@ export class Panels {
     const sec = [
       ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
       ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
-      ['⚔️ Combate', 'Toca a un enemigo o pulsa el botón grande. Puedes atacar mientras te mueves con el joystick. Sin estamina pegas la mitad.'],
+      ['⚔️ Combate', 'Toca a un enemigo o pulsa el botón grande (si no hay nadie cerca, das un tajo al aire). Puedes atacar mientras te mueves con el joystick. Sin estamina pegas la mitad.'],
       ['🎒 Mochila y equipo', 'Abre la mochila: toca un objeto para equiparlo, comerlo o beberlo. Toca una ranura para quitarte esa pieza. Todo lo que equipas se ve en tu personaje.'],
       ['⛏️ Recursos', 'Tala árboles (madera, manzanas) y pica rocas (piedra y menas). Hierro en Isla Bruma, plata en el Pedregal e Isla Tortuga, oro en la Isla Calavera. Lobos y jabalíes sueltan cuero y carne.'],
       ['⚒️ Forja y banco', 'Habla con el Herrero Tadeo (o acércate a una forja) para forjar armas y armaduras de hierro, plata y oro. El Carpintero Bruno tiene el banco para objetos de madera y cuero.'],
@@ -251,11 +252,81 @@ export class Panels {
       ['⚓ Tripulación', 'Con 3 corazones, algunos NPCs se unen a tu tripulación (hasta 10). Te siguen, luchan, suben al barco y ganan nivel y armaduras.'],
       ['💗 Romance', 'Con 5 corazones puedes declararte. Si acepta, podréis besaros y pasear de la mano.'],
       ['⛵ Barco y bodega', 'Toca el barco en el muelle para zarpar o bajar a la bodega. Navega con el joystick o tocando el mar y atraca con ⚓. En el mar, el botón te deja bajar a la bodega.'],
+      ['👥 Multijugador local', 'Botón 👥 Online: uno crea la partida y hasta 4 más se unen en la misma Wi-Fi (o la zona Wi-Fi de un móvil), buscándola o escribiendo su IP. Los enemigos son los mismos para todos; en equipo la experiencia se comparte. El anfitrión puede activar el PvP.'],
       ['📖 Bitácora', 'Ahí verás la misión principal, tus amistades, tu tripulación y tu tiempo de juego.'],
       ['💾 Partidas', 'Tienes 3 ranuras de guardado en el menú principal. El juego guarda solo.'],
     ];
     const html = sec.map(([t, d]) => `<div class="gsec"><button class="gt" data-p="guide">${t}</button><div class="gd">${d}</div></div>`).join('');
     this.show('guide', '❓ Guía de TheBruma', `<div class="guide">${html}</div>`);
+  }
+
+  // ------------------------------------------------------------------ multijugador
+  openNet() {
+    this.netMsg = '';
+    this.show('net', '👥 Multijugador local', '<div id="netRoot"></div>', false);
+    this.renderNet();
+  }
+  refreshNet() { if (this.open === 'net') this.renderNet(); }
+  netAction(a, id) {
+    const n = this.g.net, b = window.AndroidBridge;
+    this.netMsg = '';
+    if (a === 'host') { const r = n.host(); if (r.error) this.netMsg = r.error; }
+    if (a === 'scan') {
+      if (b && b.discover) {
+        this.netMsg = '🔍 Buscando partidas en tu Wi-Fi…';
+        window.onHostsFound = (list) => { n.hosts = list || []; this.netMsg = n.hosts.length ? '' : 'No se encontró ninguna partida. Escribe la IP del anfitrión.'; this.refreshNet(); };
+        b.discover();
+      } else this.netMsg = 'La búsqueda automática solo funciona en la app. Escribe la IP del anfitrión.';
+    }
+    if (a === 'join') n.join(id);
+    if (a === 'joinIp') { const v = ($('netIp') || {}).value; if (v) { n.join(v); this.netMsg = 'Conectando…'; } }
+    if (a === 'pvp') n.setPvp(!n.room.pvp);
+    if (a === 'inv') n.invite(Number(id));
+    if (a === 'leaveTeam') n.leaveTeam();
+    if (a === 'leave') n.leave();
+    this.renderNet();
+  }
+  renderNet() {
+    const g = this.g, n = g.net, root = $('netRoot');
+    if (!root) return;
+    let html = '';
+    if (!n.mode) {
+      const hosts = (n.hosts || []).map((h) => `<button class="wbtn" data-p="net" data-a="join" data-id="${esc(h.ip)}">⚓ ${esc(h.name)} <small>(${esc(h.players)}/5 · ${esc(h.ip)})</small></button>`).join('');
+      html = `<div class="parch"><p>Juega con hasta <b>5 personas</b> conectadas a la <b>misma Wi-Fi</b> (o a la zona Wi-Fi de un móvil). Cada uno usa su propio personaje.</p>
+        <p class="muted small">Uno crea la partida; los demás la buscan o escriben su IP.</p></div>
+        <div class="netbtns"><button class="wbtn primary" data-p="net" data-a="host">🏠 Crear partida</button><button class="wbtn" data-p="net" data-a="scan">🔍 Buscar partidas</button></div>
+        ${hosts ? `<div class="sub">Partidas encontradas</div><div class="netlist">${hosts}</div>` : ''}
+        <div class="sub">Unirse por IP</div>
+        <div class="netip"><input id="netIp" placeholder="192.168.1.20" inputmode="decimal" autocomplete="off"><button class="wbtn" data-p="net" data-a="joinIp">Unirse</button></div>`;
+    } else if (n.connecting) {
+      html = `<div class="parch"><p>⏳ Conectando…</p></div><div class="netbtns"><button class="wbtn danger2" data-p="net" data-a="leave">Cancelar</button></div>`;
+    } else {
+      const me = n.myId;
+      const myTeam = n.myTeam();
+      const rows = n.room.players.map((pl) => {
+        const isMe = pl.id === me;
+        const team = pl.team != null && pl.team === myTeam && !isMe;
+        const crew = (pl.crew || []).length;
+        return `<div class="frow"><b>${isMe ? '⭐ ' : ''}${esc(pl.name)}${pl.id === 0 ? ' 🏠' : ''}</b><span class="lv">Nv. ${pl.lv}</span>
+          <span class="muted small">${crew ? '⚓ ' + crew : ''}${pl.partner ? ' 💗 ' + esc(pl.partner) : ''}${pl.team != null ? ' 🤝' : ''}</span>
+          ${!isMe && !team ? `<button class="pbtn small" data-p="net" data-a="inv" data-id="${pl.id}">🤝 Equipo</button>` : ''}
+          ${team ? '<span class="tagteam">Tu equipo</span>' : ''}</div>
+          ${crew ? `<div class="crewline muted small">Tripulación: ${esc(pl.crew.join(', '))}</div>` : ''}`;
+      }).join('');
+      html = `<div class="parch">${n.isHost
+        ? `<p>🏠 <b>Eres el anfitrión.</b> Los demás deben unirse con esta IP:</p><p class="bigip">${(n.ips || []).map(esc).join(' · ')}</p>`
+        : '<p>✅ <b>Conectado a la partida.</b></p>'}
+        <p>PvP: <b>${n.room.pvp ? '⚔️ activado' : '🕊️ desactivado'}</b></p></div>
+        <div class="sub">Jugadores (${n.room.players.length}/5)</div>${rows || '<p class="muted">Esperando jugadores…</p>'}
+        <div class="netbtns">
+          ${n.isHost ? `<button class="wbtn" data-p="net" data-a="pvp">${n.room.pvp ? '🕊️ Desactivar PvP' : '⚔️ Activar PvP'}</button>` : ''}
+          ${myTeam != null ? '<button class="wbtn" data-p="net" data-a="leaveTeam">Salir del equipo</button>' : ''}
+          <button class="wbtn danger2" data-p="net" data-a="leave">🚪 Salir de la partida</button>
+        </div>
+        <p class="muted small">En equipo, la experiencia de los enemigos se comparte. Toca a otro jugador para ver su tripulación o invitarlo.</p>`;
+    }
+    if (this.netMsg) html = `<div class="netmsg">${esc(this.netMsg)}</div>` + html;
+    root.innerHTML = html;
   }
 
   // ------------------------------------------------------------------ regalos

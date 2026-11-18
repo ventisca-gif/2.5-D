@@ -359,3 +359,18 @@ body:not(.playing) #labels { display: none; }
 .upbar #upFill { height: 100%; width: 0; background: linear-gradient(#f2c860, #b8862a); transition: width 0.3s; }
 .upbar #upTxt { position: absolute; inset: 0; text-align: center; font-size: 12px; line-height: 18px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px #000; }
 #scrSlots .brow { gap: 8px; }
+
+/* multijugador */
+.lbl.remote .nm { color: #9fe8ff; }
+.lbl.remote .tag { background: rgba(20,70,110,0.8); color: #e0f6ff; }
+.netbtns { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.netbtns .wbtn { flex: 1 1 140px; }
+.netlist { display: flex; flex-direction: column; gap: 6px; }
+.netip { display: flex; gap: 8px; }
+.netip input { flex: 1; padding: 10px; border-radius: 8px; border: 2px solid #1a0e06; background: var(--parch); color: var(--ink); font-size: 16px; user-select: text; -webkit-user-select: text; }
+.netip .wbtn { flex: 0 0 auto; }
+.bigip { font-family: ui-monospace, monospace; font-size: 22px; font-weight: 800; color: #6a2a10; text-align: center; }
+.netmsg { background: #3a2414; border: 2px solid var(--rope); border-radius: 8px; padding: 8px; margin-bottom: 8px; color: #ffe9a8; font-size: 13px; }
+.tagteam { font-size: 11px; color: #9fff9f; font-weight: 800; }
+.crewline { padding: 0 4px 6px; border-bottom: 1px solid rgba(201,162,90,0.15); }
+.wbtn.danger2 { background: linear-gradient(180deg, #a83a2a, #6a1a12); }
