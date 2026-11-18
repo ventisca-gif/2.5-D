@@ -77,6 +77,12 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - v3.3: a nivel 30 el Armamento cubre torso, hombros y, en mujeres, también el busto (`espTorso` en more4.js; usa `model.look.female/bust`, que ahora devuelve `makeHumanoid2`). Antebrazos más gruesos para tapar los puños de la manga.
 - Los diálogos (`ui.openDialog`) usan textContent: `<br>` se convierte en salto de línea y se quitan `<b>`/`<small>`.
 
+## v3.4 (more6.js)
+- Romper con la pareja / divorciarse (`breakUp`, `soc.exDay`; 7 días sin poder volver con esa persona, `canConfess`).
+- Formación de seguidores: cada tripulante va a su puesto detrás del jugador (`followSlot`, `SLOTS`) y `separateFollowers` empuja a los que se pisan (tripulación, pareja y jugador).
+- Defensas de enemigos por tipo (`defenseKind`/`enemyDefend`, envuelve `damageEnemy`): parry (+contraataque al 2º bloqueo, poción <30%), dodge/evade, shell (caparazón a media vida), stone (piel de piedra si le golpeas 4 veces en 2,5 s). Los famosos usan su propia IA.
+- NPCs en duelo/pelea: bloquean, esquivan, poción en duelos (`npcDefend`, envuelve `damageNPC`) y técnica especial según arma cada 6-9 s (`npcFightSkill`, `pending.r/k`).
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

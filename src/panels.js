@@ -481,6 +481,8 @@ export class Panels {
       ['🌋 Isla Naciente', 'Durante la erupción nace una isla al oeste de Isla Ceniza con monstruos de lava y un cofre de obsidiana. Desaparece cuando el volcán se calma.'],
       ['⛓️ Prisión de la Marina', 'Si la Marina te derrota puede llevarse a un tripulante a la celda del Bastión. Ve allí, pulsa «Liberar» y vence a los carceleros.'],
       ['🌦 Clima de cada isla', 'Ventisca en Escarcha, lluvia de azúcar en Merengue, marea de pompas en Burbuja y nubes de vapor en Engranaje.'],
+      ['💔 Romper con la pareja', 'Habla con tu pareja y elige «Romper la relación» (o «Divorciarse» si estáis casados). La amistad baja y no querrá volver contigo en 7 días, pero podrás declararte a otra persona.'],
+      ['🛡 Los enemigos se defienden', 'Cada tipo se defiende a su manera: los que llevan arma paran tus golpes (y contraatacan si paran dos seguidos) y beben pociones; las bestias y los voladores esquivan; cangrejos y escorpiones se esconden en el caparazón; gólems, yetis y autómatas endurecen la piel si les golpeas muy seguido. En los duelos, los NPCs también bloquean, esquivan, beben pociones y usan técnicas especiales.'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],

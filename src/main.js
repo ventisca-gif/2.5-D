@@ -32,6 +32,7 @@ import { installMore3, makeCoralia, makeJellyModel } from './more3.js';
 import { LOGROS } from './more2.js';
 import { installMore4, makeIslands4, makeGrotto } from './more4.js';
 import { installMore5, makeNewbornIslet } from './more5.js';
+import { installMore6 } from './more6.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -577,9 +578,13 @@ class NPC extends Actor {
           this.repathT -= dt;
           if (this.repathT <= 0) { this.repathT = 0.5; this.goTo(foe.tx, foe.tz, true, 1500); }
         }
-      } else if (d > 2.4) {
+      } else {
+        // cada uno va a su puesto en la formación detrás de ti (ya no se amontonan)
+        const slot = g.followSlot(this);
+        const ds = Math.hypot(slot.x - this.x, slot.z - this.z);
         this.repathT -= dt;
-        if (this.repathT <= 0) { this.repathT = 0.6; this.goTo(p.tx, p.tz, true, 1500, 2); }
+        if (ds > 1.1 && this.repathT <= 0) { this.repathT = 0.5; this.goTo(slot.x, slot.z, true, 1500); }
+        else if (ds <= 1.1 && !this.path.length && !p.st.moving) this.faceTo(p.x - this.x, p.z - this.z, dt);
       }
     } else if (!s.crew && g.npcRoutine(this, dt)) {
       return;
@@ -611,12 +616,14 @@ class NPC extends Actor {
     if (this.pending) {
       this.pending.t -= dt;
       if (this.pending.t <= 0) {
+        const pdg = this.pending;
         this.pending = null;
-        if (!p.dead && this.dist(p) < 2.0 && this.fight) g.damagePlayer(this, this.atk);
+        if (!p.dead && this.fight && this.dist(p) < (pdg.r || 2.0)) g.damagePlayer(this, this.atk * (pdg.k || 1));
       }
     }
     if (!this.fight) return;
     if (dP > 20 || p.dead) { g.endFight(this, 'flee'); return; }
+    if (g.npcFightSkill) g.npcFightSkill(this, dt);
     if (dP <= 1.65 && this.attackCd <= 0) {
       this.faceTo(p.x - this.x, p.z - this.z, 1);
       this.attackCd = 1.3;
@@ -2679,7 +2686,8 @@ class Game {
         o.push({ label: this.carrying === n ? '👐 Bajar de tus brazos' : '👐 Llevar en brazos', action: () => this.coupleAct(n, 'carry') });
         o.push({ label: s.hand ? '🤝 Soltar la mano' : '🤝 Pasear de la mano', action: () => { s.hand = !s.hand; this.ui.toast(s.hand ? `🤝 Paseas de la mano con ${n.name}` : `Soltaste la mano de ${n.name}`); } });
         o.push({ label: '💌 Palabras bonitas', action: () => { this.addFriend(n, 1); this.ui.openDialog(n.name, pick(ROMANCE_LINES), [{ label: '❤', action: null }]); } });
-      } else if (s.f >= 70 && !this.partner()) {
+        o.push({ label: s.married ? '💔 Divorciarse' : '💔 Romper la relación', action: () => this.breakUp(n) });
+      } else if (s.f >= 70 && !this.partner() && (!this.canConfess || this.canConfess(n))) {
         o.push({ label: '💗 Declararse', action: () => this.confess(n) });
       }
     }
@@ -2838,6 +2846,7 @@ class Game {
   }
   confess(n) {
     const s = this.soc(n.id);
+    if (this.canConfess && !this.canConfess(n)) return this.ui.openDialog(n.name, 'Todavía me duele lo nuestro... Dame tiempo.', [{ label: 'Lo entiendo', action: null }]);
     if (s.f >= 90) {
       s.partner = true;
       this.addFriend(n, 5);
@@ -2976,6 +2985,7 @@ class Game {
       this.updateBuild && this.updateBuild(dt);
       this.player.st.holdHand = null;
       for (const n of this.npcs) if (!n.onShip && !n.carried) n.update(dt);
+      if (this.separateFollowers) this.separateFollowers(dt);
       for (const e of this.enemies) e.update(dt);
     }
     if (this.sailing) { if (!this.deck) p.st.moving = false; animateModel(p.model, p.st, dt); } else p.sync(dt);
@@ -3175,6 +3185,7 @@ installMore2(Game, { sfx, audio });
 installMore3(Game, { sfx });
 installMore4(Game, { sfx, EQUIP, ITEMS, OUTLINE });
 installMore5(Game, { sfx });
+installMore6(Game, { sfx });
 LOGROS.push(
   { id: 'islas', name: 'Señor de las islas', title: 'Señor de las islas', desc: 'Derrota a Glacia, Ferrum y Bizcochón', ok: (g) => (g.stats.k_reina_hielo || 0) >= 1 && (g.stats.k_gran_automata || 0) >= 1 && (g.stats.k_rey_pastel || 0) >= 1 },
   { id: 'pesca', name: 'Campeón de pesca', title: 'Rey del anzuelo', desc: 'Gana el torneo de pesca', ok: (g) => (g.stats.fishCups || 0) >= 1 },
