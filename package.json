@@ -1,0 +1,27 @@
+{
+  "name": "isla-bruma",
+  "version": "1.0.0",
+  "description": "RPG medieval y pirata 2.5D isométrico",
+  "scripts": {
+    "build": "node build.mjs",
+    "serve": "npx --yes http-server www -p 8080 -c-1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ventisca-gif/2.5-D.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ventisca-gif/2.5-D/issues"
+  },
+  "homepage": "https://github.com/ventisca-gif/2.5-D#readme",
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  },
+  "type": "module"
+}

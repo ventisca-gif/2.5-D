@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1420">
+<title>Isla Bruma</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+  <div id="labels"></div>
+
+  <div id="hud" class="hidden">
+    <div id="topLeft">
+      <div id="statsRow">
+        <button id="btnMenu" class="ibtn" aria-label="Menú">☰</button>
+        <div id="stats" class="panel">
+          <div class="r1"><span class="crest">⚜</span><span id="pname">AVENTURERO</span><span id="plvl">NV. 1</span><span class="res"><i class="coin"></i><b id="gold">0</b></span></div>
+          <div class="bar hp"><div id="hpfill"></div><span id="hptext">60 / 60</span></div>
+          <div class="bar xp"><div id="xpfill"></div></div>
+          <div class="r2"><span>🪵 <b id="wood">0</b></span><span>🪨 <b id="stone">0</b></span><span>🍶 <b id="potions">0</b></span><span>⚔ <b id="atk">0</b></span></div>
+          <div class="r3"><span id="area">VILLARROCA</span><span id="clock">☀ 08:00</span><span id="coords">50, 53</span></div>
+        </div>
+      </div>
+      <div id="questCard" class="panel">
+        <div class="qt">📜 <span id="qtitle"></span></div>
+        <div id="qdesc"></div>
+        <div id="qprog"></div>
+      </div>
+    </div>
+    <div id="minimapWrap" class="panel"><canvas id="minimap" width="200" height="200"></canvas><div id="mapHint">Mapa</div></div>
+    <div id="joy"><div id="joyKnob"></div></div>
+    <div id="actions">
+      <button id="btnPotion" class="abtn"><span>🍶</span><small id="potCount">0</small></button>
+      <button id="btnAction" class="abtn big"><span id="actIcon">⚔️</span><small id="actLabel">Atacar</small></button>
+    </div>
+    <div id="toasts"></div>
+  </div>
+
+  <div id="dialog" class="hidden">
+    <div class="dhead"><span id="dname"></span><button id="dclose" aria-label="Cerrar">✕</button></div>
+    <div id="dtext"></div>
+    <div id="dopts"></div>
+  </div>
+
+  <div id="menu" class="hidden">
+    <div class="mbox panel">
+      <h2>Isla Bruma</h2>
+      <div id="mstats"></div>
+      <div class="mbtns">
+        <button data-act="resume">Continuar</button>
+        <button data-act="save">Guardar partida</button>
+        <button data-act="sound">Sonido: Sí</button>
+        <button data-act="quality">Calidad: Media</button>
+        <button data-act="help">Cómo jugar</button>
+        <button data-act="reset" class="danger">Borrar partida</button>
+        <button data-act="exit" class="android-only">Salir del juego</button>
+      </div>
+      <div id="help" class="hidden">
+        <p><b>Moverse:</b> toca el suelo (camino automático por la cuadrícula) o usa el joystick. En PC: WASD / flechas.</p>
+        <p><b>Atacar / hablar / talar:</b> toca al enemigo, NPC, árbol o roca. O pulsa el botón grande (Espacio en PC).</p>
+        <p><b>Zoom:</b> pellizca con dos dedos o rueda del ratón.</p>
+        <p><b>Ron curativo:</b> botón 🍶 (tecla Q). Te curas solo cuando no estás en combate.</p>
+        <p><b>Mapa:</b> toca el minimapa para ampliarlo.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="start">
+    <div class="sbox">
+      <div class="logo">
+        <div class="l1">ISLA BRUMA</div>
+        <div class="l2">⚔ Espadas y Velas ⚓</div>
+      </div>
+      <div class="creator panel">
+        <div class="ctitle">Un traje a tu medida</div>
+        <label class="field">Nombre<input id="nameInput" maxlength="14" value="Aventurero" autocomplete="off"></label>
+        <div id="outfits"></div>
+        <div id="skins"></div>
+        <div class="sbtns">
+          <button id="btnNew" class="primary">Nueva partida</button>
+          <button id="btnContinue" class="hidden">Continuar</button>
+        </div>
+      </div>
+      <div class="foot">RPG medieval y pirata · 2.5D isométrico</div>
+    </div>
+  </div>
+
+  <div id="loading"><div class="spin"></div><div>Generando Isla Bruma…</div></div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
