@@ -97,6 +97,12 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Rangos `RANKS` (Grumete→Primer oficial, `soc.rank`, `promote`), Primer oficial: cañón ×1,15 y velocidad ×1,08 (envuelve shipStats).
 - Diario (`crewDiary`, `soc.mem` recuerdos, `kills/kos/exps`). Asedio al Bastión (Lucas, `siege`, 3 oleadas + comodoro, `flags.siegeDay`). Fiesta de boda (`party`). Mascotas con vida y nivel 50 (`petTarget` como objetivo de enemigos, `hurtPet`, ko 40 s). Peligros del mar (`updateSeaHazards`: icebergs en Escarcha, remolinos en aguas profundas con colisión, rayos en tormenta).
 
+## v3.7 (more9.js; se instala tras installMore porque envuelve sleepHere)
+- Segundo barco (`escortId`, `setEscort` rango ≥2 + 8000 oro, `updateEscort` sigue y dispara; si lo hunden 3 min de reparación).
+- Escuela de combate (NPC 'sable' en la plaza, `soc.sk2` segunda técnica, `crewSkill2Tick`). Pueblos que crecen (`towns9`, `LEADERS9`, `helpTown`/`growTown` casas nuevas, `priceMul9` −4%/nivel, tienda nivel 3).
+- Bestias legendarias (`bestia_lobo/tigre/golem`, `updateBeastHunt` cada 12-20 min, marcador rojo, `beastDown` en multijugador). Banquete (`BUFFS.banquete`, Atajos `btnBanquet`). Sueños (`dream` al dormir: mapa del tesoro o `vision` → jefe `sombra_abismo`). Torneo de tripulaciones (Marisol, `ctour`, 3 rondas en (50,30)).
+- Isla Errante: 3 islotes ghost (`makeWanderIslets`, `WANDER_SPOTS`), visible el de `day % 3`; laberinto (`R.maze`, InstancedMesh), guardián `guardian_errante` y cofre diario `errante_cofreN`.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

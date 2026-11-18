@@ -335,6 +335,8 @@ export class UI {
     if (rm) dot(rm.x, rm.z, '#2ad84a', 6);
     const em = g.eventMarker && g.eventMarker();
     if (em) dot(em.x, em.z, '#ffd23a', 6);
+    const bm = g.beastMarker && g.beastMarker();
+    if (bm) dot(bm.x, bm.z, '#ff2a2a', 7);
     if (g.velariaPos) { const v = g.velariaPos(); dot(v.x, v.z, '#c85ae0', 5); }
     if (g.grottoSpots) for (const gs of g.grottoSpots) dot(gs.x, gs.z, '#7ad8ff', 4);
     const qm = g.questMarker();

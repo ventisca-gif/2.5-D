@@ -35,6 +35,7 @@ import { installMore5, makeNewbornIslet } from './more5.js';
 import { installMore6 } from './more6.js';
 import { installMore7 } from './more7.js';
 import { installMore8 } from './more8.js';
+import { installMore9, makeWanderIslets } from './more9.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -110,6 +111,11 @@ const ENEMY_DEF = {
   reina_hielo: { name: 'Reina de Hielo Glacia', hp: () => 15000, atk: () => 230, speed: 2.6, xp: () => 18000, gold: () => 4500, aggro: 8, cd: 1.3, boss: true, super: 'hielo', sCol: 0x9ae8ff, sTxt: '¡Tormenta de hielo!', sMin: 'lobo_nieve', bounty: 3500 },
   gran_automata: { name: 'Gran Autómata Ferrum', hp: () => 19000, atk: () => 250, speed: 2.0, xp: () => 21000, gold: () => 5000, aggro: 8, cd: 1.7, boss: true, super: 'ferrum', sCol: 0xffc040, sTxt: '¡Lluvia de remaches!', sMin: 'automata', bounty: 4000 },
   rey_pastel: { name: 'Rey Pastel Bizcochón', hp: () => 12000, atk: () => 200, speed: 2.4, xp: () => 15000, gold: () => 4000, aggro: 8, cd: 1.4, boss: true, super: 'pastel', sCol: 0xff6ab0, sTxt: '¡Glaseado explosivo!', sMin: 'galleta', bounty: 3000 },
+  bestia_lobo: { name: 'Colmillo de Plata, lobo legendario', hp: (L) => 2500 + L * 60, atk: (L) => 20 + L * 2.6, speed: 3.6, xp: (L) => 1500 + L * 40, gold: (L) => 300 + L * 5, aggro: 8, cd: 1.0, boss: true },
+  bestia_tigre: { name: 'Tigre Sombra legendario', hp: (L) => 2300 + L * 55, atk: (L) => 22 + L * 2.8, speed: 3.8, xp: (L) => 1500 + L * 40, gold: (L) => 300 + L * 5, aggro: 8, cd: 0.9, boss: true },
+  bestia_golem: { name: 'Coloso de Musgo legendario', hp: (L) => 3500 + L * 80, atk: (L) => 24 + L * 3, speed: 2.0, xp: (L) => 1800 + L * 45, gold: (L) => 350 + L * 6, aggro: 8, cd: 1.8, boss: true },
+  sombra_abismo: { name: 'Sombra del Abismo', hp: () => 16000, atk: () => 240, speed: 3.0, xp: () => 20000, gold: () => 5000, aggro: 9, cd: 1.2, boss: true, super: 'sombra', sCol: 0x2a0a4a, sTxt: '¡Pesadilla!', sMin: 'skull', bounty: 3000 },
+  guardian_errante: { name: 'Guardián de la Isla Errante', hp: () => 18000, atk: () => 250, speed: 2.0, xp: () => 20000, gold: () => 5000, aggro: 9, cd: 1.7, boss: true, super: 'errante', sCol: 0x7af0e0, sTxt: '¡Ira de las ruinas!', sMin: 'golem', bounty: 2500 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -693,7 +699,12 @@ class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
     const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
-    if (type === 'reina_hielo') model = HUM(animeLook({ id: 'glacia', look: { skin: 0xdcecf8, hair: 0xf4fbff, longHair: true, dress: true, dressColor: 0x8ad0f0, shirt: 0xbfe8f8, hat: 'circlet', hatColor: 0xe8f8ff, halo: 0x9ae8ff, cape: 0xe0f4ff, spear: true, trident: true } }));
+    if (type === 'bestia_lobo') model = tintModel(makeBeast2('wolf'), 0xd8e0f0, 0.7);
+    else if (type === 'bestia_tigre') model = tintModel(makeBeast2('tiger'), 0x2a2030, 0.75);
+    else if (type === 'bestia_golem') model = tintModel(makeGolem('stone'), 0x4a8a3a, 0.75);
+    else if (type === 'guardian_errante') model = tintModel(makeGolem('stone'), 0x6ad8c8, 0.6);
+    else if (type === 'sombra_abismo') model = HUM({ bone: 0x2a1a3a, cape: 0x1a0a2a, hat: 'hood', hatColor: 0x0a0010, sword: true, blade: 0x8a3aff, guard: 0x2a0a4a, eyeGlow: 0xb03aff, pauldron: 0x1a0a2a });
+    else if (type === 'reina_hielo') model = HUM(animeLook({ id: 'glacia', look: { skin: 0xdcecf8, hair: 0xf4fbff, longHair: true, dress: true, dressColor: 0x8ad0f0, shirt: 0xbfe8f8, hat: 'circlet', hatColor: 0xe8f8ff, halo: 0x9ae8ff, cape: 0xe0f4ff, spear: true, trident: true } }));
     else if (type === 'gran_automata') model = tintModel(makeGolem('stone'), 0xd8a838, 0.85);
     else if (type === 'rey_pastel') model = HUM({ skin: 0xb8743a, shirt: 0xf8d8e8, pants: 0xf060b0, trim: 0xffffff, hat: 'circlet', hatColor: 0xffd040, halo: 0xff8ac8, cape: 0xf060b0, axe: true, beard: 0xffffff, bootCuff: true });
     else if (type === 'lobo_nieve') model = tintModel(makeBeast2('wolf'), 0xf4f8fc, 0.75);
@@ -730,6 +741,9 @@ class Enemy extends Actor {
     if (type === 'golem_boss') model_scale(model, 1.7);
     if (type === 'yeti') model_scale(model, 1.3);
     if (type === 'reina_hielo') model_scale(model, 1.55);
+    if (type === 'bestia_lobo' || type === 'bestia_tigre') model_scale(model, 2.0);
+    if (type === 'bestia_golem' || type === 'guardian_errante') model_scale(model, 2.1);
+    if (type === 'sombra_abismo') { model_scale(model, 1.7); for (const m of model.mats) { m.transparent = true; m.opacity = 0.85; } }
     if (type === 'gran_automata') model_scale(model, 2.0);
     if (type === 'rey_pastel') model_scale(model, 1.7);
     if (type === 'marine_boss') model_scale(model, 1.3);
@@ -970,7 +984,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet()];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets())];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -1408,6 +1422,7 @@ class Game {
     if (this.setupHud4) this.setupHud4();
     $('btnOrders').addEventListener('click', () => { if (this.started) this.ordersMenu(); });
     $('btnTravel').addEventListener('click', () => { if (this.started) this.travelMenu(); });
+    $('btnBanquet').addEventListener('click', () => { if (this.started) this.banquet(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1731,6 +1746,7 @@ class Game {
     const p = this.player;
     if (this.flags[c.id]) return this.ui.toast('El cofre está vacío');
     this.flags[c.id] = true;
+    if (c.id.startsWith('errante_cofre')) { this.flags[c.id + '_day'] = this.day; this.give('meteorito', 2, c.x, c.z); this.give('cristal', 2, c.x, c.z); }
     if (c.id === 'naciente_cofre') { this.give('obsidiana', 3, c.x, c.z); this.give('meteorito', 2, c.x, c.z); if (Math.random() < 0.3) this.give('huevo_dragon', 1); }
     if (c.id.startsWith('gruta_')) { this.flags[c.id + '_day'] = this.day; this.give('cristal', 2, c.x, c.z); }
     if (c.id.startsWith('coralia_')) { this.flags[c.id + '_day'] = this.day; this.give('coral', 2, c.x, c.z); }
@@ -2285,6 +2301,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
+      towns9: this.towns9 || {}, escortId: this.escortId || null, vision: this.vision || null,
       esp: this.esp || null, hunts: this.hunts || null, fishDex: this.fishDex || {}, child: this.child || null, childDay: this.childDay ?? null, crewOrder: this.crewOrder || 'follow', smuggle: this.smuggle || null,
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
@@ -2482,6 +2499,7 @@ class Game {
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
+    this.towns9 = data.towns9 || {}; this.escortId = data.escortId || null; this.vision = data.vision || null; this.townsGrown = false;
     this.esp = data.esp || null; this.hunts = data.hunts || null; this.fishDex = data.fishDex || {};
     this.child = data.child || null; this.childDay = data.childDay ?? undefined; this.crewOrder = data.crewOrder || 'follow'; this.smuggle = data.smuggle || null;
     if (data.famous) { this.famousInit(); for (const [k, v] of Object.entries(data.famous)) if (this.famous[k]) Object.assign(this.famous[k], v); }
@@ -2985,6 +3003,7 @@ class Game {
       this.updateRescue();
       this.updateMore7(dt);
       this.updateMore8(dt);
+      this.updateMore9(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3216,6 +3235,12 @@ LOGROS.push(
 for (const d of PREMIUM_DECOR) DECOR.push({ ...d, premium: true });
 installMore(Game, { sfx, mountModel, EVENT_COS, isFemale: () => window.game && window.game.player.ap.gender === 'f' });
 installMore8(Game, { sfx });
+installMore9(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'bestia', name: 'Cazador de leyendas vivas', title: 'Matabestias', desc: 'Caza una bestia legendaria', ok: (g) => (g.stats.beasts || 0) >= 1 },
+  { id: 'torneo_trip', name: 'La mejor tripulación', title: 'Capitán campeón', desc: 'Gana el torneo de tripulaciones', ok: (g) => (g.stats.ctours || 0) >= 1 },
+  { id: 'errante', name: 'Explorador de ruinas', title: 'Errante', desc: 'Derrota al Guardián de la Isla Errante', ok: (g) => (g.stats.k_guardian_errante || 0) >= 1 },
+);
 
 window.addEventListener('load', () => {
   setTimeout(() => {
