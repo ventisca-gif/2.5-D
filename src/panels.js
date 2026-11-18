@@ -1,0 +1,271 @@
+// Paneles de interfaz: equipo + mochila (con vista previa 3D), forja/banco/cocina, bitácora, guía y regalos.
+import * as THREE from 'three';
+import { ITEMS, EQUIP, SLOTS, RECIPES, buildLook, gearStats } from './items.js';
+import { makeHumanoid2, OUTLINE } from './chars2.js';
+import { animateModel } from './characters.js';
+import { QUESTS } from './quests.js';
+import { friendLevel, heartsText, MAX_CREW } from './social.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[<>&"]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+
+export function fmtTime(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+  return h ? `${h} h ${m} min` : `${m} min`;
+}
+
+export class Panels {
+  constructor(game) {
+    this.g = game;
+    this.el = $('panel');
+    this.open = null;
+    this.el.addEventListener('click', (e) => {
+      if (e.target === this.el) this.close();
+      const b = e.target.closest('[data-p]');
+      if (b) this.onClick(b.dataset.p, b);
+    });
+  }
+  get isOpen() { return !!this.open; }
+  show(kind, title, html, wide = false) {
+    this.open = kind;
+    this.el.classList.remove('hidden');
+    this.el.innerHTML = `<div class="pbox ${wide ? 'wide' : ''}"><div class="phead"><span class="ptitle">${title}</span><button class="pclose" data-p="close">✕</button></div><div class="pbody">${html}</div></div>`;
+    this.g.paused = true;
+  }
+  close() {
+    if (!this.open) return;
+    this.open = null;
+    this.el.classList.add('hidden');
+    this.el.innerHTML = '';
+    if (this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
+    this.g.paused = false;
+    this.g.save();
+  }
+  onClick(act, b) {
+    const g = this.g, p = g.player;
+    this.g.sfx('click');
+    if (act === 'close') return this.close();
+    if (act === 'tab') { this.tab = b.dataset.tab; return this.openBitacora(this.tab); }
+    if (act === 'item') { this.sel = b.dataset.id; return this.renderInv(); }
+    if (act === 'slot') {
+      const id = p.equip[b.dataset.slot];
+      if (id) { this.sel = null; g.unequip(b.dataset.slot); }
+      return this.renderInv();
+    }
+    if (act === 'equip') { g.equip(this.sel); this.sel = null; return this.renderInv(); }
+    if (act === 'eat') { g.eat(this.sel); if (!p.inv[this.sel]) this.sel = null; return this.renderInv(); }
+    if (act === 'craft') { g.craft(Number(b.dataset.i)); return this.openCraft(this.station); }
+    if (act === 'gift') { const n = this.giftTo; this.close(); g.giveGift(n, b.dataset.id); return; }
+    if (act === 'crewtoggle') { g.toggleCrewWait(b.dataset.id); return this.openBitacora('crew'); }
+    if (act === 'guide') { b.parentElement.classList.toggle('openg'); }
+  }
+
+  // ------------------------------------------------------------------ equipo + mochila
+  openInventory() {
+    this.sel = null;
+    this.show('inv', '🎒 Equipo y mochila', '<div id="invRoot"></div>', true);
+    this.renderInv();
+    this.startPreview();
+  }
+  renderInv() {
+    const g = this.g, p = g.player;
+    const slotBtn = (s) => {
+      const id = p.equip[s.id];
+      const it = id && ITEMS[id];
+      return `<button class="slot ${id ? 'full t' + it.tier : ''}" data-p="slot" data-slot="${s.id}" title="${s.name}">
+        <span class="si">${it ? it.icon : s.icon}</span><small>${it ? esc(it.name) : s.name}</small></button>`;
+    };
+    const left = ['head', 'chest', 'hands', 'feet'].map((id) => slotBtn(SLOTS.find((s) => s.id === id))).join('');
+    const right = ['neck', 'cape', 'ring'].map((id) => slotBtn(SLOTS.find((s) => s.id === id))).join('');
+    const bottom = ['weapon', 'shield'].map((id) => slotBtn(SLOTS.find((s) => s.id === id))).join('');
+    const items = Object.entries(p.inv).filter(([, n]) => n > 0).sort((a, b) => (ITEMS[a[0]]?.type || '').localeCompare(ITEMS[b[0]]?.type || ''));
+    const grid = items.map(([id, n]) => {
+      const it = ITEMS[id] || { icon: '❔', name: id };
+      return `<button class="cell ${this.sel === id ? 'sel' : ''} ${it.type === 'equip' ? 't' + it.tier : ''}" data-p="item" data-id="${id}"><span>${it.icon}</span>${n > 1 ? `<b>${n}</b>` : ''}</button>`;
+    }).join('') + '<span class="cell empty"></span>'.repeat(Math.max(0, 24 - items.length));
+    let detail = '<div class="idet muted">Toca un objeto para verlo. Toca una ranura equipada para quitártela.</div>';
+    if (this.sel && ITEMS[this.sel]) {
+      const it = ITEMS[this.sel];
+      let btn = '';
+      if (it.type === 'equip') btn = `<button class="pbtn" data-p="equip">Equipar</button>`;
+      if (it.type === 'food' || it.type === 'heal') btn = `<button class="pbtn" data-p="eat">${it.type === 'heal' ? 'Beber' : 'Comer'}</button>`;
+      const cmp = it.type === 'equip' && p.equip[it.slot] ? ` <span class="muted">(llevas: ${esc(ITEMS[p.equip[it.slot]].name)})</span>` : '';
+      detail = `<div class="idet"><div class="iname">${it.icon} ${esc(it.name)}${cmp}</div><div class="idesc">${esc(it.desc || '')}</div>${btn}</div>`;
+    }
+    const gs = gearStats(p.equip);
+    $('invRoot').innerHTML = `
+      <div class="inv">
+        <div class="equipArea">
+          <div class="eqTitle">${esc(p.name)} — Nivel ${p.level}</div>
+          <div class="eqRow">
+            <div class="slotCol">${left}</div>
+            <div class="preview"><canvas id="pvCanvas"></canvas>
+              <div class="pstats"><div><small>DAÑO</small><b>${Math.round(p.atk)}</b></div><div><small>ARMADURA</small><b>${gs.def}</b></div><div><small>VIDA</small><b>${p.maxHp}</b></div></div>
+            </div>
+            <div class="slotCol">${right}</div>
+          </div>
+          <div class="slotRow">${bottom}</div>
+        </div>
+        <div class="bagArea">
+          <div class="bagTitle">Mochila · <span class="coinTxt">🪙 ${p.gold}</span></div>
+          <div class="bag">${grid}</div>
+          ${detail}
+        </div>
+      </div>`;
+    this.pvDirty = true;
+  }
+  startPreview() {
+    if (!this.pv) {
+      const r = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      const sc = new THREE.Scene();
+      sc.add(new THREE.HemisphereLight(0xdfefff, 0x5a4a3a, 1.6));
+      const d = new THREE.DirectionalLight(0xffffff, 2.2);
+      d.position.set(2, 4, 3);
+      sc.add(d);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(0.55, 32), new THREE.MeshBasicMaterial({ color: 0x0a2a3a, transparent: true, opacity: 0.55 }));
+      disc.rotation.x = -Math.PI / 2;
+      sc.add(disc);
+      const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
+      cam.position.set(0, 1.0, 3.3);
+      cam.lookAt(0, 0.6, 0);
+      this.pv = { r, sc, cam, model: null, st: {} };
+    }
+    const loop = () => {
+      this.raf = requestAnimationFrame(loop);
+      const cv = $('pvCanvas');
+      if (!cv) return;
+      const pv = this.pv;
+      if (pv.r.domElement !== cv) {
+        // reutilizar el mismo renderer en el nuevo canvas
+        cv.replaceWith(pv.r.domElement);
+        pv.r.domElement.id = 'pvCanvas';
+      }
+      const el = pv.r.domElement;
+      const w = el.parentElement.clientWidth, h = Math.max(160, el.parentElement.clientHeight - 54);
+      if (el.width !== Math.round(w * pv.r.getPixelRatio()) || pv._h !== h) {
+        pv.r.setPixelRatio(Math.min(2, devicePixelRatio));
+        pv.r.setSize(w, h);
+        pv.cam.aspect = w / h;
+        pv.cam.updateProjectionMatrix();
+        pv._h = h;
+      }
+      if (this.pvDirty) {
+        this.pvDirty = false;
+        if (pv.model) pv.sc.remove(pv.model.root);
+        const p = this.g.player;
+        pv.model = makeHumanoid2({ ...buildLook(p.ap, p.equip), noAutoLegs: true });
+        pv.sc.add(pv.model.root);
+      }
+      if (pv.model) {
+        pv.model.root.rotation.y += 0.012;
+        animateModel(pv.model, pv.st, 1 / 60);
+      }
+      const prev = OUTLINE.uniforms.thick.value;
+      OUTLINE.uniforms.thick.value = 0.008;
+      pv.r.render(pv.sc, pv.cam);
+      OUTLINE.uniforms.thick.value = prev;
+    };
+    if (this.raf) cancelAnimationFrame(this.raf);
+    loop();
+  }
+
+  // ------------------------------------------------------------------ forja / banco / cocina
+  openCraft(station) {
+    this.station = station;
+    const g = this.g, p = g.player;
+    const titles = { forja: '⚒️ Forja de Tadeo', banco: '🪚 Banco de carpintero', fuego: '🍳 Cocina' };
+    const list = RECIPES.map((r, i) => ({ r, i })).filter(({ r }) => r.station === station);
+    const html = list.map(({ r, i }) => {
+      const it = ITEMS[r.out];
+      const needs = Object.entries(r.need).map(([id, n]) => {
+        const have = p.inv[id] || 0;
+        return `<span class="${have >= n ? 'ok' : 'no'}">${ITEMS[id].icon} ${have}/${n}</span>`;
+      }).join(' ');
+      const can = Object.entries(r.need).every(([id, n]) => (p.inv[id] || 0) >= n) && p.gold >= r.gold;
+      const owned = (p.inv[r.out] || 0) + (Object.values(p.equip).includes(r.out) ? 1 : 0);
+      return `<div class="rec ${it.type === 'equip' ? 't' + it.tier : ''}">
+        <div class="ricon">${it.icon}</div>
+        <div class="rinfo"><div class="rname">${esc(it.name)} ${owned ? `<small class="muted">(tienes ${owned})</small>` : ''}</div>
+          <div class="rdesc">${esc(it.desc || '')}</div><div class="rneed">${needs}${r.gold ? ` <span class="${p.gold >= r.gold ? 'ok' : 'no'}">🪙 ${r.gold}</span>` : ''}</div></div>
+        <button class="pbtn" data-p="craft" data-i="${i}" ${can ? '' : 'disabled'}>${station === 'fuego' ? 'Cocinar' : 'Fabricar'}</button>
+      </div>`;
+    }).join('');
+    this.show('craft', titles[station], `<div class="recs">${html}</div>`, true);
+  }
+
+  // ------------------------------------------------------------------ bitácora
+  openBitacora(tab = this.tab || 'mision') {
+    this.tab = tab;
+    const g = this.g, p = g.player;
+    const tabs = [['mision', '📜 Misión'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+      .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
+    let body = '';
+    if (tab === 'mision') {
+      const q = g.questInfo();
+      const done = QUESTS.slice(0, g.quest.stage).map((qq) => `<li>✔ ${esc(qq.title)}</li>`).join('');
+      body = `<div class="parch"><div class="qbig">${esc(q.title)}</div><p>${esc(q.desc)}</p>${q.prog ? `<p class="prog">${esc(q.prog)}</p>` : ''}
+        <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
+        <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'amigos') {
+      const rows = g.npcs.filter((n) => g.soc(n.id).met).map((n) => {
+        const s = g.soc(n.id);
+        const tag = s.partner ? '💗 Pareja' : s.crew ? '⚓ Tripulación' : friendLevel(s.f).name;
+        return `<div class="frow"><b>${esc(n.name)}</b><span class="lv">Nv. ${n.level}</span><span class="hearts">${heartsText(s.f)}</span><span class="muted">${tag}</span></div>`;
+      }).join('');
+      body = rows || '<p class="muted">Habla con la gente de las islas para hacer amigos.</p>';
+      body += '<p class="muted small">Charla cada día, haz regalos (comida casera, menas...) y gana duelos para subir la amistad. Con 3 corazones pueden unirse a tu tripulación; con 5, quizá algo más...</p>';
+    } else if (tab === 'crew') {
+      const crew = g.crew();
+      const rows = crew.map((n) => `<div class="frow"><b>${esc(n.name)}</b><span class="lv">Nv. ${n.level}</span>
+          <span class="muted">${['Cuero', 'Hierro', 'Plata', 'Oro'][n.tier]}</span>
+          <button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${g.soc(n.id).wait ? '▶ Seguir' : '⏸ Esperar'}</button></div>`).join('');
+      body = `<p>Tripulación: <b>${crew.length}/${MAX_CREW}</b></p>${rows || '<p class="muted">Aún no tienes tripulación. Haz amistad (3 corazones) y pídeles que se unan.</p>'}
+        <p class="muted small">Tu tripulación te sigue, lucha a tu lado, sube contigo al barco y se hace más fuerte (hasta tu nivel), con armaduras cada vez mejores.</p>`;
+    } else {
+      const st = g.stats;
+      body = `<div class="parch diary">
+        <p>⏱ Tiempo jugado: <b>${fmtTime(g.playtime)}</b></p>
+        <p>⭐ Nivel: <b>${p.level}</b> / 50 · XP ${p.xp}/${p.xpNext()}</p>
+        <p>🪙 Oro: <b>${p.gold}</b></p>
+        <p>⚔ Enemigos vencidos: <b>${st.kills || 0}</b> · Duelos ganados: <b>${st.duels || 0}</b></p>
+        <p>🎁 Cofres abiertos: <b>${Object.keys(g.flags).filter((k) => k.includes('cofre')).length}</b></p>
+        <p>🍳 Platos cocinados: <b>${st.cooked || 0}</b> · ⚒ Objetos forjados: <b>${st.crafted || 0}</b></p>
+        <p>🗺 Ubicación: <b>${esc(g.W.areaName(p.tx, p.tz))}</b></p></div>`;
+    }
+    this.show('bit', '📖 Bitácora de viaje', `<div class="tabs">${tabs}</div><div class="tabbody">${body}</div>`, true);
+  }
+
+  // ------------------------------------------------------------------ guía
+  openGuide() {
+    const sec = [
+      ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
+      ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
+      ['⚔️ Combate', 'Toca a un enemigo o pulsa el botón grande. Puedes atacar mientras te mueves con el joystick. Sin estamina pegas la mitad.'],
+      ['🎒 Mochila y equipo', 'Abre la mochila: toca un objeto para equiparlo, comerlo o beberlo. Toca una ranura para quitarte esa pieza. Todo lo que equipas se ve en tu personaje.'],
+      ['⛏️ Recursos', 'Tala árboles (madera, manzanas) y pica rocas (piedra y menas). Hierro en Isla Bruma, plata en el Pedregal e Isla Tortuga, oro en la Isla Calavera. Lobos y jabalíes sueltan cuero y carne.'],
+      ['⚒️ Forja y banco', 'Habla con el Herrero Tadeo (o acércate a una forja) para forjar armas y armaduras de hierro, plata y oro. El Carpintero Bruno tiene el banco para objetos de madera y cuero.'],
+      ['🍳 Cocina', 'Acércate a una fogata o chimenea y pulsa Cocinar. La comida cura más que nada y el guiso del capitán rellena la estamina. Cosecha trigo en la granja.'],
+      ['❤ Amistad', 'Charla con la gente una vez al día, haz regalos y gana duelos. Cada NPC tiene su nivel según su isla.'],
+      ['🤺 Duelos y peleas', 'Puedes retar a un NPC a duelo. Si les pegas, se defienden (y se enfadan). Nadie muere: el que llega a poca vida se rinde.'],
+      ['⚓ Tripulación', 'Con 3 corazones, algunos NPCs se unen a tu tripulación (hasta 10). Te siguen, luchan, suben al barco y ganan nivel y armaduras.'],
+      ['💗 Romance', 'Con 5 corazones puedes declararte. Si acepta, podréis besaros y pasear de la mano.'],
+      ['⛵ Barco y bodega', 'Toca el barco en el muelle para zarpar o bajar a la bodega. Navega con el joystick o tocando el mar y atraca con ⚓. En el mar, el botón te deja bajar a la bodega.'],
+      ['📖 Bitácora', 'Ahí verás la misión principal, tus amistades, tu tripulación y tu tiempo de juego.'],
+      ['💾 Partidas', 'Tienes 3 ranuras de guardado en el menú principal. El juego guarda solo.'],
+    ];
+    const html = sec.map(([t, d]) => `<div class="gsec"><button class="gt" data-p="guide">${t}</button><div class="gd">${d}</div></div>`).join('');
+    this.show('guide', '❓ Guía de TheBruma', `<div class="guide">${html}</div>`);
+  }
+
+  // ------------------------------------------------------------------ regalos
+  openGift(npc) {
+    const p = this.g.player;
+    this.giftTo = npc;
+    const items = Object.entries(p.inv).filter(([id, n]) => n > 0 && ITEMS[id] && ITEMS[id].type !== 'equip');
+    const html = items.length
+      ? `<div class="bag">${items.map(([id, n]) => `<button class="cell" data-p="gift" data-id="${id}"><span>${ITEMS[id].icon}</span>${n > 1 ? `<b>${n}</b>` : ''}</button>`).join('')}</div><p class="muted small">La comida cocinada y lo que le gusta a cada persona sube más la amistad.</p>`
+      : '<p class="muted">No tienes nada que regalar.</p>';
+    this.show('gift', `🎁 Regalo para ${esc(npc.name)}`, html);
+  }
+}

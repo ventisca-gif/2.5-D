@@ -116,6 +116,80 @@ class Part {
 
 const shade = (c, k) => new THREE.Color(c).multiplyScalar(k).getHex();
 
+// Peinados (con sombrero se omiten las partes de arriba)
+function hairStyle(H, style, c, hat, hood) {
+  const top = !hat;
+  const base = () => {
+    if (top) H.add(rbox(0.29, 0.09, 0.27, 0.045), c, 0, 0.27, -0.005);
+    if (!hood) {
+      H.add(rbox(0.285, 0.17, 0.06, 0.03), c, 0, 0.19, -0.115);
+      H.add(rbox(0.05, 0.12, 0.2, 0.02), c, -0.135, 0.2, -0.02);
+      H.add(rbox(0.05, 0.12, 0.2, 0.02), c, 0.135, 0.2, -0.02);
+    }
+  };
+  const fringe = () => { if (top) H.add(rbox(0.22, 0.05, 0.06, 0.02), c, 0.02, 0.265, 0.11, 0.35, 0, -0.12); };
+  if (hood) {
+    if (style === 'largo' || style === 'trenza' || style === 'rizos') H.add(rbox(0.12, 0.2, 0.04, 0.02), c, 0.07, 0.04, 0.12);
+    return;
+  }
+  switch (style) {
+    case 'corto': base(); fringe(); break;
+    case 'punta':
+      base();
+      if (top) for (let i = 0; i < 6; i++) H.add(cone(0.04, 0.12, 5), c, -0.1 + (i % 3) * 0.1, 0.32, -0.06 + Math.floor(i / 3) * 0.1, -0.5 + Math.floor(i / 3) * 0.6, 0, (i % 3 - 1) * -0.35);
+      break;
+    case 'cresta':
+      H.add(rbox(0.285, 0.12, 0.05, 0.02), shade(c, 0.6), 0, 0.17, -0.12);
+      if (top) H.add(rbox(0.06, 0.14, 0.3, 0.025), c, 0, 0.32, -0.01);
+      break;
+    case 'coleta':
+      base(); fringe();
+      H.add(sph(0.045, 8, 6), c, 0, 0.2, -0.15);
+      H.add(cap(0.035, 0.14), c, 0, 0.08, -0.17, 0.2, 0, 0);
+      break;
+    case 'rizado':
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2, y = 0.22 + (i % 2) * 0.05;
+        if (!top && Math.cos(a) > -0.2) continue;
+        H.add(sph(0.055, 8, 6), c, Math.sin(a) * 0.13, y, Math.cos(a) * 0.11 - 0.02);
+      }
+      if (top) H.add(sph(0.12, 10, 8), c, 0, 0.27, -0.01, 0, 0, 0, 1.15, 0.6, 1.1);
+      break;
+    case 'calvo':
+      H.add(rbox(0.285, 0.05, 0.05, 0.02), shade(c, 0.8), 0, 0.12, -0.12);
+      break;
+    case 'largo':
+      base(); fringe();
+      H.add(rbox(0.28, 0.34, 0.07, 0.03), c, 0, 0.0, -0.12);
+      for (const sx of [-1, 1]) H.add(rbox(0.05, 0.24, 0.07, 0.02), c, sx * 0.135, 0.06, 0.05);
+      break;
+    case 'trenza':
+      base(); fringe();
+      for (let i = 0; i < 6; i++) H.add(sph(0.038 - i * 0.003, 8, 6), c, 0, 0.12 - i * 0.065, -0.16 - i * 0.004);
+      H.add(torus(0.025, 0.008), 0xc83a5a, 0, -0.24, -0.17, Math.PI / 2, 0, 0);
+      break;
+    case 'mono':
+      base(); fringe();
+      if (top) { H.add(sph(0.075, 10, 8), c, 0, 0.33, -0.08); H.add(torus(0.05, 0.01), 0xc83a5a, 0, 0.3, -0.07, 1.0, 0, 0); }
+      else H.add(sph(0.065, 10, 8), c, 0, 0.18, -0.17);
+      break;
+    case 'melena':
+      if (top) H.add(rbox(0.31, 0.1, 0.29, 0.045), c, 0, 0.27, -0.01);
+      H.add(rbox(0.31, 0.24, 0.2, 0.06), c, 0, 0.13, -0.06);
+      fringe();
+      break;
+    case 'rizos':
+      base();
+      for (let i = 0; i < 16; i++) {
+        const a = Math.PI * 0.35 + (i / 15) * Math.PI * 1.3, y = 0.2 - (i % 3) * 0.08;
+        H.add(sph(0.05, 8, 6), c, Math.sin(a) * 0.15, y, Math.cos(a) * 0.12 - 0.03);
+      }
+      if (top) H.add(sph(0.12, 10, 8), c, 0, 0.27, -0.01, 0, 0, 0, 1.2, 0.6, 1.15);
+      break;
+    default: base();
+  }
+}
+
 // Contorno (casco invertido): misma geometría, empujada por la normal, solo caras traseras.
 export const OUTLINE = new THREE.ShaderMaterial({
   uniforms: { thick: { value: 0.012 }, color: { value: new THREE.Color(0x120d0a) } },
@@ -169,12 +243,13 @@ export function makeHumanoid2(look = {}) {
       leg.add(sph(0.068, 12, 8), boots, 0, -0.39, 0.035, 0, 0, 0, 1, 0.55, 1.45);
       leg.add(rbox(0.035, 0.03, 0.02, 0.008), trim, 0, -0.3, 0.068);
       if (look.bootCuff) leg.add(cyl(0.082, 0.076, 0.06, 12), shade(boots, 1.35), 0, -0.255, 0);
-      if (look.armor) {
-        leg.add(sph(0.048, 10, 8), armorC, 0, -0.2, 0.05, 0, 0, 0, 1, 1, 0.7);
+      const la = look.legArmor ?? (look.armor && !look.noAutoLegs ? armorC : null);
+      if (la) {
+        leg.add(sph(0.048, 10, 8), la, 0, -0.2, 0.05, 0, 0, 0, 1, 1, 0.7);
         leg.add(sph(0.018, 6, 4), trim, 0, -0.2, 0.085);
-        leg.add(cyl(0.066, 0.06, 0.11, 12), shade(armorC, 0.92), 0, -0.29, 0.01, 0, 0, 0, 1, 1, 1);
-        leg.add(sph(0.06, 10, 6), shade(armorC, 0.85), 0, -0.375, 0.06, 0, 0, 0, 1, 0.45, 1.1);
-        leg.add(cyl(0.064, 0.064, 0.15, 12), shade(armorC, 0.9), 0, -0.07, 0.008, 0, 0, 0, 1, 1, 0.9);
+        leg.add(cyl(0.066, 0.06, 0.11, 12), shade(la, 0.92), 0, -0.29, 0.01, 0, 0, 0, 1, 1, 1);
+        leg.add(sph(0.06, 10, 6), shade(la, 0.85), 0, -0.375, 0.06, 0, 0, 0, 1, 0.45, 1.1);
+        leg.add(cyl(0.064, 0.064, 0.15, 12), shade(la, 0.9), 0, -0.07, 0.008, 0, 0, 0, 1, 1, 0.9);
       }
     }
     legs.push(leg);
@@ -193,7 +268,12 @@ export function makeHumanoid2(look = {}) {
     torso.add(rbox(0.3, 0.05, 0.12, 0.02), bone, 0, 0.34, 0);
   } else {
     const chest = look.armor ? armorC : shirt;
-    torso.add(lathe([[0.001, 0.0], [0.135, 0.0], [0.148, 0.08], [0.17, 0.2], [0.175, 0.29], [0.15, 0.35], [0.09, 0.385], [0.001, 0.39]]), chest, 0, 0, 0, 0, 0, 0, 1, 1, 0.74);
+    const fx = look.female ? 0.92 : 1;
+    torso.add(lathe([[0.001, 0.0], [0.135, 0.0], [0.148, 0.08], [0.17, 0.2], [0.175, 0.29], [0.15, 0.35], [0.09, 0.385], [0.001, 0.39]]), chest, 0, 0, 0, 0, 0, 0, fx, 1, 0.74);
+    if (look.female) {
+      const bc = look.coat ? (look.vest ?? shirt) : chest;
+      for (const sx of [-1, 1]) torso.add(sph(0.058, 12, 8), bc, sx * 0.062, 0.245, 0.095, 0, 0, 0, 1, 0.9, 0.85);
+    }
     if (look.armor) {
       torso.add(torus(0.172, 0.014), trim, 0, 0.27, 0, Math.PI / 2, 0, 0, 1, 0.74, 1);
       torso.add(rbox(0.06, 0.22, 0.03, 0.012), trim, 0, 0.17, 0.122);
@@ -336,6 +416,24 @@ export function makeHumanoid2(look = {}) {
     arms.push(arm);
   }
 
+  // ---------------- escudo en el brazo izquierdo
+  if (look.shield && !bone) {
+    const sh = look.shield, a = arms[0];
+    if (sh.type === 'round') {
+      a.add(cyl(0.17, 0.17, 0.035, 18), sh.color, -0.075, -0.2, 0.03, 0, 0, Math.PI / 2);
+      for (const dz of [-0.06, 0.06]) a.add(rbox(0.006, 0.3, 0.012, 0.003), shade(sh.color, 0.7), -0.094, -0.2, 0.03 + dz);
+      a.add(torus(0.17, 0.016), sh.rim, -0.09, -0.2, 0.03, 0, Math.PI / 2, 0);
+      a.add(sph(0.045, 10, 8), sh.boss, -0.1, -0.2, 0.03, 0, 0, 0, 0.6, 1, 1);
+      for (let i = 0; i < 6; i++) { const t = (i / 6) * Math.PI * 2; a.add(sph(0.01, 4, 3), sh.rim, -0.096, -0.2 + Math.sin(t) * 0.13, 0.03 + Math.cos(t) * 0.13); }
+    } else {
+      a.add(rbox(0.03, 0.4, 0.29, 0.04), sh.rim, -0.072, -0.21, 0.03);
+      a.add(rbox(0.032, 0.36, 0.25, 0.035), sh.color, -0.082, -0.21, 0.03);
+      a.add(cone(0.12, 0.12, 4), sh.color, -0.082, -0.43, 0.03, Math.PI, Math.PI / 4, 0, 0.18, 1, 1);
+      a.add(rbox(0.02, 0.12, 0.12, 0.02), sh.boss, -0.1, -0.2, 0.03, Math.PI / 4, 0, 0);
+      a.add(rbox(0.02, 0.2, 0.025, 0.008), shade(sh.rim, 1.2), -0.1, -0.2, 0.03);
+    }
+  }
+
   // ---------------- arma en la mano derecha
   let weapon = null;
   if (look.sword) {
@@ -344,7 +442,7 @@ export function makeHumanoid2(look = {}) {
     w.add(cyl(0.016, 0.016, 0.09, 6), 0x4a2a14, 0, 0, 0);
     w.add(sph(0.024, 8, 6), look.guard ?? trim, 0, 0.055, 0);
     w.add(rbox(0.14, 0.022, 0.035, 0.008), look.guard ?? trim, 0, -0.05, 0);
-    w.add(bladeGeo(0.46, 0.05), look.blade ?? 0xdde2ea, 0, -0.06, 0, Math.PI, 0, 0);
+    w.add(bladeGeo(look.bladeLen ?? 0.46, look.bladeW ?? 0.05), look.blade ?? 0xdde2ea, 0, -0.06, 0, Math.PI, 0, 0);
     w.g.rotation.x = 0.25;
   } else if (look.spear) {
     weapon = P(arms[1].g, 0, -0.3, 0.02);
@@ -378,14 +476,17 @@ export function makeHumanoid2(look = {}) {
       head.add(rbox(0.055, 0.014, 0.01, 0.005), hairC ?? shade(skin, 0.55), s * 0.056, 0.195, 0.125, 0, 0, s * -0.12);
     }
     head.add(sph(0.022, 8, 6), shade(skin, 0.9), 0, 0.115, 0.128, 0, 0, 0, 0.9, 0.8, 0.8);
-    head.add(rbox(0.05, 0.01, 0.01, 0.004), 0x7a3a30, 0, 0.068, 0.124);
+    head.add(rbox(0.05, 0.01, 0.01, 0.004), look.female ? 0xc8505a : 0x7a3a30, 0, 0.068, 0.124);
+    if (look.female) for (const sx of [-1, 1]) head.add(rbox(0.04, 0.008, 0.012, 0.003), 0x141010, sx * 0.062, 0.178, 0.129, 0, 0, sx * 0.25);
     if (!look.beard) {
       head.add(sph(0.022, 6, 4), 0xf09a8a, -0.085, 0.1, 0.11, 0, 0, 0, 1, 0.6, 0.4);
       head.add(sph(0.022, 6, 4), 0xf09a8a, 0.085, 0.1, 0.11, 0, 0, 0, 1, 0.6, 0.4);
     }
   }
   const H = head;
-  if (hairC != null && !bone && look.hat !== 'hood') {
+  if (hairC != null && !bone && look.hairStyle) {
+    hairStyle(H, look.hairStyle, hairC, !!look.hat, look.hat === 'hood');
+  } else if (hairC != null && !bone && look.hat !== 'hood') {
     H.add(rbox(0.29, 0.1, 0.27, 0.045), hairC, 0, 0.27, -0.005);
     H.add(rbox(0.285, 0.2, 0.06, 0.03), hairC, 0, 0.18, -0.115);
     H.add(rbox(0.05, 0.13, 0.2, 0.02), hairC, -0.135, 0.2, -0.02);

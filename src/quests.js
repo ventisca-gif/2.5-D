@@ -1,4 +1,5 @@
 // Cadena de misiones principal y diálogos de los NPCs.
+import { ITEMS } from './items.js';
 
 export const QUESTS = [
   { title: 'Bienvenida a Isla Bruma', desc: 'Habla con la Alcaldesa Marisol frente al Ayuntamiento de Villarroca.', type: 'talk', target: 'marisol', giver: 'marisol' },
@@ -7,7 +8,7 @@ export const QUESTS = [
   { title: 'Rumbo a Puerto Salitre', desc: 'Baja por el camino del sur y busca a la Capitana Nerea en el muelle.', type: 'talk', target: 'nerea', giver: 'nerea', reward: { gold: 0, xp: 20 } },
   { title: 'Cangrejos en la arena', desc: 'Elimina 4 cangrejos en las playas de la isla.', type: 'kill', target: 'crab', count: 4, giver: 'nerea', reward: { gold: 35, xp: 50 } },
   { title: 'Jabalíes del Pedregal', desc: 'Lucía pide ayuda: derrota 3 jabalíes en el Pedregal del Oeste.', type: 'kill', target: 'boar', count: 3, giver: 'lucia', reward: { gold: 40, xp: 70 } },
-  { title: 'Piedra para la forja', desc: 'Pica rocas y lleva 4 de piedra al Herrero Tadeo.', type: 'gather', target: 'stone', count: 4, giver: 'tadeo', reward: { gold: 30, xp: 60, weapon: 1 } },
+  { title: 'Piedra para la forja', desc: 'Pica rocas y lleva 4 de piedra al Herrero Tadeo.', type: 'gather', target: 'stone', count: 4, giver: 'tadeo', reward: { gold: 30, xp: 60, item: 'espada_hierro' } },
   { title: 'La tripulación maldita', desc: 'Derrota 5 piratas esqueleto en la Cala de los Huesos (este).', type: 'kill', target: 'skeleton', count: 5, giver: 'nerea', reward: { gold: 80, xp: 140 } },
   { title: 'El Capitán Huesoamargo', desc: 'Vence al Capitán Huesoamargo junto al barco hundido de la cala.', type: 'kill', target: 'boss', count: 1, giver: 'nerea', reward: { gold: 250, xp: 400 } },
   { title: 'El tesoro de la Isla Calavera', desc: 'Sube al barco en el muelle de Puerto Salitre, navega al sureste hasta la Isla Calavera y abre el cofre maldito.', type: 'chest', target: 'calavera_cofre', reward: { gold: 0, xp: 250 } },
@@ -16,8 +17,8 @@ export const QUESTS = [
 
 export const NPC_LINES = {
   marisol: ['Villarroca prospera gracias a gente valiente como tú.', 'Las murallas nos protegen, pero el mar trae problemas.'],
-  bruno: ['Con buena madera se construyen casas... ¡y barcos!', 'Los robles del norte dan la mejor madera.'],
-  tadeo: ['El acero no miente. Trae oro y piedra y mejoraré tu equipo.', '¡Clang, clang! Perdona, no te oía.'],
+  bruno: ['Con buena madera se construyen casas... ¡y barcos! Usa mi banco cuando quieras.', 'Los robles del norte dan la mejor madera.'],
+  tadeo: ['El acero no miente. Tráeme hierro, plata u oro y te forjaré armaduras dignas de un rey.', '¡Clang, clang! Perdona, no te oía.'],
   rosa: ['¡Bienvenido a El Ancla Torcida! Aquí siempre hay sopa caliente.', 'Un trago de ron curativo y como nuevo.'],
   nerea: ['El mar es libre, pero no gratis.', 'Mi barco, la Gaviota Negra, está amarrado en el muelle. Súbete cuando quieras y navega con el joystick.'],
   ilyas: ['Compro madera y piedra a buen precio. ¡Palabra de mercader!', 'Telas, especias, mapas... y algún que otro rumor.'],
@@ -32,7 +33,7 @@ export const NPC_LINES = {
   lope: ['Registro cada casa, cada barco y cada moneda de Villarroca.', 'La alcaldesa trabaja sin descanso. Yo, con mucho papeleo.'],
   ines: ['La sopa de Rosa es la mejor de la isla.', 'Mi marido es pescador; zarpa antes del alba.'],
   telmo: ['♪ Oh, Isla Bruma, de brumas y velas... ♪', '¿Una canción? Por una moneda te canto la balada del Capitán Huesoamargo.'],
-  nico: ['El maestro Tadeo dice que algún día forjaré espadas como él.', 'Cuidado, ¡la forja quema!'],
+  nico: ['El maestro Tadeo me deja usar la forja. ¿Te forjo algo?', 'Cuidado, ¡la forja quema!'],
   coral: ['Bienvenido a la Sirena Tuerta, marinero.', 'Aquí el ron es fuerte y las historias, más.'],
   quino: ['He navegado hasta Isla Tortuga. Allí los contrabandistas venden barato.', 'En el mar, si sopla el viento, todo se arregla.'],
   olga: ['Dicen que el cofre de la Isla Calavera está maldito... a mí me da igual.', 'Mi espada y yo hemos visto siete mares.'],
@@ -85,7 +86,7 @@ export function dialogFor(id, G) {
     if (have >= cur.count) {
       text = id === 'bruno'
         ? '¡Madera de primera! Con esto repararé los tejados. Por cierto, la Capitana Nerea busca gente en Puerto Salitre, al sur.'
-        : '¡Buena piedra! Déjame... ¡Listo! Tu arma es ahora más afilada. Nerea te espera en el puerto: hay piratas esqueleto en la cala del este.';
+        : '¡Buena piedra! Toma, te he forjado una espada de hierro. Tráeme menas y forjaré lo que quieras. Nerea te espera en el puerto: hay piratas esqueleto en la cala del este.';
       opts.push({ label: `Entregar ${cur.count} de ${res}`, action: () => { G.player.inv[cur.target] -= cur.count; G.advanceQuest(); } });
     } else {
       text = `Necesito ${cur.count} de ${res}. Tienes ${have}. ${cur.target === 'wood' ? 'Toca un árbol para talarlo.' : 'Toca una roca para picarla.'}`;
@@ -96,23 +97,42 @@ export function dialogFor(id, G) {
 
   // tiendas y servicios
   const P = G.player;
-  if (id === 'tadeo') {
-    const wc = 20 + P.weapon * 25, ws = 2 + P.weapon * 2;
-    const ac = 20 + P.armor * 25, aw = 2 + P.armor * 2;
-    text = text || NPC_LINES.tadeo[0];
-    opts.push({ label: `Mejorar arma Nv.${P.weapon + 1} (${wc} oro, ${ws} piedra)`, action: () => G.buy({ gold: wc, stone: ws }, () => { P.weapon++; G.toast('⚔️ Arma mejorada'); }) });
-    opts.push({ label: `Mejorar armadura Nv.${P.armor + 1} (${ac} oro, ${aw} madera)`, action: () => G.buy({ gold: ac, wood: aw }, () => { P.armor++; P.recalc(); G.toast('🛡️ Armadura mejorada'); }) });
+  const sell = (item, price, label) => opts.push({ label: label || `${ITEMS[item].icon} ${ITEMS[item].name} (${price} oro)`, action: () => G.buy({ gold: price }, () => { G.give(item, 1); G.toast(`${ITEMS[item].icon} +1 ${ITEMS[item].name}`); }) });
+  if (id === 'tadeo' || id === 'nico') {
+    text = text || NPC_LINES[id][0];
+    opts.push({ label: '⚒️ Forjar equipo', action: () => G.panels.openCraft('forja') });
+  } else if (id === 'bruno') {
+    text = text || NPC_LINES.bruno[0];
+    opts.push({ label: '🪚 Banco de carpintero', action: () => G.panels.openCraft('banco') });
   } else if (id === 'mara') {
     text = text || NPC_LINES.mara[Math.floor(Math.random() * 2)];
-    opts.push({ label: 'Ron de contrabando (10 oro)', action: () => G.buy({ gold: 10 }, () => { P.inv.potion++; G.toast('🍶 +1 Ron curativo'); }) });
+    sell('potion', 10, '🍶 Ron de contrabando (10 oro)');
+    sell('sable_corsario', 260);
+    sell('tricornio', 120);
+    sell('amuleto_coral', 200);
   } else if (id === 'rosa' || id === 'coral') {
     text = text || NPC_LINES[id][Math.floor(Math.random() * 2)];
-    opts.push({ label: 'Ron curativo (15 oro)', action: () => G.buy({ gold: 15 }, () => { P.inv.potion++; G.toast('🍶 +1 Ron curativo'); }) });
-    opts.push({ label: 'Sopa caliente: curar todo (5 oro)', action: () => G.buy({ gold: 5 }, () => { P.hp = P.maxHp; G.toast('❤️ Salud al máximo'); }) });
+    sell('potion', 15);
+    sell('f_meat', 12);
+    sell('f_bread', 6);
+    if (id === 'coral') sell('f_fish', 12);
+    opts.push({ label: '🍲 Sopa caliente: curar todo (5 oro)', action: () => G.buy({ gold: 5 }, () => { P.hp = P.maxHp; G.toast('❤️ Salud al máximo'); }) });
+  } else if (id === 'lucia') {
+    text = text || NPC_LINES.lucia[1];
+    sell('wheat', 3);
+    sell('mushroom', 4);
+    sell('apple', 2);
+  } else if (id === 'gaspar') {
+    sell('fish', 5);
+  } else if (id === 'nerea' && QUESTS[G.quest.stage] && G.quest.stage >= 8) {
+    sell('casaca_corsario', 220);
   } else if (id === 'ilyas') {
     text = text || NPC_LINES.ilyas[0];
-    opts.push({ label: `Vender madera (${P.inv.wood} × 3 oro)`, action: () => { const n = P.inv.wood; if (!n) return G.toast('No tienes madera'); P.inv.wood = 0; P.gold += n * 3; G.sfx('coin'); G.toast(`+${n * 3} oro`); } });
-    opts.push({ label: `Vender piedra (${P.inv.stone} × 4 oro)`, action: () => { const n = P.inv.stone; if (!n) return G.toast('No tienes piedra'); P.inv.stone = 0; P.gold += n * 4; G.sfx('coin'); G.toast(`+${n * 4} oro`); } });
+    sell('cloth', 6);
+    sell('leather', 10);
+    const mats = Object.entries(P.inv).filter(([k, n]) => n > 0 && ITEMS[k] && ITEMS[k].type === 'mat');
+    const total = mats.reduce((a, [k, n]) => a + n * ITEMS[k].value, 0);
+    opts.push({ label: `💰 Vender materiales (${total} oro)`, action: () => { if (!total) return G.toast('No tienes materiales'); for (const [k] of mats) P.inv[k] = 0; P.gold += total; G.sfx('coin'); G.toast(`+${total} oro`); } });
   }
   if (!text) {
     const lines = NPC_LINES[id] || ['...'];

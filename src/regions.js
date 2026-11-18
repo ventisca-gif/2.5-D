@@ -203,6 +203,15 @@ export const ROOMS = [
     npcs: [],
   },
   {
+    id: 'bodega', name: 'Bodega de la Gaviota Negra', w: 8, d: 5, floor: 0x6a4a2e, wall: 0x5a3a22, wood: 0x3a2414, noBuilding: true,
+    items: [
+      ['bed', 7, 1, 0, 1, 2], ['bed', 6, 1, 0, 1, 2], ['barrel', 0, 0], ['barrel', 1, 0], ['crate', 0, 1], ['fireplace', 3, 0, 0, 1, 1, true],
+      ['table', 2, 2], ['stool', 1, 2, 0, 1, 1, false], ['stool', 3, 2, 0, 1, 1, false], ['map', 5, 0, 0, 1, 1, false],
+      ['wheel', 0, 3, Math.PI / 2, 1, 1, false], ['sacks', 7, 4], ['window', 4, 0, 0, 1, 1, false],
+    ],
+    npcs: [],
+  },
+  {
     id: 'granja', name: 'Casa de la Granja', w: 7, d: 5, floor: 0xb08a5a, wall: 0xf0e0b8, wood: 0x6a4428,
     items: [['hay', 0, 0], ['hay', 0, 1], ['bed', 6, 1, Math.PI / 2, 1, 2], ['table', 3, 1], ['stool', 3, 2, 0, 1, 1, false], ['barrel', 6, 4], ['fireplace', 3, 0, 0, 1, 1, true], ['window', 5, 0, 0, 1, 1, false]],
     npcs: [{ id: 'ramon', name: 'Abuelo Ramón', x: 2, z: 2, wander: 1, look: { shirt: 0x7a6a4a, pants: 0x4a3a2a, hair: 0xe0e0e0, beard: 0xe8e8e8, hat: 'straw', skin: 0xe0aa80 } }],
@@ -213,8 +222,8 @@ export function makeInteriors(buildings) {
   const SIDE = { s: [0, 1], n: [0, -1], e: [1, 0], w: [-1, 0] };
   const out = [];
   ROOMS.forEach((room, i) => {
-    const b = buildings.find((bb) => bb.id === room.id);
-    if (!b) return;
+    const b = room.noBuilding ? null : buildings.find((bb) => bb.id === room.id);
+    if (!b && !room.noBuilding) return;
     const X = INTERIOR_X0 + i * ROOM_STRIDE, Z = 0;
     const { w, d } = room;
     const blocked = new Uint8Array(w * d);
@@ -229,9 +238,10 @@ export function makeInteriors(buildings) {
     }
     const exit = { x: X + Math.floor(w / 2), z: Z + d };
     // puerta exterior
-    const [nx, nz] = SIDE[b.door];
-    let doorX, doorZ;
-    if (b.door === 's' || b.door === 'n') {
+    const [nx, nz] = b ? SIDE[b.door] : [0, 0];
+    let doorX = null, doorZ = null;
+    if (!b) { /* sin puerta exterior (bodega del barco) */ }
+    else if (b.door === 's' || b.door === 'n') {
       doorX = Math.floor(b.x0 + (b.w - 1) / 2);
       doorZ = b.door === 's' ? b.z0 + b.d - 1 : b.z0;
     } else {
@@ -240,7 +250,7 @@ export function makeInteriors(buildings) {
     }
     const R = {
       kind: 'interior', id: room.id, name: room.name, room, X, Z, w, d, blocked, exit, building: b,
-      door: { x: doorX, z: doorZ }, front: { x: doorX + nx, z: doorZ + nz },
+      door: b ? { x: doorX, z: doorZ } : null, front: b ? { x: doorX + nx, z: doorZ + nz } : null,
       inside: { x: exit.x, z: exit.z - 1 },
       npcs: room.npcs.map((n) => ({ ...n, x: X + n.x, z: Z + n.z })),
     };

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0e1420">
-<title>Isla Bruma</title>
+<title>TheBruma</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,6 +19,7 @@
         <div id="stats" class="panel">
           <div class="r1"><span class="crest">⚜</span><span id="pname">AVENTURERO</span><span id="plvl">NV. 1</span><span class="res"><i class="coin"></i><b id="gold">0</b></span></div>
           <div class="bar hp"><div id="hpfill"></div><span id="hptext">60 / 60</span></div>
+          <div class="bar st"><div id="stfill"></div></div>
           <div class="bar xp"><div id="xpfill"></div></div>
           <div class="r2"><span>🪵 <b id="wood">0</b></span><span>🪨 <b id="stone">0</b></span><span>🍶 <b id="potions">0</b></span><span>⚔ <b id="atk">0</b></span></div>
           <div class="r3"><span id="area">VILLARROCA</span><span id="clock">☀ 08:00</span><span id="coords">50, 53</span></div>
@@ -31,8 +32,14 @@
       </div>
     </div>
     <div id="minimapWrap" class="panel"><canvas id="minimap" width="200" height="200"></canvas><div id="mapHint">Mapa</div></div>
+    <div id="sideBtns">
+      <button id="btnBag" class="sbtn" aria-label="Mochila">🎒<small>Mochila</small></button>
+      <button id="btnLog" class="sbtn" aria-label="Bitácora">📖<small>Bitácora</small></button>
+      <button id="btnGuide" class="sbtn" aria-label="Guía">❓<small>Guía</small></button>
+    </div>
     <div id="joy"><div id="joyKnob"></div></div>
     <div id="actions">
+      <button id="btnRun" class="abtn"><span>🏃</span><small>Correr</small></button>
       <button id="btnPotion" class="abtn"><span>🍶</span><small id="potCount">0</small></button>
       <button id="btnAction" class="abtn big"><span id="actIcon">⚔️</span><small id="actLabel">Atacar</small></button>
     </div>
@@ -47,15 +54,16 @@
 
   <div id="menu" class="hidden">
     <div class="mbox panel">
-      <h2>Isla Bruma</h2>
+      <h2>TheBruma</h2>
       <div id="mstats"></div>
       <div class="mbtns">
         <button data-act="resume">Continuar</button>
         <button data-act="save">Guardar partida</button>
         <button data-act="sound">Sonido: Sí</button>
         <button data-act="quality">Calidad: Media</button>
-        <button data-act="help">Cómo jugar</button>
-        <button data-act="reset" class="danger">Borrar partida</button>
+        <button data-act="help">❓ Guía</button>
+        <button data-act="title">⚓ Menú principal</button>
+        <button data-act="reset" class="danger">Borrar esta partida</button>
         <button data-act="exit" class="android-only">Salir del juego</button>
       </div>
       <div id="help" class="hidden">
@@ -71,24 +79,33 @@
   <div id="start">
     <div class="sbox">
       <div class="logo">
-        <div class="l1">ISLA BRUMA</div>
-        <div class="l2">⚔ Espadas y Velas ⚓</div>
+        <div class="l0">⚓</div>
+        <div class="l1">TheBruma</div>
+        <div class="l2">⚔ Espadas, velas y bruma ☠</div>
       </div>
-      <div class="creator panel">
-        <div class="ctitle">Un traje a tu medida</div>
+      <div id="scrSlots" class="board">
+        <div class="btitle">☠ Elige tu partida ☠</div>
+        <div id="slots"></div>
+        <div class="brow"><button id="btnGuideMenu" class="wbtn">❓ Guía del juego</button></div>
+      </div>
+      <div id="scrCreate" class="board hidden">
+        <div class="btitle">Crea tu aventurero</div>
         <label class="field">Nombre<input id="nameInput" maxlength="14" value="Aventurero" autocomplete="off"></label>
-        <div id="outfits"></div>
-        <div id="skins"></div>
-        <div class="sbtns">
-          <button id="btnNew" class="primary">Nueva partida</button>
-          <button id="btnContinue" class="hidden">Continuar</button>
-        </div>
+        <div class="crow"><span>Género</span><div id="genders" class="opts"></div></div>
+        <div class="crow"><span>Peinado</span><div id="hairs" class="opts"></div></div>
+        <div class="crow"><span>Pelo</span><div id="hairCols" class="opts"></div></div>
+        <div class="crow"><span>Piel</span><div id="skins" class="opts"></div></div>
+        <div class="crow"><span>Ropa</span><div id="clothes" class="opts"></div></div>
+        <div class="crow" id="beardRow"><span>Barba</span><div class="opts"><button id="btnBeard" class="copt">Sin barba</button></div></div>
+        <div class="sbtns"><button id="btnBack" class="wbtn">← Volver</button><button id="btnNew" class="wbtn primary">⚓ ¡Zarpar!</button></div>
       </div>
-      <div class="foot">RPG medieval y pirata · 2.5D isométrico</div>
+      <div class="foot">TheBruma · RPG medieval y pirata 2.5D</div>
     </div>
   </div>
 
-  <div id="loading"><div class="spin"></div><div>Generando Isla Bruma…</div></div>
+  <div id="panel" class="hidden"></div>
+
+  <div id="loading"><div class="spin"></div><div>Preparando TheBruma…</div></div>
 </div>
 <script src="game.js"></script>
 </body>

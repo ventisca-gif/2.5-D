@@ -14,6 +14,9 @@ import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
 import { makeIslets, makeInteriors, attachRegions } from './regions.js';
 import { buildRoom } from './interiors.js';
+import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop, crewGear, crewTier, HAIR_M as HAIRM, HAIR_F as HAIRF, HAIR_COLORS as HAIRC, SKINS as SKINC, CLOTHES as CLOTHC } from './items.js';
+import { npcLevel, RECRUITABLE, ROMANCE, MAX_CREW, friendLevel, heartsText, CHAT_LINES, CHAT_REPLIES, ROMANCE_LINES, CONFESS_YES, CONFESS_NO, DUEL_LINES, ANGRY_LINES, GIFT_LIKES } from './social.js';
+import { Panels, fmtTime } from './panels.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -22,6 +25,9 @@ const OUTF = OUTFITS2;
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'islabruma_save_v1';
 const SETTINGS_KEY = 'islabruma_settings_v1';
+const SLOT_KEY = (i) => 'thebruma_slot_' + i;
+const DEFAULT_AP = { gender: 'm', hair: 0, hairColor: 1, skin: 1, clothes: 0, beard: false };
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && window.innerWidth < 1100);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const smoothstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -110,20 +116,21 @@ class Actor {
 
 class Player extends Actor {
   constructor(game, data) {
-    const look = { ...OUTF[data.outfit].look, skin: SKINS[data.skin] };
-    super(game, HUM(look), data.x, data.z);
+    const ap = { ...DEFAULT_AP, ...(data.ap || {}) };
+    const equip = data.equip || { weapon: 'espada_madera' };
+    super(game, HUM({ ...buildLook(ap, equip), noAutoLegs: true }), data.x, data.z);
     this.name = data.name;
-    this.outfit = data.outfit;
-    this.skin = data.skin;
+    this.ap = ap;
+    this.equip = equip;
     this.level = data.level || 1;
     this.xp = data.xp || 0;
     this.gold = data.gold ?? 10;
-    this.weapon = data.weapon || 0;
-    this.armor = data.armor || 0;
     this.inv = { wood: 0, stone: 0, potion: 2, ...(data.inv || {}) };
     this.speed = 3.4;
+    this.running = false;
     this.recalc();
     this.hp = data.hp ?? this.maxHp;
+    this.stamina = this.maxSt;
     this.target = null;
     this.attackCd = 0;
     this.lastCombat = -99;
@@ -134,28 +141,34 @@ class Player extends Actor {
     this.regenAcc = 0;
     this.label = game.ui.makeLabel('player', this.name);
   }
-  setLook(outfit, skin) {
-    this.outfit = outfit;
-    this.skin = skin;
-    this.g.scene.remove(this.model.root);
-    this.model = HUM({ ...OUTF[outfit].look, skin: SKINS[skin] });
-    this.g.scene.add(this.model.root);
+  refreshLook() {
+    const old = this.model.root;
+    const parent = old.parent || this.g.scene;
+    parent.remove(old);
+    this.model = HUM({ ...buildLook(this.ap, this.equip), noAutoLegs: true });
+    this.model.root.position.copy(old.position);
+    this.model.root.rotation.copy(old.rotation);
+    parent.add(this.model.root);
   }
   recalc() {
-    this.maxHp = 60 + (this.level - 1) * 14 + this.armor * 22;
+    const gs = gearStats(this.equip);
+    this.maxHp = 60 + (this.level - 1) * 12 + gs.hp;
+    this.maxSt = 100 + (this.level - 1) * 2;
     if (this.hp > this.maxHp) this.hp = this.maxHp;
   }
-  get atk() { return 7 + (this.level - 1) * 2.5 + this.weapon * 5; }
-  get def() { return this.armor * 2; }
+  get atk() { return 5 + (this.level - 1) * 2 + gearStats(this.equip).atk; }
+  get def() { return gearStats(this.equip).def; }
   xpNext() { const l = this.level - 1; return 25 + l * 20 + l * l * 6; }
   gainXp(n) {
+    if (this.level >= MAX_LEVEL) { this.xp = 0; return; }
     this.xp += n;
-    while (this.xp >= this.xpNext()) {
+    while (this.level < MAX_LEVEL && this.xp >= this.xpNext()) {
       this.xp -= this.xpNext();
       this.level++;
       this.recalc();
       this.hp = this.maxHp;
-      this.g.ui.toast(`⭐ ¡Nivel ${this.level}!`);
+      this.stamina = this.maxSt;
+      this.g.ui.toast(`⭐ ¡Nivel ${this.level}!${this.level >= MAX_LEVEL ? ' (máximo)' : ''}`);
       this.g.ui.float('¡NIVEL!', 'crit', this.x, 1.6, this.z);
       sfx('level');
     }
@@ -190,8 +203,8 @@ class Player extends Actor {
         this.pendingHit = null;
         if (!e.dead && this.dist(e) < 2.2) {
           const crit = Math.random() < 0.12;
-          const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1)));
-          g.damageEnemy(e, dmg, crit);
+          const dmg = Math.max(1, Math.round(this.atk * (0.85 + Math.random() * 0.3) * (crit ? 1.8 : 1) * (this.pendingWeak ? 0.5 : 1)));
+          if (e.isNPC) g.damageNPC(e, dmg, crit); else g.damageEnemy(e, dmg, crit);
         }
       }
     }
@@ -224,6 +237,17 @@ class Player extends Actor {
       this.updateTarget(dt);
     }
     this.stepMove(dt);
+    // correr y estamina
+    const wantRun = this.running || g.keys.has('shift');
+    if (wantRun && this.st.moving && this.stamina > 0 && !this.exhausted) {
+      this.speed = 5.6;
+      this.stamina -= 16 * dt;
+      if (this.stamina <= 0) { this.stamina = 0; this.exhausted = true; g.ui.toast('😮‍💨 Sin aliento'); }
+    } else {
+      this.speed = 3.4;
+      this.stamina = Math.min(this.maxSt, this.stamina + (this.st.moving ? 9 : 16) * dt);
+      if (this.exhausted && this.stamina > 25) this.exhausted = false;
+    }
 
     // regeneración fuera de combate
     if (!this.inCombat() && this.hp < this.maxHp) {
@@ -242,18 +266,16 @@ class Player extends Actor {
     const t = this.target;
     if (t.kind === 'enemy') {
       const e = t.ref;
-      if (e.dead) {
+      if (e.dead || (e.isNPC && !e.fight)) {
         this.target = null;
         g.selection.visible = false;
         return;
       }
       const d = this.dist(e);
-      if (d <= 1.6) {
+      if (d <= 1.7) {
         if (this.path.length > 1) this.path = [this.path[0]];
-        if (!this.path.length) {
-          this.faceTo(e.x - this.x, e.z - this.z, dt);
-          if (this.attackCd <= 0) this.attack(e);
-        }
+        this.faceTo(e.x - this.x, e.z - this.z, dt);
+        if (this.attackCd <= 0) this.attack(e);
       } else {
         this.repathT -= dt;
         if (this.repathT <= 0) {
@@ -289,7 +311,7 @@ class Player extends Actor {
       if (this.tx === r.front.x && this.tz === r.front.z && !this.path.length) { this.target = null; g.enterRoom(r); }
       else if (!this.path.length && !this.goTo(r.front.x, r.front.z)) { this.target = null; g.ui.toast('No hay camino'); }
     } else if (t.kind === 'ship') {
-      if (g.canBoard()) { this.target = null; this.path = []; g.board(); }
+      if (g.canBoard()) { this.target = null; this.path = []; g.shipMenu(); }
       else if (!this.path.length) {
         const d = g.docks.find((k) => k.id === g.boat.docked);
         if (!d || (this.tx === d.land.x && this.tz === d.land.z) || !this.goTo(d.land.x, d.land.z)) { this.target = null; if (!g.canBoard()) g.ui.toast('Acércate al barco por el muelle'); }
@@ -329,6 +351,8 @@ class Player extends Actor {
   attack(e) {
     this.attackCd = 0.72;
     this.st.attackT = 0.32;
+    this.pendingWeak = this.stamina < 6;
+    if (!this.pendingWeak) this.stamina -= 6;
     this.pendingHit = { e, t: 0.14 };
     this.lastCombat = this.g.time;
     sfx('swing');
@@ -359,15 +383,81 @@ class NPC extends Actor {
     this.wanderT = 2 + Math.random() * 4;
     this.talking = false;
     this.face = Math.PI / 4;
+    this.isNPC = true;
+    this.fight = null;
+    this.attackCd = 0;
+    this.repathT = 0;
+    this.tier = -1;
+    this.cxp = 0;
     if (def.small) model_scale(this.model, 0.72);
-    this.label = game.ui.makeLabel('npc', def.name);
+    this.label = game.ui.makeLabel('npc', def.name, { hp: true });
+    this.setStats(1);
+  }
+  setStats(level) {
+    this.level = level;
+    this.maxHp = Math.round(30 + level * 14);
+    this.hp = this.maxHp;
+    this.atk = 3 + level * 2.2;
+    if (this.label) this.g.ui.setHp(this.label, 1);
+  }
+  rebuild(look) {
+    const old = this.model.root;
+    const parent = old.parent || this.g.scene;
+    parent.remove(old);
+    this.model = HUM(look);
+    if (this.def.small) model_scale(this.model, 0.72);
+    this.model.root.position.copy(old.position);
+    this.model.root.rotation.copy(old.rotation);
+    parent.add(this.model.root);
   }
   update(dt) {
-    const g = this.g;
+    const g = this.g, p = g.player, s = g.soc(this.id);
+    this.st.holdHand = null;
+    if (this.fight) { this.updateFight(dt); return; }
     if (this.talking) {
       this.path = this.path.slice(0, 1);
-      if (!this.path.length) this.faceTo(g.player.x - this.x, g.player.z - this.z, dt);
+      if (!this.path.length) this.faceTo(p.x - this.x, p.z - this.z, dt);
+    } else if (s.partner && s.hand && !p.dead) {
+      // paseo de la mano: a la derecha del jugador
+      const f = p.face;
+      const tx = p.x + Math.cos(f) * 0.6, tz = p.z - Math.sin(f) * 0.6;
+      if (Math.hypot(tx - this.x, tz - this.z) > 6) { this.x = tx; this.z = tz; }
+      const k = Math.min(1, dt * 10);
+      this.x += (tx - this.x) * k;
+      this.z += (tz - this.z) * k;
+      this.face = lerpAngle(this.face, f, k);
+      this.path = [];
+      this.st.moving = p.st.moving;
+      this.st.holdHand = 'L';
+      p.st.holdHand = 'R';
+      return;
+    } else if (s.crew && !s.wait) {
+      this.speed = p.speed * 1.08;
+      const d = this.dist(p);
+      if (d > 18 || g.W.isInterior(p.x) !== g.W.isInterior(this.x)) { g.placeNear(this, p.tx, p.tz); return; }
+      const foe = g.crewFoe();
+      this.attackCd -= dt;
+      if (foe) {
+        const df = this.dist(foe);
+        if (df <= 1.7) {
+          if (this.path.length > 1) this.path = [this.path[0]];
+          this.faceTo(foe.x - this.x, foe.z - this.z, dt);
+          if (this.attackCd <= 0) {
+            this.attackCd = 1.1;
+            this.st.attackT = 0.32;
+            const dmg = Math.round((4 + this.level * 1.8) * (0.85 + Math.random() * 0.3));
+            setTimeout(() => { if (!foe.dead && this.dist(foe) < 2.2) g.damageEnemy(foe, dmg, false, this); }, 150);
+          }
+        } else {
+          this.repathT -= dt;
+          if (this.repathT <= 0) { this.repathT = 0.5; this.goTo(foe.tx, foe.tz, true, 1500); }
+        }
+      } else if (d > 2.4) {
+        this.repathT -= dt;
+        if (this.repathT <= 0) { this.repathT = 0.6; this.goTo(p.tx, p.tz, true, 1500, 2); }
+      }
     } else if (this.def.wander > 0) {
+      this.speed = 1.6;
       this.wanderT -= dt;
       if (this.wanderT <= 0 && !this.path.length) {
         this.wanderT = 3 + Math.random() * 6;
@@ -375,7 +465,7 @@ class NPC extends Actor {
         for (let i = 0; i < 8; i++) {
           const x = this.home.x + Math.round((Math.random() * 2 - 1) * r);
           const z = this.home.z + Math.round((Math.random() * 2 - 1) * r);
-          if (g.W.walkable(x, z) && !(x === g.player.tx && z === g.player.tz)) {
+          if (g.W.walkable(x, z) && !(x === p.tx && z === p.tz)) {
             this.goTo(x, z, false, 400);
             break;
           }
@@ -383,6 +473,35 @@ class NPC extends Actor {
       }
     } else if (!this.path.length) {
       this.face = lerpAngle(this.face, Math.PI / 4, dt * 2);
+    }
+    this.stepMove(dt);
+  }
+  updateFight(dt) {
+    const g = this.g, p = g.player;
+    const dP = this.dist(p);
+    this.speed = 2.8;
+    this.attackCd -= dt;
+    if (this.pending) {
+      this.pending.t -= dt;
+      if (this.pending.t <= 0) {
+        this.pending = null;
+        if (!p.dead && this.dist(p) < 2.0 && this.fight) g.damagePlayer(this, this.atk);
+      }
+    }
+    if (!this.fight) return;
+    if (dP > 20 || p.dead) { g.endFight(this, 'flee'); return; }
+    if (dP <= 1.65 && this.attackCd <= 0) {
+      this.faceTo(p.x - this.x, p.z - this.z, 1);
+      this.attackCd = 1.3;
+      this.st.attackT = 0.32;
+      this.pending = { t: 0.16 };
+    }
+    if (dP <= 1.3 && !p.st.moving) {
+      if (this.path.length > 1) this.path = [this.path[0]];
+      if (!this.path.length) this.faceTo(p.x - this.x, p.z - this.z, dt);
+    } else {
+      this.repathT -= dt;
+      if (this.repathT <= 0) { this.repathT = 0.4; this.goTo(p.tx, p.tz, true, 1500); }
     }
     this.stepMove(dt);
   }
@@ -488,21 +607,23 @@ class Enemy extends Actor {
       if (p.dead || fromHome > 15) {
         this.state = 'return';
         this.goTo(this.home.x, this.home.z, false, 3000);
-      } else if (dP <= 1.55) {
-        if (this.path.length > 1) this.path = [this.path[0]];
-        if (!this.path.length) {
-          this.faceTo(p.x - this.x, p.z - this.z, dt);
-          if (this.attackCd <= 0) {
-            this.attackCd = this.def.cd;
-            this.st.attackT = 0.32;
-            this.pending = { t: 0.16 };
-          }
-        }
       } else {
-        this.thinkT -= dt;
-        if (this.thinkT <= 0) {
-          this.thinkT = 0.5;
-          this.goTo(p.tx, p.tz, true, 1500);
+        // te persigue y ataca aunque te estés moviendo
+        if (dP <= 1.65 && this.attackCd <= 0) {
+          this.faceTo(p.x - this.x, p.z - this.z, 1);
+          this.attackCd = this.def.cd;
+          this.st.attackT = 0.32;
+          this.pending = { t: 0.16 };
+        }
+        if (dP <= 1.3 && !p.st.moving) {
+          if (this.path.length > 1) this.path = [this.path[0]];
+          if (!this.path.length) this.faceTo(p.x - this.x, p.z - this.z, dt);
+        } else {
+          this.thinkT -= dt;
+          if (this.thinkT <= 0) {
+            this.thinkT = p.st.moving ? 0.3 : 0.5;
+            this.goTo(p.tx, p.tz, true, 1500);
+          }
         }
       }
     } else if (this.state === 'return') {
@@ -569,7 +690,16 @@ class Game {
     this.sailing = false;
     this.flags = {};
     this.chests = [];
+    this.social = {};
+    this.stats = {};
+    this.playtime = 0;
+    this.day = 0;
+    this.slot = 1;
+    this.harvested = new Map();
+    this.stations = [];
+    this.chatT = 8;
     this.ui = new UI(this);
+    this.panels = new Panels(this);
     this.buildWorld();
     this.buildMarkers();
     this.applyQuality();
@@ -595,6 +725,7 @@ class Game {
   }
 
   sfx(n) { sfx(n); }
+  toast(t, c) { this.ui.toast(t, c); }
 
   // ------------------------------------------------------------- mundo
   buildWorld() {
@@ -643,9 +774,15 @@ class Game {
       const { group, dyn } = makeProp(p, M);
       batch.add(group);
       addDyn(dyn);
+      if (p.type === 'campfire') this.stations.push({ type: 'fuego', x: p.x, z: p.z });
+      if (p.type === 'forge') this.stations.push({ type: 'forja', x: p.x, z: p.z });
       if (p.type === 'chest') this.chests.push({ id: p.id || `cofre_${p.x}_${p.z}`, x: p.x, z: p.z, loot: p.loot || { gold: 30 } });
     }
     for (const r of this.rooms) {
+      for (const it of r.room.items) {
+        const st = { fireplace: 'fuego', forge: 'forja', workbench: 'banco' }[it[0]];
+        if (st) this.stations.push({ type: st, x: r.X + Math.round(it[1]), z: r.Z + Math.round(it[2]) });
+      }
       const { group, dyn } = buildRoom(r, M);
       batch.add(group);
       for (const d of dyn) { this.scene.add(d); this.dyn.push(d); }
@@ -755,11 +892,18 @@ class Game {
     const W = this.W;
     const npcDefs = [...W.npcs, ...this.islets.flatMap((r) => r.npcs), ...this.rooms.flatMap((r) => r.npcs)];
     for (const d of npcDefs) this.npcs.push(new NPC(this, d));
+    for (const n of this.npcs) {
+      const r = this.W.regionAt(n.home.x, n.home.z);
+      let area = this.W.areaName(n.home.x, n.home.z);
+      if (r && r.kind === 'interior') area = r.building ? this.W.areaName(r.building.x0, r.building.z0) : 'Puerto Salitre';
+      n.baseLevel = npcLevel(n.id, area);
+      n.setStats(n.baseLevel);
+    }
     for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns)]) {
       for (let i = 0; i < s.count; i++) this.enemies.push(new Enemy(this, s.type, s, s.lvl));
     }
     for (const r of this.rooms) {
-      r.doorLabel = this.ui.makeLabel('door', '🚪 ' + r.name);
+      r.doorLabel = this.ui.makeLabel('door', r.front ? '🚪 ' + r.name : '');
       r.exitLabel = this.ui.makeLabel('door', '🚪 Salir');
     }
     for (const t of W.towers) {
@@ -856,9 +1000,13 @@ class Game {
       if (!this.started) return;
       if (k === ' ' || k === 'f') { e.preventDefault(); this.doAction(); }
       if (k === 'q') this.player.usePotion();
+      if (k === 'i' || k === 'b') this.panels.isOpen ? this.panels.close() : this.panels.openInventory();
+      if (k === 'l') this.panels.isOpen ? this.panels.close() : this.panels.openBitacora();
+      if (k === 'r') this.player.running = !this.player.running;
       if (k === 'm' || k === 'tab') { e.preventDefault(); $('minimapWrap').click(); }
       if (k === 'escape') {
-        if (this.ui.dialogOpen) this.ui.closeDialog();
+        if (this.panels.isOpen) this.panels.close();
+        else if (this.ui.dialogOpen) this.ui.closeDialog();
         else this.toggleMenu();
       }
       if (this.ui.dialogOpen && /^[1-9]$/.test(k)) {
@@ -871,9 +1019,14 @@ class Game {
 
     $('btnAction').addEventListener('click', () => this.doAction());
     $('btnPotion').addEventListener('click', () => this.player.usePotion());
+    $('btnRun').addEventListener('click', () => { this.player.running = !this.player.running; sfx('click'); });
+    $('btnBag').addEventListener('click', () => { if (this.started) this.panels.openInventory(); });
+    $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
+    $('btnGuide').addEventListener('click', () => this.panels.openGuide());
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
+      if (this.panels.isOpen) { this.panels.close(); return true; }
       if (this.ui.mmBig) { $('minimapWrap').click(); return true; }
       if (this.ui.dialogOpen) { this.ui.closeDialog(); return true; }
       this.toggleMenu();
@@ -941,6 +1094,10 @@ class Game {
         p.setTarget({ kind: 'enemy', ref: best.a });
         this.selection.visible = true;
         this.selTarget = best.a;
+      } else if (best.a.fight) {
+        p.setTarget({ kind: 'enemy', ref: best.a });
+        this.selection.visible = true;
+        this.selTarget = best.a;
       } else {
         p.setTarget({ kind: 'npc', ref: best.a });
         this.selection.visible = false;
@@ -951,11 +1108,11 @@ class Game {
     const inRoom = this.roomAt(p.x, p.z);
     if (!inRoom && this.boat.docked) {
       const s = this.screenOf(this.boat.x, 1.0, this.boat.z);
-      if (Math.hypot(s.x - sx, s.y - sy) < 75 && Math.hypot(this.boat.x - p.x, this.boat.z - p.z) < 30) { p.setTarget({ kind: 'ship' }); return; }
+      if (Math.hypot(s.x - sx, s.y - sy) < 75 && Math.hypot(this.boat.x - p.x, this.boat.z - p.z) < 30) { if (this.canBoard()) this.shipMenu(); else p.setTarget({ kind: 'ship' }); return; }
     }
     if (!inRoom) {
       for (const r of this.rooms) {
-        if (Math.hypot(r.front.x - p.x, r.front.z - p.z) > 25) continue;
+        if (!r.front || Math.hypot(r.front.x - p.x, r.front.z - p.z) > 25) continue;
         const s = this.screenOf((r.door.x + r.front.x) / 2, 0.55, (r.door.z + r.front.z) / 2);
         if (Math.hypot(s.x - sx, s.y - sy) < 42) { p.setTarget({ kind: 'door', ref: r }); this.showCursor(r.front.x, r.front.z); return; }
       }
@@ -1020,7 +1177,7 @@ class Game {
 
   // ------------------------------------------------------------- interiores
   roomAt(x, z) { const r = this.W.regionAt(x, z); return r && r.kind === 'interior' ? r : null; }
-  doorAt(x, z) { return this.rooms.find((r) => r.door.x === x && r.door.z === z) || null; }
+  doorAt(x, z) { return this.rooms.find((r) => r.door && r.door.x === x && r.door.z === z) || null; }
   checkTriggers(p) {
     const r = this.roomAt(p.x, p.z);
     if (r && p.tx === r.exit.x && p.tz === r.exit.z) this.exitRoom(r);
@@ -1028,6 +1185,7 @@ class Game {
   enterRoom(r) {
     const p = this.player;
     p.x = r.inside.x; p.z = r.inside.z; p.path = []; p.target = null;
+    setTimeout(() => this.placeFollowers(p.tx, p.tz), 0);
     p.face = Math.PI;
     this.selection.visible = false;
     this.camTarget.set(p.x, 0, p.z);
@@ -1038,7 +1196,16 @@ class Game {
   }
   exitRoom(r) {
     const p = this.player;
+    if (r.id === 'bodega') {
+      if (this.holdFromSea) { this.holdFromSea = false; p.x = this.boat.x; p.z = this.boat.z; this.board(true); return; }
+      const d = this.docks.find((k) => k.id === this.boat.docked) || this.docks[0];
+      p.x = d.land.x; p.z = d.land.z; p.path = []; p.target = null;
+      this.camTarget.set(p.x, 0, p.z);
+      this.placeFollowers(p.tx, p.tz);
+      return;
+    }
     p.x = r.front.x; p.z = r.front.z; p.path = []; p.target = null;
+    setTimeout(() => this.placeFollowers(p.tx, p.tz), 0);
     p.face = Math.atan2(r.front.x - r.door.x, r.front.z - r.door.z);
     this.camTarget.set(p.x, 0, p.z);
     sfx('click');
@@ -1058,9 +1225,9 @@ class Game {
     const { lx, lz } = this.shipLocal(p.x, p.z);
     return Math.abs(lz) <= 4.2 && Math.abs(lx) <= 3.3;
   }
-  board() {
+  board(silent) {
     const p = this.player, b = this.boat;
-    this.lastDock = b.docked;
+    if (b.docked) this.lastDock = b.docked;
     this.sailing = true;
     b.docked = null;
     b.speed = 0;
@@ -1071,8 +1238,29 @@ class Game {
     p.model.root.position.set(0, 1.42, -2.75);
     p.model.root.rotation.set(0, 0, 0);
     this.viewTarget = Math.max(this.viewTarget, isMobile ? 16 : 18);
-    this.ui.toast('⛵ ¡A navegar! Joystick o toca el mar');
-    sfx('quest');
+    if (!silent) { this.ui.toast('⛵ ¡A navegar! Joystick o toca el mar'); sfx('quest'); }
+    // tripulación y pareja en cubierta
+    const deck = [[0.6, 1.4], [-0.6, 1.4], [0.6, 0.3], [-0.6, 0.3], [0.6, -0.8], [-0.6, -0.8], [0, 2.4], [0.5, 2.0], [-0.5, 2.0], [0.4, -1.6], [-0.4, -1.6]];
+    this.following().forEach((n, i) => {
+      const [x, z] = deck[i % deck.length];
+      n.onShip = true;
+      n.path = [];
+      this.ship.add(n.model.root);
+      n.model.root.position.set(x, 0.72, z);
+      n.model.root.rotation.set(0, (i % 2 ? -1 : 1) * 1.2, 0);
+      n.st.moving = false;
+      n.label.el.style.display = 'none';
+      n.label._vis = false;
+    });
+  }
+  unboardCrew(x, z) {
+    for (const n of this.npcs) {
+      if (!n.onShip) continue;
+      n.onShip = false;
+      this.scene.add(n.model.root);
+      n.model.root.rotation.set(0, 0, 0);
+      this.placeNear(n, x, z);
+    }
   }
   nearDock() {
     const b = this.boat;
@@ -1086,6 +1274,7 @@ class Game {
     this.scene.add(p.model.root);
     p.model.root.rotation.set(0, 0, 0);
     p.x = d.land.x; p.z = d.land.z; p.path = [];
+    this.unboardCrew(p.x, p.z);
     this.camTarget.set(p.x, 0, p.z);
     this.viewTarget = isMobile ? 11.5 : 13;
     this.ui.toast('⚓ ' + d.name, 'area');
@@ -1167,18 +1356,25 @@ class Game {
     const p = this.player;
     if (this.sailing) {
       const d = this.nearDock();
-      return d ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⛵', label: 'Navegar', fn: () => this.ui.toast('Usa el joystick o toca el mar') };
+      return d ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⬇️', label: 'Bodega', fn: () => this.enterHold() };
     }
     const inRoom = this.roomAt(p.x, p.z);
     if (inRoom && Math.hypot(p.x - inRoom.exit.x, p.z - inRoom.exit.z) < 2.3) return { icon: '🚪', label: 'Salir', fn: () => this.exitRoom(inRoom) };
     if (!inRoom) {
-      for (const r of this.rooms) if (Math.hypot(p.x - r.front.x, p.z - r.front.z) < 1.6) return { icon: '🚪', label: 'Entrar', fn: () => p.setTarget({ kind: 'door', ref: r }) };
-      if (this.canBoard()) return { icon: '⛵', label: 'Zarpar', fn: () => this.board() };
+      for (const r of this.rooms) if (r.front && Math.hypot(p.x - r.front.x, p.z - r.front.z) < 1.6) return { icon: '🚪', label: 'Entrar', fn: () => p.setTarget({ kind: 'door', ref: r }) };
+      if (this.canBoard()) return { icon: '⛵', label: 'Barco', fn: () => this.shipMenu() };
     }
     for (const c of this.chests) {
       if (!this.flags[c.id] && Math.max(Math.abs(c.x - p.tx), Math.abs(c.z - p.tz)) <= 1) return { icon: '🎁', label: 'Abrir', fn: () => p.setTarget({ kind: 'chest', ref: c }) };
     }
+    const stn = this.nearStation();
+    if (stn) {
+      const L = { fuego: ['🍳', 'Cocinar'], forja: ['⚒️', 'Forjar'], banco: ['🪚', 'Banco'] }[stn.type];
+      if (!(p.target && p.target.kind === 'enemy')) return { icon: L[0], label: L[1], fn: () => this.panels.openCraft(stn.type) };
+    }
     if (p.target && p.target.kind === 'enemy') return { icon: '⚔️', label: 'Atacar', fn: null };
+    const fld = this.nearField();
+    if (fld) return { icon: '🌾', label: 'Cosechar', fn: () => this.harvestWheat(fld) };
     let ne = null, nd = 5;
     for (const e of this.enemies) { if (e.dead) continue; const d = e.dist(p); if (d < nd) { nd = d; ne = e; } }
     let nn = null, nnd = 2.2;
@@ -1197,27 +1393,40 @@ class Game {
   doAction() {
     if (!this.started || this.paused || this.player.dead) return;
     if (this.ui.dialogOpen) return;
+    // atacar en movimiento (con el joystick)
+    if (this.joyVector() && !this.sailing) {
+      const p = this.player;
+      let best = null, bd = 2.0;
+      for (const e of [...this.enemies, ...this.npcs.filter((n) => n.fight)]) { if (e.dead) continue; const d = e.dist(p); if (d < bd) { bd = d; best = e; } }
+      if (best) { if (p.attackCd <= 0) { p.faceTo(best.x - p.x, best.z - p.z, 1); p.attack(best); } return; }
+    }
     const a = this.contextAction();
     if (a.fn) a.fn();
     else this.ui.toast('No hay nada cerca');
   }
 
   talkTo(n) {
+    if (n.fight) return;
+    const s = this.soc(n.id);
+    if (!s.met) { s.met = true; this.addFriend(n, 2, true); }
     const d = dialogFor(n.id, this);
     this.talkingTo = n;
     n.talking = true;
     n.path = n.path.slice(0, 1);
-    this.ui.openDialog(n.name, d.text, d.options);
+    const opts = d.options.slice();
+    const last = opts[opts.length - 1];
+    if (last && last.action === null) { opts.pop(); opts.push(...this.socialOptions(n), last); }
+    else opts.push(...this.socialOptions(n));
+    const tag = s.partner ? ' · 💗' : s.crew ? ' · ⚓' : '';
+    this.ui.openDialog(`${n.name} · Nv. ${n.level}  ${heartsText(s.f)}${tag}`, d.text, opts);
   }
 
   buy(cost, fn) {
     const p = this.player;
     if ((cost.gold || 0) > p.gold) return this.ui.toast('No tienes suficiente oro');
-    if ((cost.stone || 0) > p.inv.stone) return this.ui.toast('Te falta piedra');
-    if ((cost.wood || 0) > p.inv.wood) return this.ui.toast('Te falta madera');
+    for (const [k, v] of Object.entries(cost)) if (k !== 'gold' && (p.inv[k] || 0) < v) return this.ui.toast(`Te falta ${ITEMS[k] ? ITEMS[k].name.toLowerCase() : k}`);
     p.gold -= cost.gold || 0;
-    p.inv.stone -= cost.stone || 0;
-    p.inv.wood -= cost.wood || 0;
+    for (const [k, v] of Object.entries(cost)) if (k !== 'gold') p.inv[k] -= v;
     sfx('coin');
     fn();
     this.save();
@@ -1226,8 +1435,16 @@ class Game {
   harvest(o, kind) {
     const p = this.player;
     o.hp--;
-    if (kind === 'tree') { p.inv.wood++; this.ui.float('+1 🪵', 'info', o.x, 1.4, o.z); }
-    else { p.inv.stone++; this.ui.float('+1 🪨', 'info', o.x, 0.9, o.z); }
+    if (kind === 'tree') {
+      p.inv.wood++;
+      this.ui.float('+1 🪵', 'info', o.x, 1.4, o.z);
+      if ((o.type === 'oak' || o.type === 'autumn') && Math.random() < 0.18) this.give('apple', 1, o.x, o.z);
+    } else {
+      p.inv.stone++;
+      this.ui.float('+1 🪨', 'info', o.x, 0.9, o.z);
+      const ore = oreDrop(this.W.areaName(o.x, o.z));
+      if (ore) this.give(ore, 1, o.x, o.z);
+    }
     if (Math.random() < 0.15) { p.gold += 1; this.ui.float('+1 oro', 'gold', o.x, 1.1, o.z); }
     p.gainXp(2);
     if (o.hp <= 0) {
@@ -1248,7 +1465,7 @@ class Game {
     }
   }
 
-  damageEnemy(e, dmg, crit) {
+  damageEnemy(e, dmg, crit, byCrew) {
     const g = this;
     e.hp -= dmg;
     e.st.flash = 0.18;
@@ -1270,7 +1487,11 @@ class Game {
       this.ui.float(`+${xp} XP`, 'info', e.x, 1.2, e.z);
       sfx('coin');
       if (Math.random() < (e.type === 'boss' ? 1 : 0.08)) { p.inv.potion++; this.ui.toast('🍶 ¡Encontraste ron curativo!'); }
+      let k = 0;
+      for (const [id, ch] of DROPS[e.type] || []) if (Math.random() < ch) setTimeout(() => this.give(id, 1, e.x, e.z), 350 + 250 * k++);
+      this.stats.kills = (this.stats.kills || 0) + 1;
       p.gainXp(xp);
+      this.crewGainXp(xp);
       if (this.selTarget === e) this.selection.visible = false;
       this.onKill(e.type);
     }
@@ -1279,7 +1500,8 @@ class Game {
   damagePlayer(e, atk) {
     const p = this.player;
     if (p.dead) return;
-    const dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) - p.def));
+    const dmg = Math.max(1, Math.round(atk * (0.8 + Math.random() * 0.4) * (40 / (40 + p.def))));
+    if (e.isNPC && p.hp - dmg <= p.maxHp * 0.15) { this.endFight(e, 'lose'); return; }
     p.hp -= dmg;
     p.lastCombat = this.time;
     p.st.flash = 0.18;
@@ -1319,6 +1541,7 @@ class Game {
       setTimeout(() => this.ui.toast('⛵ La tripulación devolvió el barco a Puerto Salitre'), 1500);
     }
     for (const e of this.enemies) if (e.state === 'chase') { e.state = 'return'; e.path = []; }
+    this.placeFollowers(p.tx, p.tz);
   }
 
   // ------------------------------------------------------------- misiones
@@ -1338,7 +1561,7 @@ class Game {
     const p = this.player;
     if (cur.reward) {
       if (cur.reward.gold) p.gold += cur.reward.gold;
-      if (cur.reward.weapon) p.weapon += cur.reward.weapon;
+      if (cur.reward.item) { this.give(cur.reward.item, 1, p.x, p.z); this.ui.toast('🎁 ' + ITEMS[cur.reward.item].name); }
       if (cur.reward.xp) p.gainXp(cur.reward.xp);
       this.ui.float(`+${cur.reward.gold || 0} oro`, 'gold', p.x, 1.6, p.z);
     }
@@ -1398,53 +1621,101 @@ class Game {
     return '';
   }
 
-  // ------------------------------------------------------------- guardado
+  // ------------------------------------------------------------- guardado (3 ranuras)
+  saveData() {
+    const p = this.player;
+    for (const n of this.crew()) this.soc(n.id).lvl = n.level;
+    const pos = this.sailing
+      ? (() => { const d = this.docks.find((k) => k.id === this.lastDock) || this.docks[0]; return { x: d.land.x, z: d.land.z, boatDock: d.id }; })()
+      : { x: p.tx, z: p.tz, boatDock: this.boat.docked || this.lastDock || 'salitre' };
+    return {
+      v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
+      inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
+      playtime: Math.round(this.playtime), day: this.day, area: this.W.areaName(p.tx, p.tz), ...pos,
+    };
+  }
   save() {
     if (!this.started) return;
-    const p = this.player;
-    store(SAVE_KEY, {
-      v: 1, name: p.name, outfit: p.outfit, skin: p.skin, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
-      weapon: p.weapon, armor: p.armor, inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags,
-      ...(this.sailing
-        ? (() => { const d = this.docks.find((k) => k.id === this.lastDock) || this.docks[0]; return { x: d.land.x, z: d.land.z, boatDock: d.id }; })()
-        : { x: p.tx, z: p.tz, boatDock: this.boat.docked }),
-    });
+    store(SLOT_KEY(this.slot), this.saveData());
   }
 
-  // ------------------------------------------------------------- menús
-  initMenus(save) {
-    const outBox = $('outfits');
-    const skinBox = $('skins');
-    let outfit = 0, skin = 1;
-    const swatch = { caballero: '#2f5a9a', corsario: '#9a1f24', exploradora: '#3a7a3a', mercenario: '#4a3a5a' };
-    const refresh = () => {
-      [...outBox.children].forEach((c, i) => c.classList.toggle('sel', i === outfit));
-      [...skinBox.children].forEach((c, i) => c.classList.toggle('sel', i === skin));
-      this.player.setLook(outfit, skin);
-    };
-    OUTF.forEach((o, i) => {
-      const b = document.createElement('button');
-      b.className = 'ofit';
-      b.innerHTML = `<span class="sw" style="background:${swatch[o.id]}"></span>${o.name}`;
-      b.addEventListener('click', () => { outfit = i; sfx('click'); refresh(); });
-      outBox.appendChild(b);
-    });
-    SKINS.forEach((s, i) => {
-      const b = document.createElement('button');
-      b.className = 'skin';
-      b.style.background = '#' + s.toString(16).padStart(6, '0');
-      b.addEventListener('click', () => { skin = i; sfx('click'); refresh(); });
-      skinBox.appendChild(b);
-    });
-    refresh();
-    if (save && save.v === 1) {
-      $('btnContinue').classList.remove('hidden');
-      $('btnContinue').addEventListener('click', () => this.startGame(save));
+  // ------------------------------------------------------------- menú principal
+  initMenus() {
+    // migrar partida antigua a la ranura 1
+    const old = load(SAVE_KEY);
+    if (old && !load(SLOT_KEY(1))) {
+      store(SLOT_KEY(1), { ...old, v: 2, ap: { ...DEFAULT_AP, skin: old.skin ?? 1 }, equip: { weapon: 'espada_madera' }, playtime: 0 });
     }
+    this.ap = { ...DEFAULT_AP };
+    const renderSlots = () => {
+      const box = $('slots');
+      box.innerHTML = '';
+      for (let i = 1; i <= 3; i++) {
+        const d = load(SLOT_KEY(i));
+        const card = document.createElement('div');
+        card.className = 'slotCard' + (d ? '' : ' empty');
+        card.innerHTML = d
+          ? `<div class="sc1"><b>${String(d.name).replace(/[<>&]/g, '')}</b><span>Nv. ${d.level || 1}</span></div>
+             <div class="sc2">${d.area || 'Isla Bruma'} · ⏱ ${fmtTime(d.playtime || 0)}</div>
+             <div class="sc3"><button class="wbtn primary" data-slot="${i}" data-a="play">▶ Jugar</button><button class="wbtn danger" data-slot="${i}" data-a="del">🗑</button></div>`
+          : `<div class="sc1"><b>Ranura ${i}</b><span>vacía</span></div><div class="sc3"><button class="wbtn" data-slot="${i}" data-a="new">＋ Nueva partida</button></div>`;
+        box.appendChild(card);
+      }
+    };
+    renderSlots();
+    $('slots').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      sfx('click');
+      const i = Number(b.dataset.slot);
+      if (b.dataset.a === 'play') { this.slot = i; this.startGame(load(SLOT_KEY(i))); }
+      if (b.dataset.a === 'del' && confirm(`¿Borrar la partida de la ranura ${i}?`)) { try { localStorage.removeItem(SLOT_KEY(i)); } catch (err) { /* nada */ } renderSlots(); }
+      if (b.dataset.a === 'new') { this.slot = i; $('scrSlots').classList.add('hidden'); $('scrCreate').classList.remove('hidden'); refresh(); }
+    });
+    $('btnBack').addEventListener('click', () => { sfx('click'); $('scrCreate').classList.add('hidden'); $('scrSlots').classList.remove('hidden'); });
+    $('btnGuideMenu').addEventListener('click', () => this.panels.openGuide());
+
+    // creador de personaje
+    const opt = (boxId, list, key, render) => {
+      const box = $(boxId);
+      box.innerHTML = '';
+      list.forEach((it, i) => {
+        const b = document.createElement('button');
+        b.className = 'copt' + (this.ap[key] === i ? ' sel' : '');
+        render(b, it, i);
+        b.addEventListener('click', () => {
+          sfx('click');
+          this.ap[key] = i;
+          if (key === 'gender') this.ap.hair = 0;
+          refresh();
+        });
+        box.appendChild(b);
+      });
+    };
+    const hex = (c) => '#' + c.toString(16).padStart(6, '0');
+    const refresh = () => {
+      const ap = this.ap;
+      opt('genders', ['m', 'f'], 'genderIdx', (b, g) => { b.textContent = g === 'm' ? '♂ Chico' : '♀ Chica'; b.classList.toggle('sel', ap.gender === g); });
+      [...$('genders').children].forEach((b, i) => { b.onclick = () => { sfx('click'); ap.gender = i ? 'f' : 'm'; ap.hair = 0; ap.beard = false; refresh(); }; });
+      const hairs = ap.gender === 'f' ? HAIRF : HAIRM;
+      opt('hairs', hairs, 'hair', (b, h) => { b.textContent = h.name; });
+      opt('hairCols', HAIRC, 'hairColor', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
+      opt('skins', SKINC, 'skin', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
+      opt('clothes', CLOTHC, 'clothes', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
+      $('beardRow').classList.toggle('hidden', ap.gender === 'f');
+      $('btnBeard').textContent = ap.beard ? 'Con barba' : 'Sin barba';
+      this.player.ap = { ...ap };
+      this.player.equip = { weapon: 'espada_madera', feet: 'botas_cuero' };
+      this.player.refreshLook();
+    };
+    $('btnBeard').addEventListener('click', () => { this.ap.beard = !this.ap.beard; sfx('click'); refresh(); });
     $('btnNew').addEventListener('click', () => {
       const name = ($('nameInput').value || 'Aventurero').trim().slice(0, 14) || 'Aventurero';
       const sp = this.W.landmarks.spawn;
-      this.startGame({ v: 1, name, outfit, skin, x: sp.x, z: sp.z, quest: { stage: 0, progress: 0 }, fresh: true });
+      this.startGame({
+        v: 2, name, ap: { ...this.ap }, equip: { weapon: 'espada_madera', feet: 'botas_cuero' },
+        inv: { potion: 2, f_bread: 2 }, x: sp.x, z: sp.z, quest: { stage: 0, progress: 0 }, fresh: true,
+      });
     });
 
     if (window.AndroidBridge) document.body.classList.add('android');
@@ -1468,10 +1739,12 @@ class Game {
         this.applyQuality();
         this.refreshMenu();
       }
-      if (act === 'help') $('help').classList.toggle('hidden');
+      if (act === 'help') { this.toggleMenu(false); this.panels.openGuide(); }
+      if (act === 'title') { this.save(); location.reload(); }
       if (act === 'reset') {
-        if (confirm('¿Borrar la partida guardada y empezar de cero?')) {
-          try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* nada */ }
+        if (confirm('¿Borrar esta partida y volver al menú?')) {
+          this.started = false;
+          try { localStorage.removeItem(SLOT_KEY(this.slot)); } catch (err) { /* nada */ }
           location.reload();
         }
       }
@@ -1486,7 +1759,7 @@ class Game {
     $('mstats').innerHTML = `
       <span>Nombre: <b>${p.name.replace(/[<>&]/g, '')}</b></span><span>Nivel: <b>${p.level}</b></span>
       <span>Salud: <b>${Math.ceil(p.hp)} / ${p.maxHp}</b></span><span>Ataque: <b>${Math.round(p.atk)}</b></span>
-      <span>Arma: <b>Nv. ${p.weapon}</b></span><span>Armadura: <b>Nv. ${p.armor}</b></span>
+      <span>Armadura: <b>${p.def}</b></span><span>Tiempo: <b>${fmtTime(this.playtime)}</b></span>
       <span>Oro: <b>${p.gold}</b></span><span>XP: <b>${p.xp} / ${p.xpNext()}</b></span>`;
   }
   toggleMenu(force) {
@@ -1501,33 +1774,350 @@ class Game {
     const p = this.player;
     p.name = data.name;
     p.label.nm.textContent = data.name;
-    p.setLook(data.outfit, data.skin);
+    p.ap = { ...DEFAULT_AP, ...(data.ap || {}) };
+    p.equip = data.equip || { weapon: 'espada_madera' };
+    p.refreshLook();
     p.level = data.level || 1;
     p.xp = data.xp || 0;
     p.gold = data.gold ?? 10;
-    p.weapon = data.weapon || 0;
-    p.armor = data.armor || 0;
     p.inv = { wood: 0, stone: 0, potion: 2, ...(data.inv || {}) };
     p.recalc();
     p.hp = data.hp ?? p.maxHp;
     if (p.hp <= 0) p.hp = p.maxHp;
+    p.stamina = p.maxSt;
     p.x = data.x; p.z = data.z;
     if (!this.W.walkable(p.x, p.z)) { p.x = this.W.landmarks.spawn.x; p.z = this.W.landmarks.spawn.z; }
     this.quest = data.quest || { stage: 0, progress: 0 };
     this.flags = data.flags || {};
+    this.social = data.social || {};
+    this.stats = data.stats || {};
+    this.playtime = data.playtime || 0;
+    this.day = data.day || 0;
     const bd = this.docks.find((k) => k.id === data.boatDock) || this.docks[0];
     Object.assign(this.boat, { x: bd.shipX, z: bd.shipZ, heading: bd.heading, speed: 0, docked: bd.id });
     if (data.tod) this.tod = data.tod;
+    // tripulación guardada
+    for (const n of this.npcs) {
+      const s = this.social[n.id];
+      if (!s) continue;
+      if (s.crew) { n.setStats(Math.max(n.baseLevel, s.lvl || n.baseLevel)); this.rebuildCrewLook(n); }
+    }
+    this.placeFollowers(p.tx, p.tz);
     this.started = true;
     document.body.classList.add('playing');
     $('start').classList.add('hidden');
     $('hud').classList.remove('hidden');
     this.viewTarget = isMobile ? 11.5 : 13;
     sfx('quest');
-    setTimeout(() => this.ui.toast('Isla Bruma', 'area'), 300);
+    setTimeout(() => this.ui.toast('TheBruma', 'area'), 300);
     if (data.fresh) setTimeout(() => this.ui.toast('📜 Habla con la Alcaldesa Marisol (!)'), 1800);
     for (const e of this.enemies) e.updateColor();
     this.save();
+  }
+
+  // ------------------------------------------------------------- objetos
+  give(id, n = 1, x, z) {
+    const p = this.player;
+    p.inv[id] = (p.inv[id] || 0) + n;
+    const it = ITEMS[id];
+    if (x !== undefined && it) this.ui.float(`+${n} ${it.icon}`, 'info', x, 1.2, z);
+  }
+  equip(id) {
+    const p = this.player, e = EQUIP[id];
+    if (!e || !p.inv[id]) return;
+    const prev = p.equip[e.slot];
+    p.inv[id]--;
+    if (prev) p.inv[prev] = (p.inv[prev] || 0) + 1;
+    p.equip[e.slot] = id;
+    p.recalc();
+    p.refreshLook();
+    sfx('coin');
+  }
+  unequip(slot) {
+    const p = this.player, id = p.equip[slot];
+    if (!id) return;
+    delete p.equip[slot];
+    p.inv[id] = (p.inv[id] || 0) + 1;
+    p.recalc();
+    p.refreshLook();
+    sfx('click');
+  }
+  eat(id) {
+    const p = this.player, it = ITEMS[id];
+    if (!it || !p.inv[id]) return;
+    if (p.hp >= p.maxHp && !it.stamina) return this.ui.toast('Ya tienes la salud al máximo');
+    const h = it.type === 'heal' ? Math.round(p.maxHp * it.heal + 15) : it.heal;
+    p.inv[id]--;
+    p.hp = Math.min(p.maxHp, p.hp + h);
+    if (it.stamina) { p.stamina = p.maxSt; p.exhausted = false; }
+    this.ui.float('+' + h, 'heal', p.x, 1.4, p.z);
+    this.ui.toast(`${it.icon} ${it.name}: +${h} vida`);
+    sfx('drink');
+  }
+  craft(i) {
+    const r = RECIPES[i], p = this.player;
+    if (!r) return;
+    if (p.gold < r.gold || !Object.entries(r.need).every(([id, n]) => (p.inv[id] || 0) >= n)) return this.ui.toast('Te faltan materiales');
+    p.gold -= r.gold;
+    for (const [id, n] of Object.entries(r.need)) p.inv[id] -= n;
+    this.give(r.out, 1);
+    if (r.station === 'fuego') this.stats.cooked = (this.stats.cooked || 0) + 1;
+    else this.stats.crafted = (this.stats.crafted || 0) + 1;
+    this.ui.toast(`✨ ${ITEMS[r.out].icon} ${ITEMS[r.out].name}`);
+    sfx('level');
+  }
+  nearStation() {
+    const p = this.player;
+    for (const s of this.stations) if (Math.hypot(s.x - p.x, s.z - p.z) < 1.9) return s;
+    return null;
+  }
+  nearField() {
+    const p = this.player;
+    if (this.W.isInterior(p.x)) return null;
+    for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+      const x = p.tx + dx, z = p.tz + dz;
+      if (this.W.tile(x, z) !== T.FIELD) continue;
+      if (this.time - (this.harvested.get(x * 1000 + z) ?? -999) > 45) return { x, z };
+    }
+    return null;
+  }
+  harvestWheat(f) {
+    this.harvested.set(f.x * 1000 + f.z, this.time);
+    this.player.st.gather = 1;
+    setTimeout(() => { this.player.st.gather = 0; }, 500);
+    this.give('wheat', 1 + (Math.random() < 0.3 ? 1 : 0), f.x, f.z);
+    sfx('chop');
+  }
+
+  // ------------------------------------------------------------- amistad, duelos, tripulación, romance
+  soc(id) {
+    if (!this.social[id]) this.social[id] = { f: 0 };
+    return this.social[id];
+  }
+  crew() { return this.npcs.filter((n) => this.soc(n.id).crew); }
+  partner() { return this.npcs.find((n) => this.soc(n.id).partner); }
+  following() {
+    return this.npcs.filter((n) => { const s = this.soc(n.id); return (s.crew && !s.wait) || (s.partner && s.hand); });
+  }
+  addFriend(n, v, quiet) {
+    const s = this.soc(n.id);
+    const before = friendLevel(s.f).hearts;
+    s.f = clamp(s.f + v, -100, 100);
+    if (!quiet) this.ui.float(`${v >= 0 ? '+' : ''}${v} ❤`, v >= 0 ? 'heal' : 'dmg', n.x, n.model.height + 0.4, n.z);
+    const after = friendLevel(s.f).hearts;
+    if (after > before) { this.ui.toast(`❤ ${n.name}: ${friendLevel(s.f).name}`); sfx('quest'); }
+  }
+  socialOptions(n) {
+    const s = this.soc(n.id), o = [];
+    if (s.talkDay !== this.day) {
+      o.push({ label: '💬 Charlar', action: () => { s.talkDay = this.day; this.addFriend(n, 4); this.ui.openDialog(n.name, pick(CHAT_LINES), [{ label: 'Seguir', action: null }]); } });
+    }
+    o.push({ label: '🎁 Regalar', action: () => this.panels.openGift(n) });
+    if (RECRUITABLE.has(n.id) && !s.crew) {
+      if (s.f >= 50 && this.crew().length < MAX_CREW) o.push({ label: '⚓ Únete a mi tripulación', action: () => this.recruit(n) });
+    }
+    if (s.crew) {
+      o.push({ label: s.wait ? '▶ Sígueme' : '⏸ Espera aquí', action: () => this.toggleCrewWait(n.id) });
+      o.push({ label: '👋 Dejar la tripulación', action: () => this.dismiss(n) });
+    }
+    if (ROMANCE.has(n.id)) {
+      if (s.partner) {
+        o.push({ label: '💋 Besar', action: () => this.kiss(n) });
+        o.push({ label: s.hand ? '🤝 Soltar la mano' : '🤝 Pasear de la mano', action: () => { s.hand = !s.hand; this.ui.toast(s.hand ? `🤝 Paseas de la mano con ${n.name}` : `Soltaste la mano de ${n.name}`); } });
+        o.push({ label: '💌 Palabras bonitas', action: () => { this.addFriend(n, 1); this.ui.openDialog(n.name, pick(ROMANCE_LINES), [{ label: '❤', action: null }]); } });
+      } else if (s.f >= 70 && !this.partner()) {
+        o.push({ label: '💗 Declararse', action: () => this.confess(n) });
+      }
+    }
+    if (!s.partner) o.push({ label: '⚔️ Retar a duelo', action: () => this.startFight(n, 'duel') });
+    if (!s.partner && !s.crew) o.push({ label: '👊 Pegar', action: () => this.startFight(n, 'brawl') });
+    return o;
+  }
+  giveGift(n, id) {
+    const p = this.player;
+    if (!p.inv[id]) return;
+    p.inv[id]--;
+    const it = ITEMS[id];
+    const likes = (GIFT_LIKES[n.id] || []).includes(id);
+    const v = likes ? 15 : id.startsWith('f_') ? 10 : it.type === 'mat' && it.value >= 10 ? 7 : 4;
+    this.addFriend(n, v);
+    this.ui.openDialog(n.name, likes ? `¡¿${it.name}?! ¡Es mi favorito! Muchísimas gracias.` : `Oh, ${it.name.toLowerCase()}. ¡Gracias, qué detalle!`, [{ label: 'De nada', action: null }]);
+    sfx('coin');
+  }
+  startFight(n, mode) {
+    const p = this.player;
+    n.fight = { mode };
+    n.talking = false;
+    n.hp = n.maxHp;
+    n.attackCd = 0.8;
+    this.talkingTo = null;
+    if (mode === 'brawl') this.addFriend(n, -20);
+    this.ui.float(pick(mode === 'duel' ? DUEL_LINES : ANGRY_LINES), 'chat', n.x, n.model.height + 0.5, n.z);
+    this.ui.toast(mode === 'duel' ? `🤺 Duelo contra ${n.name} (Nv. ${n.level})` : `👊 ¡${n.name} se defiende!`);
+    p.setTarget({ kind: 'enemy', ref: n });
+    this.selection.visible = true;
+    this.selTarget = n;
+    sfx('swing');
+  }
+  damageNPC(n, dmg, crit) {
+    if (!n.fight) return;
+    n.hp -= dmg;
+    n.st.flash = 0.18;
+    this.ui.float(String(dmg), crit ? 'crit' : 'pdmg', n.x, n.model.height + 0.2, n.z);
+    this.ui.setHp(n.label, Math.max(0, n.hp) / n.maxHp);
+    sfx('hit');
+    if (n.hp <= n.maxHp * 0.15) this.endFight(n, 'win');
+  }
+  endFight(n, result) {
+    if (!n.fight) return;
+    const mode = n.fight.mode, p = this.player;
+    n.fight = null;
+    n.pending = null;
+    n.hp = n.maxHp;
+    n.path = [];
+    this.ui.setHp(n.label, 1);
+    if (p.target && p.target.ref === n) p.target = null;
+    if (this.selTarget === n) this.selection.visible = false;
+    if (result === 'win') {
+      const xp = 10 + n.level * 4;
+      p.gainXp(xp);
+      this.ui.float(`+${xp} XP`, 'info', n.x, 1.2, n.z);
+      if (mode === 'duel') { this.stats.duels = (this.stats.duels || 0) + 1; this.addFriend(n, 5); this.ui.toast(`🏆 ${n.name} se rinde. ¡Buen duelo!`); }
+      else { this.addFriend(n, -5); this.ui.toast(`${n.name} se rinde... y no está contento.`); }
+      sfx('quest');
+    } else if (result === 'lose') {
+      p.hp = Math.max(1, Math.round(p.maxHp * 0.15));
+      p.lastCombat = this.time;
+      if (mode === 'duel') this.addFriend(n, 2);
+      this.ui.toast(mode === 'duel' ? `😵 Has perdido el duelo contra ${n.name}` : `😵 ${n.name} te ha dado una paliza`);
+      sfx('hurt');
+    }
+  }
+  recruit(n) {
+    const s = this.soc(n.id);
+    s.crew = true;
+    s.wait = false;
+    n.setStats(Math.max(n.level, 1));
+    this.rebuildCrewLook(n);
+    this.addFriend(n, 5);
+    this.ui.toast(`⚓ ${n.name} se une a tu tripulación (${this.crew().length}/${MAX_CREW})`);
+    sfx('level');
+  }
+  dismiss(n) {
+    const s = this.soc(n.id);
+    s.crew = false;
+    n.tier = -1;
+    n.rebuild(n.def.look);
+    n.x = n.home.x; n.z = n.home.z; n.path = [];
+    this.ui.toast(`${n.name} vuelve a casa`);
+  }
+  toggleCrewWait(id) {
+    const n = this.npcById(id), s = this.soc(id);
+    s.wait = !s.wait;
+    if (s.wait) n.home = { x: n.tx, z: n.tz };
+    this.ui.toast(s.wait ? `⏸ ${n.name} te espera aquí` : `▶ ${n.name} te sigue`);
+  }
+  rebuildCrewLook(n) {
+    const tier = crewTier(n.level);
+    if (tier === n.tier) return;
+    n.tier = tier;
+    const look = { ...n.def.look, noAutoLegs: true };
+    for (const id of Object.values(crewGear(n.level))) Object.assign(look, EQUIP[id].look);
+    n.rebuild(look);
+  }
+  crewGainXp(xp) {
+    const p = this.player;
+    for (const n of this.crew()) {
+      n.cxp = (n.cxp || 0) + xp * 0.6;
+      const need = 25 + (n.level - 1) * 20 + (n.level - 1) ** 2 * 6;
+      if (n.cxp >= need && n.level < p.level) {
+        n.cxp -= need;
+        n.setStats(n.level + 1);
+        this.ui.float('⭐ Nv. ' + n.level, 'crit', n.x, n.model.height + 0.4, n.z);
+        const before = n.tier;
+        this.rebuildCrewLook(n);
+        if (n.tier !== before) this.ui.toast(`🛡️ ${n.name} consigue armadura de ${['cuero', 'hierro', 'plata', 'oro'][n.tier]}`);
+      }
+    }
+  }
+  crewFoe() {
+    const p = this.player;
+    if (p.target && p.target.kind === 'enemy' && !p.target.ref.isNPC && !p.target.ref.dead) return p.target.ref;
+    let best = null, bd = 7;
+    for (const e of this.enemies) { if (e.dead || e.state !== 'chase') continue; const d = e.dist(p); if (d < bd) { bd = d; best = e; } }
+    return best;
+  }
+  placeNear(n, x, z) {
+    for (let r = 1; r <= 4; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      const tx = x + dx, tz = z + dz;
+      if (!this.W.walkable(tx, tz) || (tx === x && tz === z)) continue;
+      if (this.npcs.some((o) => o !== n && o.tx === tx && o.tz === tz)) continue;
+      n.x = tx; n.z = tz; n.path = [];
+      return;
+    }
+    n.x = x; n.z = z; n.path = [];
+  }
+  placeFollowers(x, z) {
+    for (const n of this.following()) if (!n.onShip) this.placeNear(n, x, z);
+  }
+  kiss(n) {
+    const p = this.player;
+    n.faceTo(p.x - n.x, p.z - n.z, 1);
+    p.faceTo(n.x - p.x, n.z - p.z, 1);
+    n.st.kiss = p.st.kiss = true;
+    for (let i = 0; i < 4; i++) setTimeout(() => this.ui.float('💖', 'heal', (p.x + n.x) / 2, 1.3 + i * 0.1, (p.z + n.z) / 2), i * 250);
+    setTimeout(() => { n.st.kiss = p.st.kiss = false; }, 1600);
+    this.addFriend(n, 2, true);
+    sfx('level');
+  }
+  confess(n) {
+    const s = this.soc(n.id);
+    if (s.f >= 90) {
+      s.partner = true;
+      this.addFriend(n, 5);
+      this.ui.openDialog(n.name, pick(CONFESS_YES), [{ label: '💋 Besar', action: () => this.kiss(n) }, { label: '❤', action: null }]);
+      this.ui.toast(`💗 ¡${n.name} y tú sois pareja!`);
+      sfx('quest');
+    } else {
+      this.addFriend(n, -2);
+      this.ui.openDialog(n.name, pick(CONFESS_NO), [{ label: 'Lo entiendo', action: null }]);
+    }
+  }
+  shipMenu() {
+    this.ui.openDialog('Gaviota Negra', 'El barco de Nerea está listo. ¿Qué quieres hacer?', [
+      { label: '⛵ Zarpar', action: () => this.board() },
+      { label: '⬇️ Bajar a la bodega', action: () => { this.holdFromSea = false; this.enterRoom(this.rooms.find((r) => r.id === 'bodega')); } },
+      { label: 'Ahora no', action: null },
+    ]);
+  }
+  enterHold() {
+    const p = this.player;
+    const r = this.rooms.find((k) => k.id === 'bodega');
+    this.holdFromSea = true;
+    this.sailing = false;
+    this.boat.speed = 0;
+    this.scene.add(p.model.root);
+    p.model.root.rotation.set(0, 0, 0);
+    this.unboardCrew(r.inside.x, r.inside.z);
+    this.enterRoom(r);
+  }
+  crewChat(dt) {
+    this.chatT -= dt;
+    if (this.chatT > 0) return;
+    const p = this.player;
+    const near = this.crew().filter((n) => n.onShip || n.dist(p) < 12);
+    const inHold = this.roomAt(p.x, p.z)?.id === 'bodega';
+    this.chatT = (inHold ? 4 : 8) + Math.random() * 6;
+    if (!near.length) return;
+    const a = pick(near);
+    const say = (n, text) => {
+      const v = new THREE.Vector3();
+      n.model.root.getWorldPosition(v);
+      this.ui.float(text, 'chat', v.x, v.y + n.model.height + 0.5, v.z);
+    };
+    say(a, pick(CHAT_LINES));
+    const others = near.filter((n) => n !== a);
+    if (others.length) { const b = pick(others); setTimeout(() => say(b, pick(CHAT_REPLIES)), 1900); this.addFriend(a, 0, true); }
   }
 
   // ------------------------------------------------------------- bucle
@@ -1560,13 +2150,20 @@ class Game {
 
   update(dt) {
     this.time += dt;
-    if (this.started) this.tod = (this.tod + dt / 15) % 24;
+    if (this.started) {
+      const prev = this.tod;
+      this.tod = (this.tod + dt / 15) % 24;
+      if (this.tod < prev) this.day++;
+      this.playtime += dt;
+      this.crewChat(dt);
+    }
     this.updateLighting();
     const p = this.player;
     if (this.started) {
       if (this.sailing) this.updateBoat(dt);
       else p.update(dt);
-      for (const n of this.npcs) n.update(dt);
+      this.player.st.holdHand = null;
+      for (const n of this.npcs) if (!n.onShip) n.update(dt);
       for (const e of this.enemies) e.update(dt);
     }
     if (this.sailing) { p.st.moving = false; animateModel(p.model, p.st, dt); } else p.sync(dt);
@@ -1579,7 +2176,7 @@ class Game {
       this.torch.distance = 16;
       this.torch.intensity = 5;
     } else this.torch.distance = 8;
-    for (const n of this.npcs) n.sync(dt);
+    for (const n of this.npcs) { if (n.onShip) animateModel(n.model, n.st, dt); else n.sync(dt); }
     for (const e of this.enemies) if (!e.dead || e.model.root.visible) { if (e.dist(p) < 34 || e.st.moving) e.sync(dt); }
     for (const gd of this.guards) {
       gd.m.root.rotation.y = Math.PI / 4 + Math.sin(this.time * 0.3 + gd.base) * 1.2;
@@ -1705,13 +2302,14 @@ class Game {
     p.label.el.style.display = this.started ? '' : 'none';
     if (this.started) this.ui.placeLabel(p.label, p.x, this.sailing ? 2.9 : this.W.groundY(p.x, p.z) + p.model.height + 0.12, p.z);
     for (const r of this.rooms) {
-      const near = !room && Math.hypot(r.front.x - p.x, r.front.z - p.z) < 9;
+      const near = !room && r.front && Math.hypot(r.front.x - p.x, r.front.z - p.z) < 9;
       if (near) this.ui.placeLabel(r.doorLabel, (r.door.x + r.front.x) / 2, 1.3, (r.door.z + r.front.z) / 2);
       else if (r.doorLabel._vis) { r.doorLabel._vis = false; r.doorLabel.el.style.display = 'none'; }
       if (room === r) this.ui.placeLabel(r.exitLabel, r.exit.x, 0.5, r.exit.z);
       else if (r.exitLabel._vis) { r.exitLabel._vis = false; r.exitLabel.el.style.display = 'none'; }
     }
     for (const n of this.npcs) {
+      if (n.onShip) continue;
       if (n.dist(p) > 22) { if (n.label._vis) { n.label._vis = false; n.label.el.style.display = 'none'; } continue; }
       this.ui.setMark(n.label, this.npcMark(n));
       this.ui.placeLabel(n.label, n.x, this.W.groundY(n.x, n.z) + n.model.height + 0.12, n.z);

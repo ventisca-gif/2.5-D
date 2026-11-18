@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 import { animateModel } from './characters.js';
+import { buildLook, HAIR_M, HAIR_F } from './items.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio));
@@ -38,7 +39,11 @@ ground.rotation.x = -Math.PI / 2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-const cast = [
+const HAIRMODE = new URLSearchParams(location.search).get('hair') === '1';
+const cast = HAIRMODE ? [
+  ...HAIR_M.map((h, i) => ({ name: '♂ ' + h.name, model: makeHumanoid2({ ...buildLook({ gender: 'm', hair: i, hairColor: i % 6, skin: i % 4, clothes: i % 6, beard: i === 4 }, { weapon: 'espada_madera', feet: 'botas_cuero' }), noAutoLegs: true }) })),
+  ...HAIR_F.map((h, i) => ({ name: '♀ ' + h.name, model: makeHumanoid2({ ...buildLook({ gender: 'f', hair: i, hairColor: (i + 2) % 6, skin: (i + 1) % 4, clothes: (i + 3) % 6 }, { weapon: 'espada_madera', feet: 'botas_cuero' }), noAutoLegs: true }) })),
+] : [
   ...OUTFITS2.map((o) => ({ name: o.name, model: makeHumanoid2(o.look) })),
   { name: 'Capitana Nerea', model: makeHumanoid2({ shirt: 0x9a1f24, pants: 0x1e1a1a, hair: 0x1a1210, hat: 'tricorn', feather: 0xd83a3a, skin: 0xc68a5a, coat: true, cravat: true, sash: 0x1a1a1a, baldric: 0x3a2414, bootCuff: true, earring: true, longHair: true, sleeve: 0xf0ead8, sword: true }) },
   { name: 'Guardia', model: makeHumanoid2({ shirt: 0x3a5a8a, pants: 0x2a2a3a, hat: 'helmet', skin: 0xe0aa80, armor: true, tabard: 0x3a5a8a, spear: true }) },

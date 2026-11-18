@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Compila la APK de Isla Bruma sin Gradle, con las herramientas de Android de Ubuntu/Debian:
 #   sudo apt-get install -y aapt apksigner zipalign dalvik-exchange android-sdk-platform-23 default-jdk
-# Uso: ./android/build-apk.sh   ->  dist/IslaBruma.apk
+# Uso: ./android/build-apk.sh   ->  dist/TheBruma.apk
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -32,8 +32,8 @@ if [ ! -f "$KS" ]; then
     -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Isla Bruma, O=Isla Bruma, C=ES"
 fi
 apksigner sign --ks "$KS" --ks-pass "pass:$KS_PASS" --key-pass "pass:$KS_PASS" --ks-key-alias islabruma \
-  --out dist/IslaBruma.apk "$B/aligned.apk"
-apksigner verify dist/IslaBruma.apk
-rm -f dist/IslaBruma.apk.idsig
-ls -lh dist/IslaBruma.apk
-echo "APK lista: dist/IslaBruma.apk"
+  --out dist/TheBruma.apk "$B/aligned.apk"
+apksigner verify dist/TheBruma.apk
+rm -f dist/TheBruma.apk.idsig
+ls -lh dist/TheBruma.apk
+echo "APK lista: dist/TheBruma.apk"

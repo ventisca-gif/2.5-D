@@ -1,11 +1,11 @@
-# Isla Bruma — Espadas y Velas
+# TheBruma — Espadas, velas y bruma
 
 RPG **medieval y pirata** en **2.5D isométrico** sobre cuadrícula, para Android (APK) y navegador.
 Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni modelos externos.
 
 ## Descargar y jugar
 
-- **APK Android:** [`dist/IslaBruma.apk`](dist/IslaBruma.apk) — instálala en el móvil (permite "instalar apps de origen desconocido").
+- **APK Android:** [`dist/TheBruma.apk`](dist/TheBruma.apk) — instálala en el móvil (permite "instalar apps de origen desconocido").
 - Gira el móvil cuando quieras: funciona en **horizontal y vertical**.
 
 ## El juego
@@ -14,6 +14,11 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
   - **Villarroca**: ciudad amurallada con torres y vigías, plaza con fuente, mercado, Ayuntamiento, Herrería, Taberna y Torre del Reloj.
   - **Puerto Salitre**: muelles, barco pirata *Gaviota Negra*, faro, taberna La Sirena Tuerta y almacén.
   - **Bosque Norte**, **Pedregal del Oeste**, **Granja de los Trigales** y **Cala de los Huesos** (barco hundido).
+- **Personalización**: chico o chica, 6 peinados por género, color de pelo, piel, ropa y barba. **3 ranuras** de partida con **tiempo jugado**.
+- **Equipo visible** (cabeza, pecho, manos, pies, capa, cuello, anillo, arma, escudo) en tiers de madera/cuero, hierro, plata y oro, más piezas corsarias. **Forja**, **banco de carpintero** y **cocina**. Nivel máximo 50.
+- **Correr con estamina**; los enemigos te persiguen y atacan en movimiento.
+- **Amistad**, **duelos** y peleas con NPCs (cada uno con su nivel según su isla), **tripulación** de hasta 10 que te sigue, lucha, sube contigo al barco y mejora su armadura, **bodega del barco** y **romance** (declararse, besar, pasear de la mano).
+- **Mochila**, **bitácora de viaje** y **guía** dentro del juego.
 - **Isla Tortuga** (refugio de contrabandistas) e **Isla Calavera** (roca-calavera, piratas esqueleto y cofre maldito), alcanzables **navegando en barco**.
 - **Interiores**: Ayuntamiento, dos tabernas, Herrería, Almacén, Taller de Bruno y Granja, con muebles y NPCs dentro.
 - **Navegación**: sube al barco en el muelle, gobiérnalo con el joystick (o tocando el mar) y atraca en los muelles de cada isla.
@@ -52,7 +57,7 @@ Sin Gradle ni Android Studio, con las herramientas de Ubuntu/Debian:
 
 ```bash
 sudo apt-get install -y aapt apksigner zipalign dalvik-exchange android-sdk-platform-23 default-jdk
-./android/build-apk.sh   # -> dist/IslaBruma.apk
+./android/build-apk.sh   # -> dist/TheBruma.apk
 ```
 
 GitHub Actions (`.github/workflows/apk.yml`) recompila la APK en cada push y la deja como artefacto.

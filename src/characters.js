@@ -321,6 +321,11 @@ export function animateModel(model, st, dt) {
       ar = -0.6;
     }
     p.armR.rotation.x = ar;
+    p.armL.rotation.z = 0;
+    p.armR.rotation.z = 0;
+    if (st.holdHand === 'L') { p.armL.rotation.z = -0.55; p.armL.rotation.x = -0.25; }
+    if (st.holdHand === 'R') { p.armR.rotation.z = 0.55; p.armR.rotation.x = -0.25; }
+    p.head.rotation.x = st.kiss ? 0.25 : 0;
     p.body.position.y = moving ? Math.abs(Math.cos(st.phase)) * 0.04 : Math.sin(st.phase) * 0.008;
     if (p.cape) p.cape.rotation.x = moving ? 0.35 + Math.abs(s) * 0.15 : 0.08;
     p.head.rotation.y = st.lookYaw || 0;

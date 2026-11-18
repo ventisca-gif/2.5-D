@@ -83,7 +83,7 @@ export class UI {
     el.className = 'float ' + cls;
     el.textContent = text;
     this.labelsEl.appendChild(el);
-    this.floats.push({ el, x: x + (Math.random() - 0.5) * 0.3, y, z, t: 0, life: cls === 'info' ? 1.6 : 1.0 });
+    this.floats.push({ el, x: x + (cls === 'chat' ? 0 : (Math.random() - 0.5) * 0.3), y, z, t: 0, life: cls === 'chat' ? 3.2 : cls === 'info' ? 1.6 : 1.0, chat: cls === 'chat' });
   }
   updateFloats(dt) {
     const g = this.g;
@@ -95,11 +95,11 @@ export class UI {
         this.floats.splice(i, 1);
         continue;
       }
-      v3.set(f.x, f.y + f.t * 0.9, f.z).project(g.camera);
+      v3.set(f.x, f.y + (f.chat ? 0 : f.t * 0.9), f.z).project(g.camera);
       const sx = (v3.x * 0.5 + 0.5) * g.width;
       const sy = (-v3.y * 0.5 + 0.5) * g.height;
       const k = f.t / f.life;
-      const sc = k < 0.15 ? 0.6 + k * 4 : 1.2 - Math.min(0.2, k);
+      const sc = f.chat ? 1 : k < 0.15 ? 0.6 + k * 4 : 1.2 - Math.min(0.2, k);
       f.el.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -50%) scale(${sc})`;
       f.el.style.opacity = k > 0.6 ? String(1 - (k - 0.6) / 0.4) : '1';
     }
@@ -212,6 +212,11 @@ export class UI {
     this.set('atk', String(Math.round(p.atk)));
     this.set('hptext', `${Math.ceil(p.hp)} / ${p.maxHp}`);
     this.style('hpfill', 'width', (100 * Math.max(0, p.hp) / p.maxHp).toFixed(1) + '%');
+    this.style('stfill', 'width', (100 * Math.max(0, p.stamina) / p.maxSt).toFixed(1) + '%');
+    const low = p.exhausted || p.stamina < 20;
+    if (this.cache.stlow !== low) { this.cache.stlow = low; document.querySelector('.bar.st').classList.toggle('low', low); }
+    const run = !!p.running;
+    if (this.cache.run !== run) { this.cache.run = run; document.getElementById('btnRun').classList.toggle('on', run); }
     this.style('xpfill', 'width', (100 * p.xp / p.xpNext()).toFixed(1) + '%');
     this.set('area', g.W.areaName(p.tx, p.tz).toUpperCase());
     const h = Math.floor(g.tod), m = Math.floor((g.tod % 1) * 60);
