@@ -474,7 +474,7 @@ export function makeProp(p, M) {
       break;
     }
     case 'roundtower': {
-      // torre redonda a rayas blancas y azules (Guardia Naval)
+      // torre redonda a rayas blancas y azules (Marina)
       const n = 5, H = 2.6;
       for (let i = 0; i < n; i++) cyl(g, 0.7, 0.72, H / n, i % 2 ? mat(0x2a4a8a, { map: M.tx.stone }) : M.stone, 0, (i + 0.5) * (H / n), 0, 12);
       cyl(g, 0.82, 0.82, 0.16, M.stoneDark, 0, H + 0.08, 0, 12);
@@ -495,6 +495,18 @@ export function makeProp(p, M) {
       box(g, 0.36, 0.05, 0.03, M.white, 0.84, 3.0, 0).rotation.z = -0.25;
       box(g, 0.05, 0.26, 0.03, M.white, 0.7, 2.8, 0);
       box(g, 0.24, 0.05, 0.03, M.white, 0.7, 2.68, 0);
+      break;
+    }
+    case 'poster': {
+      // tablón de Se busca
+      for (const x of [-0.42, 0.42]) cyl(g, 0.05, 0.06, 1.6, M.darkWood, x, 0.8, 0, 5);
+      box(g, 1.0, 0.75, 0.06, M.plank, 0, 1.15, 0, 1.2);
+      box(g, 1.1, 0.08, 0.12, M.darkWood, 0, 1.56, 0);
+      for (const [x, y, r] of [[-0.24, 1.17, 0.05], [0.22, 1.13, -0.07]]) {
+        const pp = box(g, 0.36, 0.5, 0.02, mat(0xe8d8a8), x, y, 0.045); pp.rotation.z = r;
+        box(g, 0.22, 0.2, 0.025, mat(0x8a6a4a), x, y + 0.05, 0.05).rotation.z = r;
+        box(g, 0.26, 0.04, 0.025, mat(0x3a2a1a), x, y + 0.2, 0.05).rotation.z = r;
+      }
       break;
     }
     case 'totem': {

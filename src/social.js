@@ -4,8 +4,8 @@
 const AREA_LEVEL = {
   'Villarroca': 6, 'Granja de los Trigales': 4, 'Prados de Isla Bruma': 5, 'Puerto Salitre': 10,
   'Bosque Norte': 7, 'Pedregal del Oeste': 8, 'Cala de los Huesos': 12, 'Isla Tortuga': 16, 'Isla Calavera': 20,
-  'Isla Duna': 18, 'Oasis de Sal': 16, 'Isla Selva': 24, 'Aldea Liana': 22, 'Bastión de la Guardia Naval': 30, 'Villa Grillete': 26,
-  'Fortaleza de la Guardia': 34, 'Isla Ceniza': 40, 'Campamento Brasa': 38,
+  'Isla Duna': 18, 'Oasis de Sal': 16, 'Isla Selva': 24, 'Aldea Liana': 22, 'Bastión de la Marina': 30, 'Villa Grillete': 26,
+  'Fortaleza de la Marina': 34, 'Isla Ceniza': 40, 'Campamento Brasa': 38,
 };
 const STRONG = new Set(['ramiro', 'elvira', 'nerea', 'olga', 'mara', 'tadeo', 'farid', 'kuno', 'lucas', 'brasa', 'ferro']);
 export function npcLevel(id, area) {

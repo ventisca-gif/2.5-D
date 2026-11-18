@@ -53,6 +53,17 @@ function furniture(type, fw, fd, M, room, dyn) {
       box(g, 0.86, 0.06, 0.16, woodL, 0, 0.93, 0.04);
       g.position.z = -0.47;
       break;
+    case 'poster': {
+      // tablón con carteles de Se busca
+      box(g, 0.95, 0.7, 0.05, wood, 0, 1.35, 0);
+      for (const [x, y, r] of [[-0.24, 1.38, 0.05], [0.22, 1.36, -0.06]]) {
+        const pp = box(g, 0.36, 0.48, 0.02, mat(0xe8d8a8), x, y, 0.035);
+        pp.rotation.z = r;
+        box(g, 0.2, 0.18, 0.025, mat(0x8a6a4a), x, y + 0.04, 0.04).rotation.z = r;
+      }
+      g.position.z = -0.46;
+      break;
+    }
     case 'painting': {
       box(g, 0.8, 0.6, 0.05, M.gold, 0, 1.4, 0);
       box(g, 0.68, 0.48, 0.06, mat(0x8ac0e0), 0, 1.4, 0.005);

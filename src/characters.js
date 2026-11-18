@@ -300,6 +300,45 @@ export const OUTFITS = [
 
 export const SKINS = [0xf3cfaa, 0xe8b98f, 0xc68a5a, 0x8a5a3a];
 
+// Poses especiales: pareja (beso, abrazo, baile, en brazos), meditar y habilidades.
+function poses(p, st, dt) {
+  const T = performance.now() / 1000;
+  if (st.kiss) { p.torso.rotation.x = 0.24; p.armL.rotation.set(-1.0, 0, 0.45); p.armR.rotation.set(-1.0, 0, -0.45); p.head.rotation.x = 0.3; }
+  if (st.hug) { p.armL.rotation.set(-1.3, 0, 0.6); p.armR.rotation.set(-1.3, 0, -0.6); p.torso.rotation.x = 0.14; }
+  if (st.dance) {
+    p.body.rotation.y = Math.sin(T * 3) * 0.7;
+    p.armL.rotation.set(-2.5 + Math.sin(T * 6) * 0.4, 0, -0.3);
+    p.armR.rotation.set(-2.5 + Math.cos(T * 6) * 0.4, 0, 0.3);
+    p.legL.rotation.x = Math.sin(T * 6) * 0.4; p.legR.rotation.x = -Math.sin(T * 6) * 0.4;
+    p.body.position.y = Math.abs(Math.sin(T * 6)) * 0.07;
+  }
+  if (st.carry) { p.armL.rotation.set(-1.35, 0, 0.3); p.armR.rotation.set(-1.35, 0, -0.3); }
+  if (st.carried) { p.legL.rotation.x = -1.4; p.legR.rotation.x = -1.4; p.armL.rotation.set(-2.4, 0, -0.2); p.armR.rotation.set(-0.5, 0, 0.5); }
+  if (st.meditate) {
+    p.legL.rotation.set(-1.5, 0, -0.8); p.legR.rotation.set(-1.5, 0, 0.8);
+    p.body.position.y = -0.3 + Math.sin(T * 1.5) * 0.01;
+    p.armL.rotation.set(-0.6, 0, -0.4); p.armR.rotation.set(-0.6, 0, 0.4);
+    p.head.rotation.x = 0.12;
+  }
+  const k = st.skill;
+  if (k) {
+    k.t += dt;
+    const e = Math.min(1, k.t / k.dur);
+    const sn = Math.sin(e * Math.PI);
+    switch (k.type) {
+      case 'spin': p.body.rotation.y = e * Math.PI * 4; p.armR.rotation.set(-1.6, 0, 1.3); p.armL.rotation.set(-1.2, 0, -1.0); break;
+      case 'leap': p.body.position.y = sn * 1.1; p.armR.rotation.x = -2.9 + e * 3.8; p.armL.rotation.x = -2.0 + e * 2.4; p.legL.rotation.x = -0.6 * sn; p.legR.rotation.x = -0.9 * sn; break;
+      case 'thrust': p.armR.rotation.set(-1.55, 0, 0); p.armL.rotation.set(-1.2, 0, 0.3); p.torso.rotation.x = 0.35 * sn; p.body.position.z = sn * 0.35; p.legL.rotation.x = -0.5 * sn; break;
+      case 'dash': p.torso.rotation.x = 0.45; p.armR.rotation.set(-1.4, 0, 1.1); p.legL.rotation.x = -0.8; p.legR.rotation.x = 0.6; break;
+      case 'slam': { const a = e < 0.55 ? -3.0 * (e / 0.55) : -3.0 + ((e - 0.55) / 0.45) * 4.2; p.armR.rotation.x = a; p.armL.rotation.x = a; p.torso.rotation.x = e < 0.55 ? -0.2 : 0.4; p.body.position.y = e < 0.55 ? sn * 0.4 : 0; break; }
+      case 'cry': p.armL.rotation.set(-2.9, 0, -0.4); p.armR.rotation.set(-2.9, 0, 0.4); p.head.rotation.x = -0.45; p.body.position.y = sn * 0.08; break;
+      case 'sweep': p.torso.rotation.y = 1.4 - e * 2.8; p.armR.rotation.set(-1.5, 0, 0.9); break;
+      default: break;
+    }
+    if (e >= 1) st.skill = null;
+  }
+}
+
 // Animación común: fase de paso, ataque, golpe recibido.
 export function animateModel(model, st, dt) {
   const p = model.parts;
@@ -307,6 +346,8 @@ export function animateModel(model, st, dt) {
   st.phase = (st.phase || 0) + dt * (moving ? 11 : 2);
   const s = Math.sin(st.phase);
   if (model.kind === 'humanoid') {
+    p.body.rotation.y = 0;
+    p.body.position.z = 0;
     p.torso.rotation.set(0, 0, 0);
     p.armL.rotation.set(0, 0, 0);
     p.armR.rotation.set(0, 0, 0);
@@ -357,6 +398,7 @@ export function animateModel(model, st, dt) {
       p.head.rotation.x = st.kiss ? 0.25 : 0;
       p.body.position.y = moving ? Math.abs(Math.cos(st.phase)) * 0.04 : Math.sin(st.phase) * 0.008;
       if (p.cape) p.cape.rotation.x = moving ? 0.35 + Math.abs(s) * 0.15 : 0.08;
+      poses(p, st, dt);
     }
     p.head.rotation.y = st.lookYaw || 0;
   } else if (model.kind === 'quad') {

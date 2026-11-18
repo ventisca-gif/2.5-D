@@ -159,6 +159,11 @@ export function makeIslets() {
   tor.npcs.push({ id: 'mara', name: 'Contrabandista Mara', x: tc.x + 1, z: tc.z + 1, wander: 2, look: { shirt: 0x2a5a5a, pants: 0x3a2a1a, hair: 0x1a1a1a, longHair: true, hat: 'bandana', capColor: 0x6a2a8a, skin: 0xa86a3a, coat: true, sash: 0x6a2a8a, baldric: 0x3a2414, earring: true, bootCuff: true, sword: true } });
   tor.npcs.push({ id: 'pepe', name: 'Grumete Pepe', x: tc.x - 2, z: tc.z + 2, wander: 3, small: true, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0xd8a040, skin: 0xf0c49a, hat: 'bandana', capColor: 0x2a6ab0 } });
   populate(tor, 1);
+  // escondite pirata al este de Tortuga
+  for (const [dx, dz, r] of [[7, -4, 0.4], [7, 4, -0.6]]) { tor.props.push({ type: 'tent', x: tc.x + dx, z: tc.z + dz, rot: r }); tor.block(tc.x + dx, tc.z + dz); }
+  tor.props.push({ type: 'campfire', x: tc.x + 6, z: tc.z + 1 }); tor.block(tc.x + 6, tc.z + 1);
+  tor.props.push({ type: 'flag', x: tc.x + 8, z: tc.z, rot: 0 }); tor.block(tc.x + 8, tc.z);
+  tor.spawns.push({ type: 'pirate', count: 6, area: [tc.x + 3, tc.z - 7, tc.x + 9, tc.z + 7], lvl: [22, 28] });
   tor.spawns.push({ type: 'crab', count: 4, area: [tor.ox, tor.oz, tor.ox + tor.N - 1, tor.oz + tor.N - 1], lvl: [3, 5], sand: true });
 
   // Isla Calavera: tesoro maldito (sureste)
@@ -200,7 +205,7 @@ export const ROOMS = [
       ['counter', 2.5, 1, 0, 4, 1], ['shelf', 2.5, 0, 0, 3, 1, false], ['barrel', 0, 0], ['barrel', 5, 0], ['barrel', 6, 0],
       ['fireplace', 0, 4, Math.PI / 2], ['table', 6, 3], ['stool', 5, 3, 0, 1, 1, false], ['stool', 7, 3, 0, 1, 1, false],
       ['table', 3, 4], ['stool', 2, 4, 0, 1, 1, false], ['stool', 4, 4, 0, 1, 1, false], ['table', 7, 5], ['stool', 8, 5, 0, 1, 1, false],
-      ['window', 7, 0, 0, 1, 1, false], ['plant', 8, 0], ['rug', 4, 6, 0, 2, 1, false],
+      ['window', 7, 0, 0, 1, 1, false], ['poster', 0, 2, Math.PI / 2, 1, 1, false], ['plant', 8, 0], ['rug', 4, 6, 0, 2, 1, false],
     ],
     npcs: [
       { id: 'rosa', name: 'Tabernera Rosa', x: 2, z: 0, wander: 1, look: { shirt: 0xb83a3a, pants: 0x5a2a2a, hair: 0x8a3a1a, skin: 0xf0c49a, dress: true, apron: 0xf0ead8, longHair: true } },
@@ -220,7 +225,7 @@ export const ROOMS = [
     id: 'sirena', name: 'Taberna La Sirena Tuerta', w: 9, d: 7, floor: 0x6a4a2e, wall: 0x7a5a3a, wood: 0x3a2414,
     items: [
       ['counter', 5.5, 1, 0, 4, 1], ['shelf', 5.5, 0, 0, 3, 1, false], ['barrel', 8, 0], ['barrel', 8, 1], ['barrel', 0, 0], ['barrel', 1, 0],
-      ['wheel', 3, 0, 0, 1, 1, false], ['anchor', 0, 3, Math.PI / 2], ['map', 0, 5, Math.PI / 2, 1, 1, false],
+      ['wheel', 3, 0, 0, 1, 1, false], ['anchor', 0, 3, Math.PI / 2], ['map', 0, 5, Math.PI / 2, 1, 1, false], ['poster', 0, 1, Math.PI / 2, 1, 1, false],
       ['table', 2, 4], ['stool', 1, 4, 0, 1, 1, false], ['stool', 3, 4, 0, 1, 1, false],
       ['table', 6, 4], ['stool', 5, 4, 0, 1, 1, false], ['stool', 7, 4, 0, 1, 1, false], ['crate', 8, 6],
     ],
@@ -249,6 +254,25 @@ export const ROOMS = [
       ['bed', 7, 1, 0, 1, 2], ['bed', 6, 1, 0, 1, 2], ['barrel', 0, 0], ['barrel', 1, 0], ['crate', 0, 1], ['fireplace', 3, 0, 0, 1, 1, true],
       ['table', 2, 2], ['stool', 1, 2, 0, 1, 1, false], ['stool', 3, 2, 0, 1, 1, false], ['map', 5, 0, 0, 1, 1, false],
       ['wheel', 0, 3, Math.PI / 2, 1, 1, false], ['sacks', 7, 4], ['window', 4, 0, 0, 1, 1, false],
+    ],
+    npcs: [],
+  },
+  {
+    id: 'bodega2', name: 'Bodega ampliada', w: 11, d: 6, floor: 0x6a4a2e, wall: 0x5a3a22, wood: 0x3a2414, noBuilding: true,
+    items: [
+      ['bed', 10, 1, 0, 1, 2], ['bed', 9, 1, 0, 1, 2], ['bed', 8, 1, 0, 1, 2], ['barrel', 0, 0], ['barrel', 1, 0], ['crate', 0, 1], ['fireplace', 3, 0, 0, 1, 1, true],
+      ['table', 3, 2], ['stool', 2, 2, 0, 1, 1, false], ['stool', 4, 2, 0, 1, 1, false], ['map', 5, 0, 0, 1, 1, false], ['workbench', 6.5, 0, 0, 2, 1],
+      ['wheel', 0, 3, Math.PI / 2, 1, 1, false], ['sacks', 10, 5], ['chest', 9, 5], ['window', 4, 0, 0, 1, 1, false], ['rug', 5, 4, 0, 3, 2, false], ['poster', 0, 4, Math.PI / 2, 1, 1, false],
+    ],
+    npcs: [],
+  },
+  {
+    id: 'bodega3', name: 'Cubierta inferior y camarote', w: 13, d: 7, floor: 0x7a5636, wall: 0x5a3a22, wood: 0x3a2414, noBuilding: true,
+    items: [
+      ['bed', 12, 1, 0, 1, 2], ['bed', 11, 1, 0, 1, 2], ['bed', 10, 1, 0, 1, 2], ['bed', 9, 1, 0, 1, 2], ['barrel', 0, 0], ['barrel', 1, 0], ['crate', 0, 1], ['fireplace', 3, 0, 0, 1, 1, true],
+      ['table', 3, 2], ['stool', 2, 2, 0, 1, 1, false], ['stool', 4, 2, 0, 1, 1, false], ['map', 5, 0, 0, 1, 1, false], ['workbench', 6.5, 0, 0, 2, 1], ['forge', 0, 5, Math.PI / 2, 1, 2],
+      ['bookshelf', 8, 0], ['desk', 10.5, 4, 0, 2, 1], ['chair', 10.5, 3, Math.PI, 1, 1, false], ['chest', 12, 6], ['chest', 11, 6], ['painting', 12, 4, -Math.PI / 2, 1, 1, false],
+      ['rug', 6, 4.5, 0, 3, 2, false], ['plant', 8, 6], ['window', 4, 0, 0, 1, 1, false], ['poster', 0, 3, Math.PI / 2, 1, 1, false],
     ],
     npcs: [],
   },

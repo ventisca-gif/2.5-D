@@ -117,7 +117,7 @@ export const EQUIP = {
   corona_huesos: { name: 'Corona de huesos', slot: 'cosHead', tier: 3, cos: true, icon: '👑', look: { hat: 'circlet' } },
   chaqueta_pirata: { name: 'Casaca pirata', slot: 'cosBody', tier: 2, cos: true, icon: '🧥', look: { coat: true, shirt: 0x8a1a1a, vest: 0xd8b060, cravat: true, sash: 0x1a1a1a, sleeve: 0xf0ead8, bootCuff: true } },
   chaqueta_negra: { name: 'Chaqueta negra de capitán', slot: 'cosBody', tier: 3, cos: true, icon: '🧥', look: { coat: true, shirt: 0x1a1a1e, vest: 0x8a1a1a, cravat: true, sash: 0xd8a838, sleeve: 0xe8e0d0, trim: 0xd8a838 } },
-  traje_guardia: { name: 'Uniforme de la Guardia Naval', slot: 'cosBody', tier: 2, cos: true, icon: '🎖️', look: { coat: true, shirt: 0x2a4a8a, sleeve: 0xf4f4f8, trim: 0xd8a838, sash: 0xf4f4f8 } },
+  traje_guardia: { name: 'Uniforme de la Marina', slot: 'cosBody', tier: 2, cos: true, icon: '🎖️', look: { coat: true, shirt: 0x2a4a8a, sleeve: 0xf4f4f8, trim: 0xd8a838, sash: 0xf4f4f8 } },
   camisa_marinera: { name: 'Camisa marinera', slot: 'cosBody', tier: 0, cos: true, icon: '👕', look: { shirt: 0xf0f2f8, scarf: 0xc8302a, sleeve: 0x2a4a8a } },
   capa_lobo: { name: 'Capa de piel de lobo', slot: 'cosCape', tier: 1, cos: true, icon: '🐺', look: { cape: 0x8c8f96 } },
   capa_tigre: { name: 'Capa de piel de tigre', slot: 'cosCape', tier: 2, cos: true, icon: '🐯', look: { cape: 0xd8781a } },

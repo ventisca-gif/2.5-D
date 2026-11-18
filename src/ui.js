@@ -210,7 +210,9 @@ export class UI {
     this.set('potions', String(p.inv.potion));
     this.set('potCount', String(p.inv.potion));
     this.set('atk', String(Math.round(p.atk)));
-    this.set('bounty', String(g.bounty || 0));
+    const mar = g.isMarine();
+    this.set('bounty', mar ? (g.honor || 0) + ' ' + g.bountyText() : String(g.bounty || 0));
+    if (this.cache.mar !== mar) { this.cache.mar = mar; document.getElementById('bountyBox').firstChild.textContent = mar ? '⚓ ' : '☠ '; document.getElementById('bountyBox').classList.toggle('mar', mar); }
     this.set('hptext', `${Math.ceil(p.hp)} / ${p.maxHp}`);
     this.style('hpfill', 'width', (100 * Math.max(0, p.hp) / p.maxHp).toFixed(1) + '%');
     this.style('stfill', 'width', (100 * Math.max(0, p.stamina) / p.maxSt).toFixed(1) + '%');
@@ -222,15 +224,18 @@ export class UI {
     this.set('area', g.W.areaName(p.tx, p.tz).toUpperCase());
     const h = Math.floor(g.tod), m = Math.floor((g.tod % 1) * 60);
     const night = g.tod < 6.5 || g.tod > 19.5;
-    this.set('clock', `${night ? '☾' : '☀'} ${String(h).padStart(2, '0')}:${String(Math.floor(m / 10) * 10).padStart(2, '0')}`);
+    this.set('clock', `${g.weatherIcon ? g.weatherIcon() : ''} ${night ? '☾' : ''}${String(h).padStart(2, '0')}:${String(Math.floor(m / 10) * 10).padStart(2, '0')}`);
     this.set('coords', g.W.isInterior(p.x) ? 'interior' : `${p.tx}, ${p.tz}`);
     const q = g.questInfo();
     this.set('qtitle', q.title);
     this.set('qdesc', q.desc);
     this.set('qprog', q.prog);
     const a = g.contextAction();
-    this.set('actIcon', a.icon);
-    this.set('actLabel', a.label);
+    const use = a && a.fn && a.label !== 'Atacar';
+    if (this.cache.use !== use) { this.cache.use = use; document.getElementById('btnUse').classList.toggle('hidden', !use); }
+    if (use) { this.set('useIcon', a.icon); this.set('useLabel', a.label); }
+    this.set('actIcon', g.sailing ? '💣' : '⚔️');
+    this.set('actLabel', g.sailing ? 'Cañones' : 'Atacar');
   }
 
   // ---------------------------------------------------------- minimapa

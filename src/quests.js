@@ -14,7 +14,7 @@ export const QUESTS = [
   { title: 'El tesoro de la Isla Calavera', desc: 'Sube al barco en el muelle de Puerto Salitre, navega al sureste hasta la Isla Calavera y abre el cofre maldito.', type: 'chest', target: 'calavera_cofre', reward: { gold: 0, xp: 250 } },
   // ---- Capítulo 2: el Mar de Bruma
   { title: 'Humo en el oeste', desc: 'La farera Tomasa ha visto algo desde el faro. Habla con ella.', type: 'talk', target: 'tomasa', giver: 'tomasa', reward: { gold: 50, xp: 200 },
-    talkText: 'Desde el faro he visto humo al oeste: la Isla Duna. Dicen que el Jeque Zaid pide ayuda... y que barcos blancos de la Guardia Naval rondan estas aguas. Ten cuidado: si te ganas fama de pirata, te cazarán.' },
+    talkText: 'Desde el faro he visto humo al oeste: la Isla Duna. Dicen que el Jeque Zaid pide ayuda... y que barcos blancos de la Marina rondan estas aguas. Ten cuidado: si te ganas fama de pirata, te cazarán.' },
   { title: 'El Oasis de Sal', desc: 'Navega al oeste hasta la Isla Duna y habla con el Jeque Zaid en el Oasis de Sal.', type: 'talk', target: 'zaid', giver: 'zaid', reward: { gold: 80, xp: 300 },
     talkText: 'Que el viento te guarde, viajero. Los escorpiones rojos han salido de las dunas y envenenan nuestros pozos. Mata a 6 y el oasis te deberá la vida.' },
   { title: 'Escorpiones rojos', desc: 'Mata 6 escorpiones rojos en la Isla Duna y vuelve con el Jeque Zaid.', type: 'kill', target: 'scorpion', count: 6, giver: 'zaid', zone: [-58, 30], reward: { gold: 300, xp: 900, item: 'alfanje_ambar' },
@@ -22,12 +22,18 @@ export const QUESTS = [
   { title: 'La chamana de la selva', desc: 'Navega al norte hasta la Isla Selva y habla con la Chamana Ixa en la Aldea Liana.', type: 'talk', target: 'ixa', giver: 'ixa', reward: { gold: 100, xp: 400 },
     talkText: 'Te esperaba. Los tigres están inquietos y los murciélagos salen de día: algo los asusta. Caza 4 tigres antes de que ataquen la aldea.' },
   { title: 'Tigres inquietos', desc: 'Caza 4 tigres en la Isla Selva y vuelve con la Chamana Ixa.', type: 'kill', target: 'tiger', count: 4, giver: 'ixa', zone: [36, -62], reward: { gold: 400, xp: 1400, item: 'katana_jade' },
-    doneText: 'La selva respira de nuevo. Esta katana de jade es tuya. Mis visiones hablan de un rebelde en Villa Grillete, junto al Bastión de la Guardia Naval al sur de Isla Bruma: te busca.' },
-  { title: 'El rebelde de Grillete', desc: 'Navega al sur hasta el Bastión de la Guardia Naval y busca al Rebelde Lucas en Villa Grillete, fuera de la muralla.', type: 'talk', target: 'lucas', giver: 'lucas', reward: { gold: 120, xp: 500 },
-    talkText: 'La Guardia Naval no caza piratas: caza a quien no paga. El Comodoro Vidal cobra "protección" a los pueblos y quema los que se niegan. Derrota a 5 guardias y demostraremos que no son invencibles. (Atacarles subirá tu recompensa.)' },
-  { title: 'Uniformes blancos', desc: 'Derrota a 5 guardias navales y vuelve con el Rebelde Lucas.', type: 'kill', target: 'marine', count: 5, giver: 'lucas', zone: [49, 206], reward: { gold: 600, xp: 2200 },
+    doneText: 'La selva respira de nuevo. Esta katana de jade es tuya. Mis visiones hablan de un rebelde en Villa Grillete, junto al Bastión de la Marina al sur de Isla Bruma: te busca.' },
+  { marine: { title: 'Órdenes del Bastión', desc: 'Navega al sur hasta el Bastión de la Marina y preséntate al Teniente Ferro en Villa Grillete.', target: 'ferro', giver: 'ferro',
+      talkText: 'Así que eres la nueva recluta de la que hablan. Los piratas de Tortuga se están armando: tienen un escondite al este de la isla. Ve y derrota a 6 de ellos.' },
+    title: 'El rebelde de Grillete', desc: 'Navega al sur hasta el Bastión de la Marina y busca al Rebelde Lucas en Villa Grillete, fuera de la muralla.', type: 'talk', target: 'lucas', giver: 'lucas', reward: { gold: 120, xp: 500 },
+    talkText: 'La Marina no caza piratas: caza a quien no paga. El Comodoro Vidal cobra "protección" a los pueblos y quema los que se niegan. Derrota a 5 marines y demostraremos que no son invencibles. (Atacarles subirá tu recompensa.)' },
+  { marine: { title: 'El escondite pirata', desc: 'Derrota a 6 piratas rivales en el escondite de Isla Tortuga y vuelve con el Teniente Ferro.', target: 'pirate', count: 6, giver: 'ferro', zone: [135, 19],
+      doneText: 'Buen trabajo. Pero los peces gordos siguen libres: los piratas famosos cruzan el Mar de Bruma. Derrota a cualquiera de ellos (mira los carteles de Se busca) y vuelve.' },
+    title: 'Uniformes blancos', desc: 'Derrota a 5 marines y vuelve con el Rebelde Lucas.', type: 'kill', target: 'marine', count: 5, giver: 'lucas', zone: [49, 206], reward: { gold: 600, xp: 2200 },
     doneText: '¡Ahora sí nos escucharán! Vidal se esconde frente a la torre de la fortaleza. Acaba con él y Grillete será libre.' },
-  { title: 'El Comodoro Vidal', desc: 'Derrota al Comodoro Vidal frente a la torre del Bastión y vuelve con Lucas.', type: 'kill', target: 'marine_boss', count: 1, giver: 'lucas', zone: [49, 207], reward: { gold: 1500, xp: 4000, item: 'chaqueta_negra' },
+  { marine: { title: 'Cazar a una leyenda', desc: 'Derrota a un pirata famoso (consulta los carteles de Se busca en los pueblos) y vuelve con el Teniente Ferro.', target: 'famous', count: 1, giver: 'ferro', zone: null,
+      doneText: '¡Increíble! El Almirantazgo ha oído hablar de ti. Dicen que en la Isla Ceniza, muy al sureste, la Herrera Brasa necesita ayuda con algo antiguo que despierta en el volcán.', reward: { gold: 1500, xp: 4000, item: 'traje_guardia' } },
+    title: 'El Comodoro Vidal', desc: 'Derrota al Comodoro Vidal frente a la torre del Bastión y vuelve con Lucas.', type: 'kill', target: 'marine_boss', count: 1, giver: 'lucas', zone: [49, 207], reward: { gold: 1500, xp: 4000, item: 'chaqueta_negra' },
     doneText: '¡Vidal ha caído! Toma su chaqueta: que vean quién manda ahora. Dicen que en la Isla Ceniza, muy al sureste, la Herrera Brasa forja obsidiana... y que algo antiguo despierta en el volcán.' },
   { title: 'Fuego en Isla Ceniza', desc: 'Navega al sureste lejano hasta la Isla Ceniza y habla con la Herrera Brasa.', type: 'talk', target: 'brasa', giver: 'brasa', reward: { gold: 150, xp: 700 },
     talkText: 'Si has llegado hasta aquí, sabes pelear. Cada noche salen calaveras llameantes del cráter. Destruye 5 y te contaré qué las despierta.' },
@@ -38,6 +44,13 @@ export const QUESTS = [
   { title: 'Leyenda del Mar de Bruma', desc: 'Has vencido al Primigenio. Completa los encargos de cada isla (Bitácora), mejora tu barco con Marga y llega a nivel 100.', type: 'done' },
 ];
 
+// misión actual según el bando (la Marina tiene su propia versión de algunas)
+export function questAt(stage, G) {
+  const q = QUESTS[stage];
+  if (q && q.marine && G && G.isMarine && G.isMarine()) return { ...q, ...q.marine };
+  return q;
+}
+
 // Encargos secundarios: uno por NPC, no se repiten.
 export const SIDE_QUESTS = {
   naira: { title: 'Caravanas en peligro', desc: 'Destruye 3 gólems de piedra en las ruinas del templo de la Isla Duna.', type: 'kill', target: 'golem', count: 3, reward: { gold: 350, xp: 800, item: 'escudo_ambar' } },
@@ -45,7 +58,7 @@ export const SIDE_QUESTS = {
   selim: { title: 'Pieles de tigre', desc: 'Trae 3 pieles de tigre al Sastre Selim.', type: 'gather', target: 'piel_tigre', count: 3, reward: { gold: 200, xp: 600, item: 'capa_tigre' } },
   kuno: { title: 'La cueva de los murciélagos', desc: 'Mata 6 murciélagos vampiro en la cueva del norte de la Isla Selva.', type: 'kill', target: 'bat', count: 6, reward: { gold: 300, xp: 1000, item: 'capa_murcielago' } },
   tika: { title: 'Piedras verdes', desc: 'Tika quiere 2 piedras de jade (pica rocas en la Isla Selva).', type: 'gather', target: 'jade', count: 2, reward: { gold: 120, xp: 500, item: 'anillo_jade' } },
-  berta: { title: 'Fragatas blancas', desc: 'Hunde 2 fragatas de la Guardia Naval con los cañones de tu barco.', type: 'ship', target: 'marine', count: 2, reward: { gold: 600, xp: 1800, item: 'sombrero_capitan' } },
+  berta: { title: 'Fragatas blancas', desc: 'Hunde 2 fragatas de la Marina con los cañones de tu barco.', type: 'ship', target: 'marine', count: 2, reward: { gold: 600, xp: 1800, item: 'sombrero_capitan' } },
   mara: { title: 'Competencia desleal', desc: 'Hunde 3 barcos piratas rivales para Mara.', type: 'ship', target: 'pirate', count: 3, reward: { gold: 400, xp: 1200, item: 'chaqueta_pirata' } },
   quino: { title: 'La bestia de las profundidades', desc: 'Derrota a una serpiente marina en aguas profundas (lejos de las islas).', type: 'kill', target: 'serpent', count: 1, reward: { gold: 700, xp: 2500, item: 'tridente' } },
   osvaldo: { title: 'Piedra negra', desc: 'Destruye 4 gólems de obsidiana en la Isla Ceniza.', type: 'kill', target: 'golem_obs', count: 4, reward: { gold: 800, xp: 3000, item: 'anillo_obsidiana' } },
@@ -79,13 +92,13 @@ export const NPC_LINES = {
   zaid: ['El desierto no perdona al que olvida el agua.', 'Nuestro ámbar es el mejor del Mar de Bruma.'],
   selim: ['¿Ropa nueva? Un buen pirata se reconoce por su chaqueta.', 'Coso sobre cualquier armadura: tu armadura sigue protegiendo, solo cambia cómo luces.'],
   naira: ['El agua del oasis es fresca... cuando no hay escorpiones.', 'Las ruinas del templo, al noroeste, están llenas de gólems.'],
-  farid: ['Vigilo las dunas día y noche.', 'Si la Guardia Naval desembarca, aquí sabremos recibirla.'],
+  farid: ['Vigilo las dunas día y noche.', 'Si la Marina desembarca, aquí sabremos recibirla.'],
   ixa: ['La selva habla a quien sabe escuchar.', 'Los murciélagos de la cueva del norte no son normales.'],
   kuno: ['Un tigre de la selva puede derribar a un toro.', 'Sus pieles valen oro en el Oasis de Sal.'],
   tika: ['¡Cuando sea mayor cazaré tigres como Kuno!', '¿Has visto piedras verdes? ¡Me encantan!'],
-  lucas: ['Grillete no se arrodilla.', 'La Guardia dice que trae orden. Trae impuestos.'],
+  lucas: ['Grillete no se arrodilla.', 'La Marina dice que trae orden. Trae impuestos.'],
   berta: ['En mi posada no se habla de política... salvo de Vidal.', 'Las fragatas blancas salen del Bastión cada mañana.'],
-  ferro: ['Sirvo a la Guardia... y a quien pague mejor.', 'Un cartel de "Se busca" puede perderse, si hay oro de por medio.'],
+  ferro: ['Sirvo a la Marina... y a quien pague mejor.', 'Un cartel de "Se busca" puede perderse, si hay oro de por medio.'],
   brasa: ['La obsidiana no se doma: se convence.', 'Mi forja arde con el calor del volcán.'],
   osvaldo: ['Llevo treinta años en esta isla. El volcán me habla.', 'No pises la lava. Parece obvio, pero...'],
   marga: ['Un barco es tan fuerte como su casco.', 'Tráeme madera, hierro y pólvora y tu barco será la envidia del puerto.'],
@@ -97,7 +110,7 @@ export const NPC_LINES = {
 // Devuelve { text, options[] } según el estado del juego.
 export function dialogFor(id, G) {
   const q = G.quest;
-  const cur = QUESTS[q.stage];
+  const cur = questAt(q.stage, G);
   const opts = [];
   let text = null;
   const isGiver = cur && cur.giver === id;
@@ -203,11 +216,8 @@ export function dialogFor(id, G) {
     sell('potion', 16); sell('f_meat', 14);
     opts.push({ label: '🍲 Guiso de la posada: curar todo (8 oro)', action: () => G.buy({ gold: 8 }, () => { P.hp = P.maxHp; G.toast('❤️ Salud al máximo'); }) });
   } else if (id === 'ferro') {
-    if (B > 0) {
-      const c = Math.max(100, Math.round(B * 0.6));
-      text = text || `Tu recompensa es de ${B} oro. Por ${c} monedas, la mitad de tus carteles podrían... perderse.`;
-      opts.push({ label: `💰 Sobornar (${c} oro): recompensa -50%`, action: () => G.buy({ gold: c }, () => { G.lowerBounty(0.5); G.toast(`🤫 Ferro "pierde" papeles. Recompensa: ${G.bounty}`); }) });
-    }
+    if (G.isMarine()) text = text || `Recluta ${G.player.name}: tus méritos suman ${G.honor || 0}. Rango actual: ${G.bountyText()}. Sigue cazando piratas.`;
+    else if (B > 0) text = text || `Antes aceptaba sobornos... pero un pirata de verdad no borra su recompensa: la lleva con orgullo. La tuya es de ${B} oro.`;
   } else if (id === 'brasa' || id === 'osvaldo') {
     if (id === 'brasa') opts.push({ label: '⚒️ Forjar equipo', action: () => G.panels.openCraft('forja') });
     if (id === 'osvaldo') sell('potion', 18);
@@ -224,8 +234,8 @@ export function dialogFor(id, G) {
   if (!text) {
     const lines = NPC_LINES[id] || ['...'];
     text = lines[Math.floor(Math.random() * lines.length)];
-    if (B >= 300 && Math.random() < 0.35 && id !== 'ferro') {
-      text = [`Unos guardias navales vinieron preguntando por ti... ofrecen ${B} de oro por tu cabeza. Yo no he dicho nada.`, `He visto tu cartel en el puerto: «SE BUSCA — ${B} oro». ¡Qué fama!`, `La Guardia Naval anda preguntando por ${G.player.name}. Si desembarcan aquí, te defenderemos.`][Math.floor(Math.random() * 3)];
+    if (!G.isMarine() && B >= 300 && Math.random() < 0.35 && id !== 'ferro') {
+      text = [`Unos marines vinieron preguntando por ti... ofrecen ${B} de oro por tu cabeza. Yo no he dicho nada.`, `He visto tu cartel en el puerto: «SE BUSCA — ${B} oro». ¡Qué fama!`, `La Marina anda preguntando por ${G.player.name}. Si desembarcan aquí, te defenderemos.`][Math.floor(Math.random() * 3)];
     } else if (cur && cur.giver && cur.giver !== id && cur.type !== 'done') {
       // pista de la misión actual
       if (Math.random() < 0.5) text += ` (Misión: ${cur.desc})`;

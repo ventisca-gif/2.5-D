@@ -37,14 +37,20 @@
       <button id="btnBag" class="sbtn" aria-label="Mochila">🎒<small>Mochila</small></button>
       <button id="btnLog" class="sbtn" aria-label="Bitácora">📖<small>Bitácora</small></button>
       <button id="btnNet" class="sbtn" aria-label="Multijugador">👥<small>Online</small></button>
+      <button id="btnBuild" class="sbtn" aria-label="Construir">🔨<small>Construir</small></button>
       <button id="btnGuide" class="sbtn" aria-label="Guía">❓<small>Guía</small></button>
     </div>
     <div id="joy"><div id="joyKnob"></div></div>
     <div id="actions">
       <button id="btnRun" class="abtn"><span>🏃</span><small>Correr</small></button>
-      <button id="btnCannon" class="abtn"><span>💣</span><small>Cañones</small></button>
+      <button id="btnMed" class="abtn"><span>🧘</span><small>Meditar</small></button>
       <button id="btnPotion" class="abtn"><span>🍶</span><small id="potCount">0</small></button>
+      <button id="btnUse" class="abtn use hidden"><span id="useIcon">💬</span><small id="useLabel">Hablar</small></button>
       <button id="btnAction" class="abtn big"><span id="actIcon">⚔️</span><small id="actLabel">Atacar</small></button>
+    </div>
+    <div id="skillBar"></div>
+    <div id="buffs"></div>
+    <div>
     </div>
     <div id="toasts"></div>
   </div>
@@ -96,6 +102,7 @@
       <div id="scrCreate" class="board hidden">
         <div class="btitle">Crea tu aventurero</div>
         <label class="field">Nombre<input id="nameInput" maxlength="14" value="Aventurero" autocomplete="off"></label>
+        <div class="crow"><span>Bando</span><div id="factions" class="opts"></div></div>
         <div class="crow"><span>Género</span><div id="genders" class="opts"></div></div>
         <div class="crow"><span>Cuerpo</span><div id="bodies" class="opts"></div></div>
         <div class="crow" id="bustRow"><span>Busto</span><div id="busts" class="opts"></div></div>

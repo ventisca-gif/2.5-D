@@ -9,18 +9,21 @@ import {
 } from './props.js';
 import { animateModel, SKINS } from './characters.js';
 import { findPath } from './pathfinding.js';
-import { QUESTS, SIDE_QUESTS, dialogFor } from './quests.js';
+import { QUESTS, SIDE_QUESTS, questAt, dialogFor } from './quests.js';
 import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
 import { makeIslets, makeInteriors, attachRegions } from './regions.js';
 import { buildRoom } from './interiors.js';
-import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop, crewGear, crewTier, HAIR_AM as HAIRM, HAIR_AF as HAIRF, HAIR_COLORS as HAIRC, SKINS as SKINC, CLOTHES as CLOTHC, BODY_M, BODY_F, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './items.js';
+import { ITEMS, EQUIP, RECIPES, DROPS, MAX_LEVEL, buildLook, gearStats, oreDrop, crewGear, crewTier, TIER_NAMES, HAIR_AM as HAIRM, HAIR_AF as HAIRF, HAIR_COLORS as HAIRC, SKINS as SKINC, CLOTHES as CLOTHC, BODY_M, BODY_F, FACES_F, FACES_M, FACE_SHAPES, EYE_COLORS } from './items.js';
 import { npcLevel, RECRUITABLE, ROMANCE, MAX_CREW, friendLevel, heartsText, CHAT_LINES, CHAT_REPLIES, ROMANCE_LINES, CONFESS_YES, CONFESS_NO, DUEL_LINES, ANGRY_LINES, GIFT_LIKES } from './social.js';
 import { Panels, fmtTime } from './panels.js';
 import { Updater } from './updater.js';
 import { Net } from './net.js';
 import { makeNewIslets, MARINE_LOOK, SEA_ZONES } from './isles2.js';
 import { installNaval, makeArenaRegion } from './naval.js';
+import { installLife, FAMOUS } from './life.js';
+import { installSkills } from './skills.js';
+import { installBuild } from './build.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -32,7 +35,7 @@ const SETTINGS_KEY = 'islabruma_settings_v1';
 const SLOT_KEY = (i) => 'thebruma_slot_' + i;
 const DEFAULT_AP = { gender: 'm', hair: 0, hairColor: 1, skin: 1, clothes: 0, beard: false, body: 0, faceShape: 0, face: 0, eye: 0, bust: 2, nose: true, mouth: true, blush: true };
 // NPCs con cara anime: género, peinado, ojos, expresión, forma de cara y cuerpo deterministas por id
-const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara', 'naira', 'tika', 'berta', 'ixa', 'brasa', 'marga']);
+const FEMALE_NPC = new Set(['nerea', 'marisol', 'rosa', 'lucia', 'elvira', 'clara', 'tomasa', 'coral', 'olga', 'ines', 'mara', 'naira', 'tika', 'berta', 'ixa', 'brasa', 'marga', 'escarlata', 'ceniza', 'ondina', 'plata', 'medusa', 'garfio']);
 function hashId(id) { let h = 7; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; }
 function animeLook(def) {
   const L = def.look;
@@ -76,13 +79,13 @@ const ENEMY_DEF = {
   golem: { name: 'Gólem de piedra', hp: (L) => 60 + 16 * L, atk: (L) => 6 + 2.4 * L, speed: 1.7, xp: (L) => 18 + 7 * L, gold: (L) => 6 + Math.floor(Math.random() * (5 + L)), aggro: 4, cd: 2.0 },
   golem_obs: { name: 'Gólem de obsidiana', hp: (L) => 70 + 18 * L, atk: (L) => 7 + 2.6 * L, speed: 1.8, xp: (L) => 20 + 8 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 4.5, cd: 1.9 },
   skull: { name: 'Calavera llameante', hp: (L) => 26 + 9 * L, atk: (L) => 5 + 2.2 * L, speed: 3.0, xp: (L) => 14 + 6 * L, gold: (L) => 5 + Math.floor(Math.random() * (4 + L)), aggro: 6, cd: 1.3, fly: true },
-  marine: { name: 'Guardia Naval', hp: (L) => 44 + 13 * L, atk: (L) => 5 + 2.2 * L, speed: 2.8, xp: (L) => 16 + 7 * L, gold: (L) => 6 + Math.floor(Math.random() * (5 + L)), aggro: 6, cd: 1.3, neutral: true, bounty: 60 },
+  marine: { name: 'Marina', hp: (L) => 44 + 13 * L, atk: (L) => 5 + 2.2 * L, speed: 2.8, xp: (L) => 16 + 7 * L, gold: (L) => 6 + Math.floor(Math.random() * (5 + L)), aggro: 6, cd: 1.3, neutral: true, bounty: 60 },
   pirate: { name: 'Pirata rival', hp: (L) => 40 + 12 * L, atk: (L) => 5 + 2.1 * L, speed: 2.8, xp: (L) => 14 + 6 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 5, cd: 1.3 },
   marine_boss: { name: 'Comodoro Vidal', hp: () => 3200, atk: () => 95, speed: 2.8, xp: () => 3000, gold: () => 900, aggro: 7, cd: 1.4, boss: true, neutral: true, bounty: 2500 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
-// recompensa a partir de la cual la Guardia Naval te ataca nada más verte
+// recompensa a partir de la cual la Marina te ataca nada más verte
 const WANTED = 300;
 
 // ======================================================================= Actores
@@ -197,8 +200,8 @@ class Player extends Actor {
     this.maxSt = 100 + (this.level - 1) * 2;
     if (this.hp > this.maxHp) this.hp = this.maxHp;
   }
-  get atk() { return 5 + (this.level - 1) * 2 + gearStats(this.equip).atk; }
-  get def() { return gearStats(this.equip).def; }
+  get atk() { return (5 + (this.level - 1) * 2 + gearStats(this.equip).atk) * (this.g.buffMul ? this.g.buffMul('atk') : 1); }
+  get def() { return Math.round(gearStats(this.equip).def * (this.g.buffMul ? this.g.buffMul('def') : 1)); }
   xpNext() { const l = this.level - 1; return Math.round(25 + l * 18 + l * l * 2.2); }
   gainXp(n) {
     if (this.level >= MAX_LEVEL) { this.xp = 0; return; }
@@ -494,6 +497,12 @@ class NPC extends Actor {
   update(dt) {
     const g = this.g, p = g.player, s = g.soc(this.id);
     this.st.holdHand = null;
+    if (s.role && (s.crew || s.partner)) {
+      // en el barco o recolectando: no se ve por la isla
+      if (this.model.root.visible) { this.model.root.visible = false; this.label.el.style.display = 'none'; this.label._vis = false; }
+      this.st.moving = false;
+      return;
+    }
     if (this.fight) { this.updateFight(dt); return; }
     if (this.talking) {
       this.path = this.path.slice(0, 1);
@@ -538,6 +547,8 @@ class NPC extends Actor {
         this.repathT -= dt;
         if (this.repathT <= 0) { this.repathT = 0.6; this.goTo(p.tx, p.tz, true, 1500, 2); }
       }
+    } else if (!s.crew && g.npcRoutine(this, dt)) {
+      return;
     } else if (this.def.wander > 0) {
       this.speed = 1.6;
       this.wanderT -= dt;
@@ -606,6 +617,7 @@ class Enemy extends Actor {
     else if (type === 'golem') model = makeGolem('stone');
     else if (type === 'golem_obs' || type === 'golem_boss') model = makeGolem('obs');
     else if (type === 'skull') model = makeFlameSkull();
+    else if (type.startsWith('famous_')) { const f = FAMOUS.find((k) => 'famous_' + k.id === type); model = HUM(animeLook({ id: f.id, look: f.look })); }
     else if (type === 'marine' || type === 'marine_boss') model = HUM(MARINE_LOOK(type === 'marine_boss' ? 2 : seed % 5 === 0 ? 1 : 0, seed));
     else if (type === 'pirate') {
       model = HUM({ shirt: [0x8a2a2a, 0x2a2a2a, 0x5a3a6a, 0x2a5a4a][seed % 4], pants: 0x2a2220, hat: seed % 3 ? 'bandana' : 'tricorn', capColor: [0x1a1a1a, 0xb02a2a, 0x2a4ab0][seed % 3], hair: [0x1a1a1a, 0x6a3a1a, 0xb04a2a][seed % 3], beard: seed % 2 ? 0x2a1a10 : undefined, skin: [0xf0c49a, 0xc68a5a, 0x8a5a3a][seed % 3], sword: true, eyepatch: seed % 4 === 0, sash: 0xc8302a, bootCuff: true, earring: true });
@@ -618,6 +630,7 @@ class Enemy extends Actor {
     if (type === 'boss') model_scale(model, 1.5);
     if (type === 'golem_boss') model_scale(model, 1.7);
     if (type === 'marine_boss') model_scale(model, 1.3);
+    if (type.startsWith('famous_')) model_scale(model, 1.18);
     this.type = type;
     this.def = ENEMY_DEF[type];
     this.spawnDef = spawn;
@@ -716,16 +729,23 @@ class Enemy extends Actor {
     }
     this.path = [];
   }
-  // la Guardia Naval solo ataca si te buscan (recompensa alta) o si la provocas
-  hostile() { return !this.def.neutral || this.provoked || (this.g.bounty || 0) >= WANTED; }
+  // la Marina solo ataca si te buscan (recompensa alta) o si la provocas
+  hostile() {
+    if (this.def.famous) return !!this.provoked;
+    if (!this.def.neutral) return true;
+    if (this.g.isMarine()) return !!this.provoked;
+    return this.provoked || (this.g.bounty || 0) >= WANTED;
+  }
   updateColor() {
     const d = this.level - (this.g.player ? this.g.player.level : 1);
-    const c = this.def.boss ? '#ff5ad0' : this.def.neutral && !this.hostile() ? '#9ad0ff' : d >= 3 ? '#ff5a4a' : d >= 1 ? '#ffb84a' : d >= -2 ? '#7aff8a' : '#c8c8c8';
+    const c = this.def.famous ? (this.provoked ? '#ff5ad0' : '#ffd23a') : this.def.boss ? '#ff5ad0' : this.def.neutral && !this.hostile() ? '#9ad0ff' : d >= 3 ? '#ff5a4a' : d >= 1 ? '#ffb84a' : d >= -2 ? '#7aff8a' : '#c8c8c8';
     if (this.label._c !== c) { this.label._c = c; this.label.nm.style.color = c; }
   }
   update(dt) {
     const g = this.g;
     if (g.net.isClient && g.net.active) { this.netUpdate(dt); return; }
+    if (this.stunT > 0 && !this.dead) { this.stunT -= dt; this.st.moving = false; return; }
+    if (this.def.famous && !this.dead) { this.famousUpdate(dt); return; }
     const p = g.enemyTarget(this);
     if (this.dead) {
       this.deadT += dt;
@@ -840,6 +860,7 @@ class Game {
     this.W = generateWorld();
     this.islets = [...makeIslets(), ...makeNewIslets()];
     this.rooms = makeInteriors(this.W.buildings);
+    this.addPosters();
     this.arena = makeArenaRegion();
     this.addMarga();
     attachRegions(this.W, [...this.islets, ...this.rooms, this.arena]);
@@ -854,6 +875,7 @@ class Game {
     this.bounty = 0;
     this.sailing = false;
     this.flags = {};
+    this.posters = [];
     this.side = {};
     this.chests = [];
     this.social = {};
@@ -893,6 +915,23 @@ class Game {
   }
 
   sfx(n) { sfx(n); }
+  // tablones de Se busca en cada pueblo
+  addPosters() {
+    const spot = (W, x0, z0, add) => {
+      for (let r = 0; r < 6; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+        const x = x0 + dx, z = z0 + dz;
+        if (W.walkable(x, z) && W.tile(x, z) !== T.DOCK && W.tile(x, z) !== T.WATER) { add(x, z); return; }
+      }
+    };
+    const W = this.W;
+    for (const [x, z] of [[54, 47], [57, 87], [38, 64]]) spot(W, x, z, (px, pz) => { W.props.push({ type: 'poster', x: px, z: pz, rot: Math.PI / 4 }); W.blocked[W.idx(px, pz)] = 1; });
+    const at = { tortuga: [-3, 3], duna: [1, 3], selva: [-3, -1], bastion: [3, -10], ceniza: [1, 3] };
+    for (const r of this.islets) {
+      const o = at[r.id];
+      if (!o) continue;
+      spot(r, r.center.x + o[0], r.center.z + o[1], (px, pz) => { r.props.push({ type: 'poster', x: px, z: pz, rot: Math.PI / 4 }); r.block(px, pz); });
+    }
+  }
   // astillera de Puerto Salitre (mejoras y reparación del barco)
   addMarga() {
     const W = this.W;
@@ -920,6 +959,7 @@ class Game {
     groundTex.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
     const { ground, sides } = buildTerrain(W, groundTex);
     this.scene.add(ground, sides);
+    this.groundMain = ground;
     this.water = buildWater(W);
     this.scene.add(this.water);
     for (const r of this.islets) {
@@ -956,10 +996,12 @@ class Game {
       addDyn(dyn);
       if (p.type === 'campfire') this.stations.push({ type: 'fuego', x: p.x, z: p.z });
       if (p.type === 'forge') this.stations.push({ type: 'forja', x: p.x, z: p.z });
+      if (p.type === 'poster') this.posters.push({ x: p.x, z: p.z });
       if (p.type === 'chest') this.chests.push({ id: p.id || `cofre_${p.x}_${p.z}`, x: p.x, z: p.z, loot: p.loot || { gold: 30 } });
     }
     for (const r of this.rooms) {
       for (const it of r.room.items) {
+        if (it[0] === 'poster') this.posters.push({ x: r.X + Math.round(it[1]), z: r.Z + Math.round(it[2]) });
         const st = { fireplace: 'fuego', forge: 'forja', workbench: 'banco' }[it[0]];
         if (st) this.stations.push({ type: st, x: r.X + Math.round(it[1]), z: r.Z + Math.round(it[2]) });
       }
@@ -986,6 +1028,7 @@ class Game {
     // árboles / rocas / decoración instanciados
     const TG = treeGeometries();
     const vmat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    this.treeMat = vmat;
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), sc = new THREE.Vector3(), ps = new THREE.Vector3();
     const col = new THREE.Color();
     this.treeMap = new Map();
@@ -1181,8 +1224,8 @@ class Game {
       const k = e.key.toLowerCase();
       this.keys.add(k);
       if (!this.started) return;
-      if (k === ' ') { e.preventDefault(); this.doAction(); }
-      if (k === 'f') { e.preventDefault(); if (this.sailing) this.fireCannons(); else this.doAction(); }
+      if (k === ' ' || k === 'f') { e.preventDefault(); this.doAction(); }
+      if (k === 'e') { e.preventDefault(); const a = this.contextAction(); if (a && a.fn && a.label !== 'Atacar') a.fn(); }
       if (k === 'q') this.player.usePotion();
       if (k === 'i' || k === 'b') this.panels.isOpen ? this.panels.close() : this.panels.openInventory();
       if (k === 'l') this.panels.isOpen ? this.panels.close() : this.panels.openBitacora();
@@ -1211,7 +1254,9 @@ class Game {
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) $('btnAction').addEventListener(ev, () => { this.attackHeld = false; });
     press('btnPotion', () => this.player.usePotion());
     press('btnRun', () => { this.player.running = !this.player.running; sfx('click'); });
-    press('btnCannon', () => this.fireCannons());
+    press('btnUse', () => { if (!this.started || this.paused || this.ui.dialogOpen) return; const a = this.contextAction(); if (a && a.fn && a.label !== 'Atacar') a.fn(); });
+    press('btnMed', () => this.meditate());
+    press('btnBuild', () => this.panels.openBuild());
     $('btnBag').addEventListener('click', () => { if (this.started) this.panels.openInventory(); });
     $('btnLog').addEventListener('click', () => { if (this.started) this.panels.openBitacora(); });
     $('btnGuide').addEventListener('click', () => this.panels.openGuide());
@@ -1396,7 +1441,7 @@ class Game {
   }
   exitRoom(r) {
     const p = this.player;
-    if (r.id === 'bodega') {
+    if (r.id.startsWith('bodega')) {
       if (this.holdFromSea) { this.holdFromSea = false; p.x = this.boat.x; p.z = this.boat.z; this.board(true); return; }
       const d = this.docks.find((k) => k.id === this.boat.docked) || this.docks[0];
       p.x = d.land.x; p.z = d.land.z; p.path = []; p.target = null;
@@ -1427,6 +1472,7 @@ class Game {
   }
   board(silent) {
     const p = this.player, b = this.boat;
+    this.deck = null;
     if (b.docked) this.lastDock = b.docked;
     this.sailing = true;
     b.docked = null;
@@ -1441,8 +1487,9 @@ class Game {
     if (!silent) { this.ui.toast('⛵ ¡A navegar! Joystick o toca el mar'); sfx('quest'); }
     // tripulación y pareja en cubierta
     const deck = [[0.6, 1.4], [-0.6, 1.4], [0.6, 0.3], [-0.6, 0.3], [0.6, -0.8], [-0.6, -0.8], [0, 2.4], [0.5, 2.0], [-0.5, 2.0], [0.4, -1.6], [-0.4, -1.6]];
-    this.following().forEach((n, i) => {
+    [...this.following(), ...this.crew().filter((c) => this.soc(c.id).role === 'ship')].forEach((n, i) => {
       const [x, z] = deck[i % deck.length];
+      n.model.root.visible = true;
       n.onShip = true;
       n.path = [];
       this.ship.add(n.model.root);
@@ -1469,6 +1516,8 @@ class Game {
   }
   dock(d) {
     const p = this.player, b = this.boat;
+    this.deck = null;
+    this.autoHelm = null;
     b.x = d.shipX; b.z = d.shipZ; b.heading = d.heading; b.speed = 0; b.docked = d.id; b.waypoint = null;
     this.sailing = false;
     this.scene.add(p.model.root);
@@ -1491,7 +1540,9 @@ class Game {
   }
   updateBoat(dt) {
     const b = this.boat, p = this.player;
-    const j = this.joyVector();
+    let j = this.joyVector();
+    if (this.deck) { this.moveOnDeck(dt, j); j = null; }
+    if (!j && this.autoHelm) this.autoPilot(dt);
     let want = null, throttle = 0;
     if (j) {
       b.waypoint = null;
@@ -1540,7 +1591,7 @@ class Game {
     this.ui.toast(`🎁 ¡Tesoro! +${gold} oro${pot ? ` y ${pot} ron` : ''}`);
     sfx('coin');
     setTimeout(() => sfx('quest'), 250);
-    const cur = QUESTS[this.quest.stage];
+    const cur = questAt(this.quest.stage, this);
     if (cur && cur.type === 'chest' && cur.target === c.id) this.advanceQuest();
     this.save();
   }
@@ -1601,7 +1652,7 @@ class Game {
       const nv = this.navalAction();
       if (nv) return nv;
       const d = this.nearDock();
-      return d ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⬇️', label: 'Bodega', fn: () => this.enterHold() };
+      return d && !this.deck ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     const inRoom = this.roomAt(p.x, p.z);
     if (inRoom && Math.hypot(p.x - inRoom.exit.x, p.z - inRoom.exit.z) < 2.3) return { icon: '🚪', label: 'Salir', fn: () => this.exitRoom(inRoom) };
@@ -1612,6 +1663,11 @@ class Game {
     for (const c of this.chests) {
       if (!this.flags[c.id] && Math.max(Math.abs(c.x - p.tx), Math.abs(c.z - p.tz)) <= 1) return { icon: '🎁', label: 'Abrir', fn: () => p.setTarget({ kind: 'chest', ref: c }) };
     }
+    for (const ps of this.posters) if (Math.hypot(ps.x - p.x, ps.z - p.z) < 1.7) return { icon: '📜', label: 'Se busca', fn: () => this.panels.openPosters() };
+    const sb = this.structNear(1.9);
+    if (sb) return { icon: '🔨', label: 'Estructura', fn: () => this.structMenu(sb) };
+    const fam = this.famousAt(2.4);
+    if (fam) return { icon: this.isMarine() ? '⛓️' : '⚔️', label: 'Retar', fn: () => this.challengeFamous(fam) };
     const stn = this.nearStation();
     if (stn) {
       const L = { fuego: ['🍳', 'Cocinar'], forja: ['⚒️', 'Forjar'], banco: ['🪚', 'Banco'] }[stn.type];
@@ -1638,11 +1694,8 @@ class Game {
   doAction() {
     if (!this.started || this.paused || this.player.dead) return;
     if (this.ui.dialogOpen) return;
-    // con el joystick (caminando o corriendo) el botón siempre ataca
-    if (this.joyVector() && !this.sailing) { this.attackPress(); return; }
-    const a = this.contextAction();
-    if (a.fn) a.fn();
-    else this.attackPress();
+    // el botón grande siempre ataca (o dispara los cañones navegando); las demás acciones van en el botón de usar
+    this.attackPress();
   }
   // ataque manual: golpea al objetivo seleccionado o al enemigo más cercano a tu alcance; si no hay, tajo al aire
   attackPress() {
@@ -1716,7 +1769,7 @@ class Game {
       p.st.gather = 0;
       sfx(kind === 'tree' ? 'chop' : 'mine');
     }
-    const cur = QUESTS[this.quest.stage];
+    const cur = questAt(this.quest.stage, this);
     if (cur && cur.type === 'gather' && cur.target === (kind === 'tree' ? 'wood' : 'stone') && p.inv[cur.target] === cur.count) {
       const giver = this.npcs.find((n) => n.id === cur.giver);
       this.ui.toast(`✔ Ya tienes ${cur.count}. Ve con ${giver ? giver.name : ''}`);
@@ -1737,12 +1790,13 @@ class Game {
   }
   damageEnemy(e, dmg, crit, byCrew, killerId = 0) {
     const g = this;
+    if (e.def.famous && e.provoked && Math.random() < 0.2) { dmg = Math.max(1, Math.round(dmg * 0.3)); this.ui.float('¡Bloqueo!', 'info', e.x, e.model.height + 0.5, e.z); }
     e.hp -= dmg;
     e.st.flash = 0.18;
     if (e.def.neutral && !e.provoked) {
-      // atacar a la Guardia alerta a sus compañeros cercanos
-      for (const o of this.enemies) if (o.def.neutral && !o.dead && o.dist(e) < 9) { o.provoked = true; o.updateColor(); if (o.state === 'idle') { o.state = 'chase'; o.thinkT = 0; } }
-      if (!e.temp && (this.bounty || 0) < WANTED) this.toast('🚨 ¡Has atacado a la Guardia Naval!', 'area');
+      // atacar a la Marina alerta a sus compañeros cercanos
+      for (const o of this.enemies) if (o.def.neutral && (o.def.group || 'marina') === (e.def.group || 'marina') && !o.dead && o.dist(e) < 9) { o.provoked = true; o.updateColor(); if (o.state === 'idle') { o.state = 'chase'; o.thinkT = 0; } }
+      if (!e.temp && (this.isMarine() || (this.bounty || 0) < WANTED)) this.toast(this.isMarine() ? '🚨 ¡Atacas a tus compañeros de la Marina!' : '🚨 ¡Has atacado a la Marina!', 'area');
     }
     if (e.state !== 'chase') { e.state = 'chase'; e.thinkT = 0; }
     g.ui.float(String(dmg), crit ? 'crit' : 'pdmg', e.x, e.model.height + 0.2, e.z);
@@ -1779,13 +1833,14 @@ class Game {
       this.stats.kills = (this.stats.kills || 0) + 1;
       this.stats['k_' + type] = (this.stats['k_' + type] || 0) + 1;
       this.ui.float(`+${xp} XP`, 'info', x, 1.2, z);
-      this.addBounty(def.bounty || (def.boss ? 400 : Math.max(2, Math.round(level / 3))));
+      this.addBounty(def.bounty || (def.boss ? 400 : Math.max(2, Math.round(level / 3))), type);
     } else {
       this.ui.float(`+${xp} XP 🤝`, 'info', p.x, 1.5, p.z);
     }
     p.gainXp(xp);
     this.crewGainXp(xp);
     this.onKill(type);
+    if (type.startsWith('famous_')) { this.onKill('famous'); if (isKiller || true) this.famousDefeated(type.slice(7)); }
   }
   // el anfitrión elige a quién persigue cada enemigo (el jugador vivo más cercano)
   enemyTarget(e) {
@@ -1915,7 +1970,7 @@ class Game {
   }
   onKill(type) {
     this.sideTick('kill', type);
-    const cur = QUESTS[this.quest.stage];
+    const cur = questAt(this.quest.stage, this);
     if (!cur || cur.type !== 'kill' || cur.target !== type) return;
     this.quest.progress++;
     if (this.quest.progress === cur.count) {
@@ -1925,7 +1980,7 @@ class Game {
     }
   }
   advanceQuest() {
-    const cur = QUESTS[this.quest.stage];
+    const cur = questAt(this.quest.stage, this);
     const p = this.player;
     if (cur.reward) {
       if (cur.reward.gold) p.gold += cur.reward.gold;
@@ -1936,15 +1991,16 @@ class Game {
     if (this.quest.stage > 0 || cur.type !== 'talk') this.ui.toast('📜 Misión completada');
     this.quest.stage = Math.min(QUESTS.length - 1, this.quest.stage + 1);
     this.quest.progress = 0;
-    const nq = QUESTS[this.quest.stage];
+    const nq = questAt(this.quest.stage, this);
     setTimeout(() => this.ui.toast('Nueva misión: ' + nq.title), 900);
     if (nq.type === 'chest' && this.flags[nq.target]) setTimeout(() => this.advanceQuest(), 2500);
     sfx('quest');
     this.save();
   }
+  questAtCur() { return questAt(this.quest.stage, this); }
   questInfo() {
     const q = this.quest;
-    const cur = QUESTS[q.stage];
+    const cur = questAt(q.stage, this);
     let prog = '';
     if (cur.type === 'kill') {
       const gv = this.npcById(cur.giver);
@@ -1957,7 +2013,7 @@ class Game {
   }
   questMarker() {
     const q = this.quest;
-    const cur = QUESTS[q.stage];
+    const cur = questAt(q.stage, this);
     if (!cur || cur.type === 'done') return null;
     const npc = (id) => { const n = this.npcById(id); return n ? { x: n.x, z: n.z } : null; };
     if (cur.type === 'talk') return npc(cur.target);
@@ -1965,6 +2021,7 @@ class Game {
       if (q.progress >= cur.count) return npc(cur.giver);
       const zones = { wolf: [50, 20], crab: [70, 80], boar: [20, 41], skeleton: [85, 50], boss: [87, 56] };
       const z = cur.zone || zones[cur.target];
+      if (!z) return cur.target === 'famous' && this.famousNear ? this.famousNear() : null;
       return { x: z[0], z: z[1] };
     }
     if (cur.type === 'chest') {
@@ -1979,7 +2036,7 @@ class Game {
   }
   npcMark(n) {
     const q = this.quest;
-    const cur = QUESTS[q.stage];
+    const cur = questAt(q.stage, this);
     if (!cur) return '';
     if (cur.type === 'talk' && cur.target === n.id) return '!';
     if (cur.giver === n.id) {
@@ -2000,7 +2057,8 @@ class Game {
       v: 2, name: p.name, ap: p.ap, equip: p.equip, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
       inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags, social: this.social, stats: this.stats,
       playtime: Math.round(this.playtime), day: this.day, area: this.boarding ? 'Mar de Bruma' : this.W.areaName(p.tx, p.tz), ...pos,
-      bounty: this.bounty || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
+      famous: this.famous, weather: this.weather, builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow })) : [], townDef: this.townDef || {},
+      bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
   }
   save() {
@@ -2080,6 +2138,7 @@ class Game {
       opt('skins', SKINC, 'skin', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
       opt('clothes', CLOTHC, 'clothes', (b, c) => { b.classList.add('sw'); b.style.background = hex(c); });
       opt('busts', ['Plano', 'Pequeño', 'Medio', 'Grande'], 'bust', (b, it) => { b.textContent = it; });
+      opt('factions', ['☠ Pirata', '⚓ Marina'], 'factionIdx', (b, it, i) => { b.textContent = it; b.classList.toggle('sel', (ap.factionIdx || 0) === i); });
       $('bustRow').classList.toggle('hidden', ap.gender !== 'f');
       const det = $('details');
       det.innerHTML = '';
@@ -2191,6 +2250,11 @@ class Game {
     this.playtime = data.playtime || 0;
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
+    this.honor = data.honor || 0;
+    if (data.famous) { this.famousInit(); for (const [k, v] of Object.entries(data.famous)) if (this.famous[k]) Object.assign(this.famous[k], v); }
+    if (data.weather) this.weather = data.weather;
+    this.townDef = data.townDef || {};
+    if (this.loadBuilds) this.loadBuilds(data.builds || []);
     this.side = data.side || {};
     this.shipUp = { hull: 0, cannons: 0, sails: 0, size: 0, ...(data.shipUp || {}) };
     this.boat.hp = undefined;
@@ -2204,7 +2268,10 @@ class Game {
       const s = this.social[n.id];
       if (!s) continue;
       if (s.crew) { n.setStats(Math.max(n.baseLevel, s.lvl || n.baseLevel)); this.rebuildCrewLook(n); }
+      else if (s.partner && s.lvl) n.setStats(Math.max(n.baseLevel, s.lvl));
     }
+    // partidas antiguas: como mucho 3 te acompañan, el resto espera en el barco
+    this.activeCrew().slice(3).forEach((n) => { this.soc(n.id).role = 'ship'; });
     this.placeFollowers(p.tx, p.tz);
     this.started = true;
     document.body.classList.add('playing');
@@ -2300,7 +2367,55 @@ class Game {
   crew() { return this.npcs.filter((n) => this.soc(n.id).crew); }
   partner() { return this.npcs.find((n) => this.soc(n.id).partner); }
   following() {
-    return this.npcs.filter((n) => { const s = this.soc(n.id); return (s.crew && !s.wait) || (s.partner && s.hand); });
+    return this.npcs.filter((n) => { const s = this.soc(n.id); return (s.crew && !s.wait && !s.role) || (s.partner && s.hand && !s.role); });
+  }
+  activeCrew() { return this.crew().filter((n) => !this.soc(n.id).role); }
+  // papel de cada tripulante: undefined = te sigue (máx. 3), 'ship' = en el barco, 'farm' = recolectando en una isla
+  setCrewRole(id, role) {
+    const n = this.npcById(id), s = this.soc(id);
+    if (!role && s.role && this.activeCrew().length >= 3) return this.ui.toast('Solo pueden acompañarte 3 a la vez. Manda a otro al barco.');
+    if (s.role === 'farm' && role !== 'farm') this.collectFarm(n);
+    if (role === 'farm') {
+      if (this.W.isInterior(this.player.x) || this.sailing) return this.ui.toast('Tienes que estar en una isla para mandarles a recolectar');
+      s.farm = { area: this.W.areaName(this.player.tx, this.player.tz), isle: this.islandName(), t0: this.playtime };
+      this.ui.toast(`⛏ ${n.name} se queda recolectando en ${s.farm.isle}`);
+    }
+    s.role = role || undefined;
+    s.wait = false;
+    n.model.root.visible = !role;
+    if (!role) { this.placeNear(n, this.player.tx, this.player.tz); this.ui.toast(`▶ ${n.name} te acompaña`); }
+    else if (role === 'ship') this.ui.toast(`⚓ ${n.name} te espera en el barco`);
+    if (this.autoHelm === id && role !== 'ship') this.autoHelm = null;
+  }
+  islandName() {
+    const r = this.W.regionAt(this.player.x, this.player.z);
+    return r && r.kind === 'islet' ? r.name : 'Isla Bruma';
+  }
+  farmYield(n) {
+    const s = this.soc(n.id);
+    if (!s.farm) return null;
+    const min = Math.min(60, (this.playtime - s.farm.t0) / 60);
+    const k = min * (1 + n.level / 25);
+    const out = { wood: Math.floor(k * 2), stone: Math.floor(k * 1.2), gold: Math.floor(k * 6) };
+    for (let i = 0; i < Math.floor(min); i++) { const o = oreDrop(s.farm.area); if (o) out[o] = (out[o] || 0) + 1; }
+    const special = { 'Isla Duna': 'ambar', 'Isla Selva': 'jade', 'Isla Ceniza': 'obsidiana', 'Isla Tortuga': 'silver', 'Isla Calavera': 'goldore' }[s.farm.isle];
+    if (special) out[special] = (out[special] || 0) + Math.floor(min / 4);
+    return { min, out, xp: Math.round(k * 30) };
+  }
+  collectFarm(n) {
+    const s = this.soc(n.id), y = this.farmYield(n);
+    if (!y) return;
+    const p = this.player;
+    const parts = [];
+    for (const [k, v] of Object.entries(y.out)) {
+      if (!v) continue;
+      if (k === 'gold') p.gold += v; else this.give(k, v);
+      parts.push(`${v} ${k === 'gold' ? 'oro' : ITEMS[k] ? ITEMS[k].icon : k}`);
+    }
+    n.cxp = (n.cxp || 0) + y.xp;
+    this.crewGainXp(0);
+    s.farm = null;
+    this.ui.toast(parts.length ? `⛏ ${n.name} trae: ${parts.join(', ')}` : `${n.name} no tuvo tiempo de recolectar nada`);
   }
   addFriend(n, v, quiet) {
     const s = this.soc(n.id);
@@ -2311,7 +2426,7 @@ class Game {
     if (after > before) { this.ui.toast(`❤ ${n.name}: ${friendLevel(s.f).name}`); sfx('quest'); }
   }
   socialOptions(n) {
-    const s = this.soc(n.id), o = [];
+    const s = this.soc(n.id), o = [...this.townDefOptions(n.id)];
     if (s.talkDay !== this.day) {
       o.push({ label: '💬 Charlar', action: () => { s.talkDay = this.day; this.addFriend(n, 4); this.ui.openDialog(n.name, pick(CHAT_LINES), [{ label: 'Seguir', action: null }]); } });
     }
@@ -2325,7 +2440,10 @@ class Game {
     }
     if (ROMANCE.has(n.id)) {
       if (s.partner) {
-        o.push({ label: '💋 Besar', action: () => this.kiss(n) });
+        o.push({ label: '💋 Besar', action: () => this.coupleAct(n, 'kiss') });
+        o.push({ label: '🤗 Abrazar', action: () => this.coupleAct(n, 'hug') });
+        o.push({ label: '💃 Bailar juntos', action: () => this.coupleAct(n, 'dance') });
+        o.push({ label: this.carrying === n ? '👐 Bajar de tus brazos' : '👐 Llevar en brazos', action: () => this.coupleAct(n, 'carry') });
         o.push({ label: s.hand ? '🤝 Soltar la mano' : '🤝 Pasear de la mano', action: () => { s.hand = !s.hand; this.ui.toast(s.hand ? `🤝 Paseas de la mano con ${n.name}` : `Soltaste la mano de ${n.name}`); } });
         o.push({ label: '💌 Palabras bonitas', action: () => { this.addFriend(n, 1); this.ui.openDialog(n.name, pick(ROMANCE_LINES), [{ label: '❤', action: null }]); } });
       } else if (s.f >= 70 && !this.partner()) {
@@ -2398,8 +2516,11 @@ class Game {
   }
   recruit(n) {
     const s = this.soc(n.id);
+    const full = this.activeCrew().length >= 3;
     s.crew = true;
     s.wait = false;
+    s.role = full ? 'ship' : undefined;
+    if (s.role) setTimeout(() => this.ui.toast(`${n.name} te espera en el barco (ya te acompañan 3)`), 1200);
     n.setStats(Math.max(n.level, 1));
     this.rebuildCrewLook(n);
     this.addFriend(n, 5);
@@ -2408,7 +2529,10 @@ class Game {
   }
   dismiss(n) {
     const s = this.soc(n.id);
+    if (s.role === 'farm') this.collectFarm(n);
     s.crew = false;
+    s.role = undefined;
+    n.model.root.visible = true;
     n.tier = -1;
     n.rebuild(n.look0);
     n.x = n.home.x; n.z = n.home.z; n.path = [];
@@ -2430,16 +2554,21 @@ class Game {
   }
   crewGainXp(xp) {
     const p = this.player;
-    for (const n of this.crew()) {
+    const pt = this.partner();
+    const list = this.crew();
+    if (pt && !list.includes(pt)) list.push(pt);
+    for (const n of list) {
       n.cxp = (n.cxp || 0) + xp * 0.6;
-      const need = Math.round(25 + (n.level - 1) * 18 + (n.level - 1) ** 2 * 2.2);
-      if (n.cxp >= need && n.level < p.level) {
+      let need = Math.round(25 + (n.level - 1) * 18 + (n.level - 1) ** 2 * 2.2);
+      while (n.cxp >= need && n.level < MAX_LEVEL) {
         n.cxp -= need;
         n.setStats(n.level + 1);
-        this.ui.float('⭐ Nv. ' + n.level, 'crit', n.x, n.model.height + 0.4, n.z);
+        this.soc(n.id).lvl = n.level;
+        if (n.model.root.visible) this.ui.float('⭐ Nv. ' + n.level, 'crit', n.x, n.model.height + 0.4, n.z);
         const before = n.tier;
-        this.rebuildCrewLook(n);
-        if (n.tier !== before) this.ui.toast(`🛡️ ${n.name} consigue armadura de ${['cuero', 'hierro', 'plata', 'oro'][n.tier]}`);
+        if (this.soc(n.id).crew) this.rebuildCrewLook(n);
+        if (n.tier !== before) this.ui.toast(`🛡️ ${n.name} consigue armadura de ${TIER_NAMES[n.tier].toLowerCase()}`);
+        need = Math.round(25 + (n.level - 1) * 18 + (n.level - 1) ** 2 * 2.2);
       }
     }
   }
@@ -2478,7 +2607,7 @@ class Game {
     if (s.f >= 90) {
       s.partner = true;
       this.addFriend(n, 5);
-      this.ui.openDialog(n.name, pick(CONFESS_YES), [{ label: '💋 Besar', action: () => this.kiss(n) }, { label: '❤', action: null }]);
+      this.ui.openDialog(n.name, pick(CONFESS_YES), [{ label: '💋 Besar', action: () => this.coupleAct(n, 'kiss') }, { label: '❤', action: null }]);
       this.ui.toast(`💗 ¡${n.name} y tú sois pareja!`);
       sfx('quest');
     } else {
@@ -2489,13 +2618,17 @@ class Game {
   shipMenu() {
     this.ui.openDialog('Gaviota Negra', 'El barco de Nerea está listo. ¿Qué quieres hacer?', [
       { label: '⛵ Zarpar', action: () => this.board() },
-      { label: '⬇️ Bajar a la bodega', action: () => { this.holdFromSea = false; this.enterRoom(this.rooms.find((r) => r.id === 'bodega')); } },
+      { label: '⬇️ Bajar a la bodega', action: () => { this.holdFromSea = false; this.enterRoom(this.holdRoom()); } },
       { label: 'Ahora no', action: null },
     ]);
   }
+  holdRoom() {
+    const sz = (this.shipUp && this.shipUp.size) || 0;
+    return this.rooms.find((k) => k.id === (sz >= 2 ? 'bodega3' : sz === 1 ? 'bodega2' : 'bodega'));
+  }
   enterHold() {
     const p = this.player;
-    const r = this.rooms.find((k) => k.id === 'bodega');
+    const r = this.holdRoom();
     this.holdFromSea = true;
     this.sailing = false;
     this.boat.speed = 0;
@@ -2509,7 +2642,7 @@ class Game {
     if (this.chatT > 0) return;
     const p = this.player;
     const near = this.crew().filter((n) => n.onShip || n.dist(p) < 12);
-    const inHold = this.roomAt(p.x, p.z)?.id === 'bodega';
+    const inHold = (this.roomAt(p.x, p.z)?.id || '').startsWith('bodega');
     this.chatT = (inHold ? 4 : 8) + Math.random() * 6;
     if (!near.length) return;
     const a = pick(near);
@@ -2540,8 +2673,9 @@ class Game {
     const night = 1 - day;
     const sunCol = new THREE.Color(0x9ab0ff).lerp(new THREE.Color(0xffffff), day).lerp(new THREE.Color(0xffa860), clamp(warm, 0, 1) * 0.55);
     this.sun.color.copy(sunCol);
-    this.sun.intensity = 0.55 + 1.75 * day;
-    this.hemi.intensity = 0.7 + 0.65 * day;
+    const wd = this.weatherDim ? this.weatherDim() : 1;
+    this.sun.intensity = (0.55 + 1.75 * day) * Math.min(1, wd) * (wd > 1 ? 1.6 : 1);
+    this.hemi.intensity = (0.7 + 0.65 * day) * (0.55 + 0.45 * wd);
     this.hemi.color.set(0x5a6aa8).lerp(new THREE.Color(0xdfefff), day);
     this.hemi.groundColor.set(0x252a3a).lerp(new THREE.Color(0x8a7a5a), day);
     this.scene.background.set(0x0a1424).lerp(new THREE.Color(0x8fc6e8), day);
@@ -2561,7 +2695,9 @@ class Game {
       this.playtime += dt;
       this.crewChat(dt);
     }
+    this.updateWeather(dt);
     this.updateLighting();
+    this.updateRings(dt);
     const p = this.player;
     if (this.started) {
       if (this.sailing) { if (!this.boat.sinking) this.updateBoat(dt); }
@@ -2569,11 +2705,14 @@ class Game {
       this.updateNaval(dt);
       this.updateBoarding(dt);
       this.updateRaids(dt);
+      this.updateFamous(dt);
+      this.updateSkills && this.updateSkills(dt);
+      this.updateBuild && this.updateBuild(dt);
       this.player.st.holdHand = null;
-      for (const n of this.npcs) if (!n.onShip) n.update(dt);
+      for (const n of this.npcs) if (!n.onShip && !n.carried) n.update(dt);
       for (const e of this.enemies) e.update(dt);
     }
-    if (this.sailing) { p.st.moving = false; animateModel(p.model, p.st, dt); } else p.sync(dt);
+    if (this.sailing) { if (!this.deck) p.st.moving = false; animateModel(p.model, p.st, dt); } else p.sync(dt);
     // interior: fondo oscuro y luz cálida
     const room = this.roomAt(p.x, p.z);
     this.water.visible = !room;
@@ -2583,7 +2722,7 @@ class Game {
       this.torch.distance = 16;
       this.torch.intensity = 5;
     } else this.torch.distance = 8;
-    for (const n of this.npcs) { if (n.onShip) animateModel(n.model, n.st, dt); else n.sync(dt); }
+    for (const n of this.npcs) { if (n.onShip || n.carried) animateModel(n.model, n.st, dt); else n.sync(dt); }
     for (const e of this.enemies) if (!e.dead || e.model.root.visible) { if (e.dist(p) < 34 || e.st.moving) e.sync(dt); }
     for (const gd of this.guards) {
       gd.m.root.rotation.y = Math.PI / 4 + Math.sin(this.time * 0.3 + gd.base) * 1.2;
@@ -2719,8 +2858,8 @@ class Game {
       else if (r.exitLabel._vis) { r.exitLabel._vis = false; r.exitLabel.el.style.display = 'none'; }
     }
     for (const n of this.npcs) {
-      if (n.onShip) continue;
-      if (n.dist(p) > 22) { if (n.label._vis) { n.label._vis = false; n.label.el.style.display = 'none'; } continue; }
+      if (n.onShip || n.carried) continue;
+      if (n.dist(p) > 22 || !n.model.root.visible) { if (n.label._vis) { n.label._vis = false; n.label.el.style.display = 'none'; } continue; }
       this.ui.setMark(n.label, this.npcMark(n));
       this.ui.placeLabel(n.label, n.x, this.W.groundY(n.x, n.z) + n.model.height + 0.12, n.z);
     }
@@ -2736,8 +2875,7 @@ class Game {
     this.ui.updateFloats(dt);
     this.net.update(dt);
     if (this.attackHeld && this.started && !this.ui.dialogOpen && !this.panels.isOpen && this.player.attackCd <= 0) {
-      const a = this.sailing || this.joyVector() ? null : this.contextAction();
-      if (!a || a.label === 'Atacar') this.attackPress();
+      this.attackPress();
     }
     this.updateFx(dt);
 
@@ -2761,6 +2899,9 @@ class Game {
 }
 
 installNaval(Game, { sfx, Enemy });
+installLife(Game, { sfx, Enemy, buildLook, animeLook });
+installSkills(Game, { sfx, EQUIP });
+installBuild(Game, { sfx, T });
 
 window.addEventListener('load', () => {
   setTimeout(() => {

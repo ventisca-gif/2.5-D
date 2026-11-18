@@ -1,4 +1,4 @@
-// Combate naval, recompensa (Se busca), redadas de la Guardia Naval, abordajes y astillero.
+// Combate naval, recompensa (Se busca), redadas de la Marina, abordajes y astillero.
 // Se instala sobre el prototipo de Game para no inflar main.js.
 import * as THREE from 'three';
 import { makeShip } from './props.js';
@@ -9,7 +9,7 @@ import { ITEMS } from './items.js';
 const ARENA_X = 1700, ARENA_Z = 0;
 export const WANTED = 300;
 const RAID_TOWNS = new Set(['Villarroca', 'Puerto Salitre', 'Isla Tortuga', 'Oasis de Sal', 'Aldea Liana', 'Villa Grillete', 'Granja de los Trigales']);
-// NPCs que salen a defender su pueblo cuando la Guardia desembarca
+// NPCs que salen a defender su pueblo cuando la Marina desembarca
 const DEFENDERS = new Set(['ramiro', 'elvira', 'nerea', 'tadeo', 'olga', 'mara', 'farid', 'kuno', 'lucas', 'brasa', 'quino', 'rufo']);
 
 export const SHIP_UPS = {
@@ -56,13 +56,25 @@ export function installNaval(Game, D) {
   const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
 
   // ------------------------------------------------------------ recompensa
-  P.addBounty = function (n) {
+  P.isMarine = function () { return (this.player && this.player.ap && this.player.ap.factionIdx) === 1; };
+  const RANKS = [[0, 'Recluta'], [300, 'Marinero'], [1000, 'Sargento'], [3000, 'Teniente'], [10000, 'Capitán'], [25000, 'Comodoro'], [60000, 'Vicealmirante'], [150000, 'Almirante']];
+  P.addBounty = function (n, type) {
+    if (this.isMarine()) {
+      // en la Marina se ganan méritos cazando piratas (y protegiendo a la gente)
+      const pir = type && (type === 'pirate' || type === 'skeleton' || type === 'boss' || type.startsWith('famous_') || type === 'ship_pirate');
+      if (type === 'marine' || type === 'marine_boss' || type === 'ship_marine') { this.honor = Math.max(0, (this.honor || 0) - n); return; }
+      const before = this.honor || 0;
+      this.honor = before + (pir ? n * 2 : Math.ceil(n / 2));
+      for (const [v, name] of RANKS) if (v > 0 && before < v && this.honor >= v) { this.toast(`🎖️ ¡Ascenso! Ahora eres ${name} de la Marina`, 'area'); sfx('level'); }
+      return;
+    }
     const before = this.bounty || 0;
     this.bounty = before + n;
-    const steps = [[WANTED, '📜 ¡SE BUSCA! La Guardia Naval te atacará en cuanto te vea.'], [1000, '📜 Tu recompensa sube: la Guardia manda barcos a buscarte.'], [3000, '📜 Eres una leyenda pirata: la Guardia envía a sus mejores.'], [10000, '📜 ¡El Almirantazgo pone precio de rey a tu cabeza!']];
+    const steps = [[WANTED, '📜 ¡SE BUSCA! La Marina te atacará en cuanto te vea.'], [1000, '📜 Tu recompensa sube: la Marina manda barcos a buscarte.'], [3000, '📜 Eres una leyenda pirata: la Marina envía a sus mejores.'], [10000, '📜 ¡El Almirantazgo pone precio de rey a tu cabeza!']];
     for (const [v, txt] of steps) if (before < v && this.bounty >= v) { this.toast(txt, 'area'); sfx('quest'); for (const e of this.enemies) e.updateColor(); }
   };
   P.bountyText = function () {
+    if (this.isMarine()) { let r = RANKS[0][1]; for (const [v, name] of RANKS) if ((this.honor || 0) >= v) r = name; return r; }
     const b = this.bounty || 0;
     return b >= 10000 ? 'Leyenda' : b >= 3000 ? 'Temido' : b >= 1000 ? 'Buscado' : b >= WANTED ? 'Se busca' : 'Desconocido';
   };
@@ -206,11 +218,11 @@ export function installNaval(Game, D) {
       cd: 3 + Math.random() * 2, boardCd: 8 + Math.random() * 6, sinking: 0, side: Math.random() < 0.5 ? 1 : -1,
       label: this.ui.makeLabel('enemy', '', { hp: true }),
     };
-    s.label.nm.textContent = `${type === 'marine' ? '⚓ Fragata de la Guardia' : '☠ Corsarios'} · Nv. ${lvl}`;
+    s.label.nm.textContent = `${type === 'marine' ? '⚓ Fragata de la Marina' : '☠ Corsarios'} · Nv. ${lvl}`;
     s.label.nm.style.color = type === 'marine' ? '#9ad0ff' : '#ff8a6a';
     this.ui.setHp(s.label, 1);
     this.naval.ships.push(s);
-    this.toast(type === 'marine' ? '🔭 ¡Una fragata de la Guardia Naval te ha visto!' : '🔭 ¡Barco pirata a la vista! Vienen a por tu botín', 'area');
+    this.toast(type === 'marine' ? '🔭 ¡Una fragata de la Marina te ha visto!' : '🔭 ¡Barco pirata a la vista! Vienen a por tu botín', 'area');
     sfx('quest');
     return s;
   };
@@ -251,8 +263,8 @@ export function installNaval(Game, D) {
     this.give('polvora', 2 + Math.floor(Math.random() * 3), s.x, s.z);
     if (Math.random() < 0.4) this.give(s.type === 'marine' ? 'silver' : 'goldore', 1);
     this.stats['s_' + s.type] = (this.stats['s_' + s.type] || 0) + 1;
-    this.addBounty(s.type === 'marine' ? 150 : 40);
-    this.toast(s.type === 'marine' ? '💥 ¡Fragata de la Guardia hundida!' : '💥 ¡Barco pirata hundido!', 'area');
+    this.addBounty(s.type === 'marine' ? 150 : 40, 'ship_' + s.type);
+    this.toast(s.type === 'marine' ? '💥 ¡Fragata de la Marina hundida!' : '💥 ¡Barco pirata hundido!', 'area');
     this.puff(s.x, 1, s.z, 0x8a8a8a, true);
     sfx('quest');
     this.onShipSunk && this.onShipSunk(s.type);
@@ -279,7 +291,7 @@ export function installNaval(Game, D) {
         const alive = N.ships.filter((s) => !s.sinking).length;
         const r = Math.random();
         if (alive < 2) {
-          if ((this.bounty || 0) >= 100 && r < 0.3 + Math.min(0.4, (this.bounty || 0) / 8000)) this.spawnEnemyShip('marine');
+          if (!this.isMarine() && (this.bounty || 0) >= 100 && r < 0.3 + Math.min(0.4, (this.bounty || 0) / 8000)) this.spawnEnemyShip('marine');
           else if (r < (deep ? 0.75 : 0.5)) this.spawnEnemyShip('pirate');
           else if (deep && !N.serpents.some((s) => !s.dead) && p.level >= 15) this.spawnSerpent();
         }
@@ -427,8 +439,77 @@ export function installNaval(Game, D) {
         const k = Math.round((b.hp / b.maxHp) * 100);
         if (hud._k !== k) { hud._k = k; document.getElementById('shipfill').style.width = k + '%'; document.getElementById('shiptext').textContent = `${Math.round(b.hp)} / ${b.maxHp}`; }
         const ready = N.cd <= 0;
-        const cb = document.getElementById('btnCannon');
+        const cb = document.getElementById('btnAction');
         if (cb && cb._r !== ready) { cb._r = ready; cb.classList.toggle('cool', !ready); }
+      }
+    }
+  };
+
+  // ------------------------------------------------------------ menú del barco, cubierta y timonel
+  P.sailMenu = function () {
+    const opts = [];
+    opts.push({ label: '⬇️ Bajar a la bodega', action: () => this.enterHold() });
+    opts.push({ label: this.deck ? '🧭 Volver al timón' : '🚶 Pasear por la cubierta', action: () => this.toggleDeck() });
+    if (this.autoHelm) {
+      const h = this.npcById(this.autoHelm);
+      opts.push({ label: `✋ Quitar a ${h ? h.name : 'timonel'} del timón`, action: () => { this.autoHelm = null; this.boat.waypoint = null; this.toast('Llevas tú el timón'); } });
+    } else {
+      const aboard = this.npcs.filter((n) => n.onShip && this.soc(n.id).crew).slice(0, 4);
+      for (const n of aboard) opts.push({ label: `🧭 Timonel: ${n.name}`, action: () => { this.autoHelm = n.id; this.boat.waypoint = null; this.toast(`🧭 ${n.name} toma el timón: explorará y atacará barcos enemigos`); } });
+      if (!aboard.length) opts.push({ label: '🧭 (Necesitas tripulación a bordo para un timonel)', action: null });
+    }
+    opts.push({ label: 'Cerrar', action: null });
+    this.ui.openDialog('⚙️ Barco', this.autoHelm ? 'Tu timonel navega solo: explora el mar y combate a los barcos que encuentre. Usa el joystick para tomar el control un momento.' : 'Elige qué hacer a bordo.', opts);
+  };
+  P.toggleDeck = function () {
+    const p = this.player;
+    if (this.deck) {
+      this.deck = null;
+      p.model.root.position.set(0, 1.42, -2.75);
+      p.model.root.rotation.set(0, 0, 0);
+      p.st.moving = false;
+      this.viewTarget = this.isMobile ? 16 : 18;
+    } else {
+      this.deck = { x: 0, z: 0.4 };
+      this.viewTarget = this.isMobile ? 11 : 12;
+      this.toast(this.autoHelm ? '🚶 Paseas por cubierta mientras el timonel navega' : '🚶 Paseas por cubierta (el barco se detiene sin timonel)');
+    }
+  };
+  P.moveOnDeck = function (dt, j) {
+    const d = this.deck, p = this.player, b = this.boat;
+    const k = 1 + (this.shipUp.size || 0) * 0.12;
+    if (j) {
+      const ang = Math.atan2(j.x - j.y, -j.x - j.y) - b.heading;
+      const sp = 2.2 * Math.min(1, Math.hypot(j.x, j.y));
+      d.x = clamp(d.x + Math.sin(ang) * sp * dt, -0.8, 0.8);
+      d.z = clamp(d.z + Math.cos(ang) * sp * dt, -1.9, 3.0);
+      p.st.moving = true;
+      p.model.root.rotation.y = ang;
+    } else p.st.moving = false;
+    p.model.root.position.set(d.x, 0.74, d.z);
+    void k;
+  };
+  P.autoPilot = function (dt) {
+    this.navalInit();
+    const N = this.naval, b = this.boat;
+    let best = null, bd = 35;
+    for (const t of [...N.ships.filter((s) => !s.sinking), ...N.serpents.filter((s) => !s.dead)]) {
+      const d = Math.hypot(t.x - b.x, t.z - b.z);
+      if (d < bd) { bd = d; best = t; }
+    }
+    if (best) {
+      if (bd > 9) b.waypoint = { x: best.x, z: best.z };
+      else { const a = Math.atan2(b.x - best.x, b.z - best.z) + 0.7; b.waypoint = { x: best.x + Math.sin(a) * 8, z: best.z + Math.cos(a) * 8 }; }
+      if (N.cd <= 0 && bd < 15) this.fireCannons();
+      return;
+    }
+    b.stuckT = Math.abs(b.speed) < 0.5 ? (b.stuckT || 0) + dt : 0;
+    if (!b.waypoint || b.stuckT > 3) {
+      b.stuckT = 0;
+      for (let i = 0; i < 25; i++) {
+        const a = Math.random() * Math.PI * 2, r = 20 + Math.random() * 25;
+        const x = b.x + Math.sin(a) * r, z = b.z + Math.cos(a) * r;
+        if (x > -95 && z > -95 && x < 235 && z < 235 && !this.shipBlocked(x, z, a)) { b.waypoint = { x, z }; break; }
       }
     }
   };
@@ -490,7 +571,7 @@ export function installNaval(Game, D) {
     for (let i = 0; i < n; i++) {
       const [x, z] = spots[i];
       const e = this.spawnTemp(type, x, z, Math.max(1, ship.level + (i === 0 ? 3 : -1 - (i % 3))));
-      if (i === 0) { e.label.nm.textContent = (type === 'marine' ? 'Capitán de la Guardia' : 'Capitán corsario') + ` · Nv. ${e.level}`; e.maxHp = Math.round(e.maxHp * 1.6); e.hp = e.maxHp; }
+      if (i === 0) { e.label.nm.textContent = (type === 'marine' ? 'Capitán de la Marina' : 'Capitán corsario') + ` · Nv. ${e.level}`; e.maxHp = Math.round(e.maxHp * 1.6); e.hp = e.maxHp; }
       this.boarding.temps.push(e);
     }
     this.toast(theyBoard ? '🪝 ¡Os abordan! Tiran la pasarela: ¡a las armas!' : '🪝 ¡Al abordaje! Cruza la pasarela', 'area');
@@ -532,7 +613,7 @@ export function installNaval(Game, D) {
       if (Math.random() < 0.5) this.give(s.type === 'marine' ? 'silver' : 'goldore', 2);
       if (Math.random() < 0.15) this.give(s.type === 'marine' ? 'traje_guardia' : 'chaqueta_pirata', 1);
       this.toast(`🏴‍☠️ ¡Barco capturado! +${gold} oro. Lo hundís tras saquearlo.`, 'area');
-      this.addBounty(s.type === 'marine' ? 200 : 60);
+      this.addBounty(s.type === 'marine' ? 200 : 60, 'ship_' + s.type);
       if (!s.sinking) { s.hp = 0; this.killShip(s); }
       p.x = b.x; p.z = b.z;
       this.board(true);
@@ -573,35 +654,36 @@ export function installNaval(Game, D) {
         for (const e of R.temps) if (!e.removed) e.remove();
         this.raid = null;
         this.purgeTemps();
-        if (won) { this.toast(`🛡️ ¡${R.town} ha rechazado a la Guardia Naval!`, 'area'); p.gold += 60; this.addFriendTown && this.addFriendTown(R.town); sfx('quest'); }
+        if (won) { this.toast(`🛡️ ¡${R.town} ha rechazado el ataque!`, 'area'); p.gold += 60; this.addFriendTown && this.addFriendTown(R.town); sfx('quest'); }
       }
       return;
     }
-    if ((this.bounty || 0) < WANTED) return;
+    const marine = this.isMarine();
+    const heat = marine ? (this.honor || 0) : (this.bounty || 0);
+    if (heat < WANTED) return;
     const town = this.W.areaName(p.tx, p.tz);
     if (!RAID_TOWNS.has(town) || this.W.isInterior(p.x)) { this.raidT = Math.min(this.raidT ?? 90, 90); return; }
     this.raidT = (this.raidT ?? 90) - dt;
     if (this.raidT > 0) return;
-    this.raidT = 200 + Math.random() * 160 - Math.min(120, (this.bounty || 0) / 100);
+    this.raidT = 200 + Math.random() * 160 - Math.min(120, heat / 100);
     // desembarcan cerca del jugador, entre él y el muelle más cercano
     let dk = this.docks[0], dd = Infinity;
     for (const d of this.docks) { const k = Math.hypot(d.land.x - p.x, d.land.z - p.z); if (k < dd) { dd = k; dk = d; } }
-    const n = clamp(3 + Math.floor((this.bounty || 0) / 1500), 3, 6);
-    const lvl = clamp(Math.round(p.level * 0.9 + 2 + Math.sqrt(this.bounty || 0) * 0.15), 8, 90);
+    const n = clamp(3 + Math.floor(heat / 1500), 3, 6);
+    const lvl = clamp(Math.round(p.level * 0.9 + 2 + Math.sqrt(heat) * 0.15), 8, 90);
     const temps = [];
     const ax = dd < 30 ? dk.land.x : p.x + 9, az = dd < 30 ? dk.land.z : p.z + 9;
     for (let i = 0; i < n * 6 && temps.length < n; i++) {
       const x = Math.round(ax + (Math.random() - 0.5) * 6), z = Math.round(az + (Math.random() - 0.5) * 6);
       if (!this.W.walkable(x, z) || Math.hypot(x - p.x, z - p.z) < 5) continue;
-      const e = this.spawnTemp('marine', x, z, lvl + (temps.length === 0 ? 4 : 0));
-      e.def = { ...e.def };
-      if (temps.length === 0) e.label.nm.textContent = `Sargento de la Guardia · Nv. ${e.level}`;
+      const e = this.spawnTemp(marine ? 'pirate' : 'marine', x, z, lvl + (temps.length === 0 ? 4 : 0));
+      if (temps.length === 0) e.label.nm.textContent = `${marine ? 'Capitán pirata' : 'Sargento de la Marina'} · Nv. ${e.level}`;
       e.updateColor();
       temps.push(e);
     }
     if (!temps.length) return;
     this.raid = { town, temps, t: 0 };
-    this.toast(`⚓ ¡La Guardia Naval desembarca en ${town} buscando a ${p.name}!`, 'area');
+    this.toast(marine ? `🏴‍☠️ ¡Piratas desembarcan en ${town} para vengarse de ${p.name}!` : `⚓ ¡La Marina desembarca en ${town} buscando a ${p.name}!`, 'area');
     setTimeout(() => this.toast('🛡️ Los vecinos toman las armas para defenderte'), 1800);
     sfx('quest');
   };

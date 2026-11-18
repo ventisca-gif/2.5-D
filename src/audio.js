@@ -51,6 +51,8 @@ export function sfx(name) {
   try {
     switch (name) {
       case 'swing': noise(0.12, 0.12, 2200); break;
+      case 'thunder': noise(1.4, 0.3, 90); tone(45, 1.0, 'sine', 0.1, -15); break;
+      case 'skill': noise(0.25, 0.18, 1600); tone(420, 0.25, 'triangle', 0.07, 400); break;
       case 'cannon': noise(0.45, 0.35, 160); tone(70, 0.3, 'sine', 0.12, -30); break;
       case 'hit': noise(0.1, 0.25, 700); tone(160, 0.1, 'square', 0.05, -80); break;
       case 'hurt': tone(220, 0.15, 'sawtooth', 0.06, -120); break;

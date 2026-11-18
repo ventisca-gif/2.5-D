@@ -4,6 +4,7 @@ import { ITEMS, EQUIP, SLOTS, COS_SLOTS, RECIPES, DROPS, TIER_NAMES, buildLook, 
 import { makeHumanoid2, OUTLINE } from './chars2.js';
 import { animateModel } from './characters.js';
 import { QUESTS, SIDE_QUESTS } from './quests.js';
+import { STRUCTS } from './build.js';
 import { friendLevel, heartsText, MAX_CREW } from './social.js';
 
 const $ = (id) => document.getElementById(id);
@@ -58,8 +59,16 @@ export class Panels {
     if (act === 'craft') { g.craft(Number(b.dataset.i)); return this.openCraft(this.station); }
     if (act === 'gift') { const n = this.giftTo; this.close(); g.giveGift(n, b.dataset.id); return; }
     if (act === 'crewtoggle') { g.toggleCrewWait(b.dataset.id); return this.openBitacora('crew'); }
+    if (act === 'crewrole') {
+      const r = b.dataset.role;
+      if (r === 'collect') { const n = g.npcById(b.dataset.id), s = g.soc(n.id); const f = { ...s.farm }; g.collectFarm(n); s.farm = { ...f, t0: g.playtime }; }
+      else g.setCrewRole(b.dataset.id, r || null);
+      return this.openBitacora('crew');
+    }
     if (act === 'guide') { b.parentElement.classList.toggle('openg'); }
     if (act === 'net') this.netAction(b.dataset.a, b.dataset.id);
+    if (act === 'poster') return this.openPosters(Number(b.dataset.i));
+    if (act === 'build') { this.close(); g.placeStruct(b.dataset.id); return; }
   }
 
   // ------------------------------------------------------------------ equipo + mochila
@@ -202,7 +211,7 @@ export class Panels {
   openBitacora(tab = this.tab || 'mision') {
     this.tab = tab;
     const g = this.g, p = g.player;
-    const tabs = [['mision', '📜 Misión'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
+    const tabs = [['mision', '📜 Misión'], ['wanted', '☠ Se busca'], ['bestia', '🐾 Bestiario'], ['armeria', '⚔ Armería'], ['amigos', '❤ Amistades'], ['crew', '⚓ Tripulación'], ['diario', '🧭 Diario']]
       .map(([id, n]) => `<button class="tab ${tab === id ? 'on' : ''}" data-p="tab" data-tab="${id}">${n}</button>`).join('');
     let body = '';
     if (tab === 'mision') {
@@ -212,6 +221,8 @@ export class Panels {
         <p class="muted">El círculo dorado del minimapa marca el destino.</p></div>
         <div class="sub">Encargos de las islas</div>${this.sideHtml()}
         <div class="sub">Misiones completadas</div><ul class="qlist">${done || '<li class="muted">Ninguna todavía.</li>'}</ul>`;
+    } else if (tab === 'wanted') {
+      return this.openPosters();
     } else if (tab === 'bestia') {
       body = this.bestiaryHtml();
     } else if (tab === 'armeria') {
@@ -226,11 +237,18 @@ export class Panels {
       body += '<p class="muted small">Charla cada día, haz regalos (comida casera, menas...) y gana duelos para subir la amistad. Con 3 corazones pueden unirse a tu tripulación; con 5, quizá algo más...</p>';
     } else if (tab === 'crew') {
       const crew = g.crew();
-      const rows = crew.map((n) => `<div class="frow"><b>${esc(n.name)}</b><span class="lv">Nv. ${n.level}</span>
-          <span class="muted t${n.tier}">${TIER_NAMES[n.tier]}</span>
-          <button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${g.soc(n.id).wait ? '▶ Seguir' : '⏸ Esperar'}</button></div>`).join('');
-      body = `<p>Tripulación: <b>${crew.length}/${MAX_CREW}</b></p>${rows || '<p class="muted">Aún no tienes tripulación. Haz amistad (3 corazones) y pídeles que se unan.</p>'}
-        <p class="muted small">Tu tripulación te sigue, lucha a tu lado, sube contigo al barco y se hace más fuerte (hasta tu nivel), con armaduras cada vez mejores.</p>`;
+      const pt = g.partner();
+      const rows = crew.map((n) => {
+        const s = g.soc(n.id);
+        const role = s.role === 'farm' ? `⛏ Recolectando en ${esc(s.farm ? s.farm.isle : '?')}` : s.role === 'ship' ? '⚓ En el barco' : s.wait ? '⏸ Esperando' : '▶ Te acompaña';
+        const y = s.role === 'farm' ? g.farmYield(n) : null;
+        const btn = (r, label) => `<button class="pbtn small" data-p="crewrole" data-id="${n.id}" data-role="${r}">${label}</button>`;
+        const btns = [s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : ''].join('');
+        return `<div class="frow crewrow"><b>${esc(n.name)}${s.partner ? ' 💗' : ''}</b><span class="lv">Nv. ${n.level}</span>
+          <span class="muted t${n.tier}">${TIER_NAMES[n.tier] || ''}</span><span class="muted">${role}${g.autoHelm === n.id ? ' · 🧭 Timonel' : ''}</span><div class="cbtns">${btns}</div></div>`;
+      }).join('');
+      body = `<p>Tripulación: <b>${crew.length}/${MAX_CREW}</b> · te acompañan <b>${g.activeCrew().length}/3</b>${pt && !g.soc(pt.id).crew ? ` · Pareja: <b>${esc(pt.name)}</b> (Nv. ${pt.level})` : ''}</p>${rows || '<p class="muted">Aún no tienes tripulación. Haz amistad (3 corazones) y pídeles que se unan.</p>'}
+        <p class="muted small">Solo 3 te acompañan a la vez; el resto espera en el barco y sube a cubierta al zarpar. Puedes dejarlos recolectando en la isla donde estás (madera, piedra, menas y oro según la isla, hasta 60 min) y recogerlo luego. Suben de nivel hasta 100, igual que tú. Navegando, pon a uno de timonel desde el botón ⚙️ Barco.</p>`;
     } else {
       const st = g.stats;
       body = `<div class="parch diary">
@@ -247,6 +265,31 @@ export class Panels {
     this.show('bit', '📖 Bitácora de viaje', `<div class="tabs">${tabs}</div><div class="tabbody">${body}</div>`, true);
   }
 
+  // ------------------------------------------------------------------ construcción
+  openBuild() {
+    const g = this.g, p = g.player;
+    const rows = Object.entries(STRUCTS).map(([id, d]) => {
+      const cost = Object.entries(d.cost).map(([k, v]) => `${v} ${ITEMS[k] ? ITEMS[k].icon : k}`).join(' · ');
+      const ok = Object.entries(d.cost).every(([k, v]) => (p.inv[k] || 0) >= v);
+      return `<div class="rec"><span class="rname">${d.icon} ${esc(d.name)}</span><span class="muted small">${esc(d.desc)} · Vida ${d.hp}</span><span class="small">${cost}</span><button class="pbtn" data-p="build" data-id="${id}" ${ok ? '' : 'disabled'}>Construir</button></div>`;
+    }).join('');
+    this.show('build', '🔨 Construir (2×2 casillas)', `<p class="muted small">Se coloca delante de ti en un hueco libre de 4 casillas. Las torres y cañones disparan a los enemigos; los asaltantes pueden destruir lo que construyas. Acércate a una estructura y pulsa 🔨 para repararla, reforzarla o desmontarla. Para proteger un pueblo, habla con su líder (Marisol, Nerea, Mara, Zaid, Ixa, Lucas, Lucía) y dale materiales.</p>${rows}`, true);
+  }
+  // ------------------------------------------------------------------ carteles de Se busca
+  openPosters(sel) {
+    const g = this.g;
+    const list = g.wantedList();
+    const fmt = (n) => n.toLocaleString('es');
+    const cards = list.map((w, i) => `<button class="wanted ${w.me ? 'me' : ''} ${w.down ? 'down' : ''}" data-p="poster" data-i="${i}">
+        <div class="wt">SE BUSCA</div><img src="${g.portrait(w.key, w.look)}" alt=""><div class="wv">VIVO O MUERTO</div>
+        <div class="wn">${esc(w.name)}</div><div class="wb">🪙 ${fmt(w.bounty)}</div><div class="wm">MARINA</div></button>`).join('');
+    let det = '<p class="muted small">Toca un cartel para ver más. Los piratas famosos viajan entre islas, cazan monstruos y su recompensa sube. Acércate a uno y pulsa ⚔️ Retar.</p>';
+    if (sel !== undefined && list[sel]) {
+      const w = list[sel];
+      det = `<div class="parch"><b>${esc(w.name)}</b> «${esc(w.ep)}» · Nivel ${w.lvl} · Recompensa ${fmt(w.bounty)} oro<br>${w.me ? 'Este eres tú. Cada victoria hace crecer tu leyenda.' : w.down ? 'Malherido (o en prisión): no se le ha visto en un tiempo.' : `Visto por última vez: <b>${esc(w.where)}</b>.`}</div>`;
+    }
+    this.show('wanted', '📜 Tablón de Se busca', `${det}<div class="wgrid">${cards}</div>`, true);
+  }
   sideHtml() {
     const g = this.g;
     const rows = Object.entries(SIDE_QUESTS).map(([id, q]) => {
@@ -278,7 +321,7 @@ export class Panels {
       return card(ICON[t], D[t].name, info, 'Botín: ' + drops, kills);
     });
     list.push(card('🐍', 'Serpiente marina', 'Aguas profundas, lejos de las islas · se combate con cañones', 'Botín: 🐚 Escamas, ⚪ Perlas', st.k_serpent || 0));
-    list.push(card('⛵', 'Fragata de la Guardia Naval', 'Mar abierto · aparece si tienes recompensa', 'Botín: 🧨 Pólvora, 🥈 Plata', st.s_marine || 0));
+    list.push(card('⛵', 'Fragata de la Marina', 'Mar abierto · aparece si tienes recompensa', 'Botín: 🧨 Pólvora, 🥈 Plata', st.s_marine || 0));
     list.push(card('🏴‍☠️', 'Barco pirata rival', 'Mar abierto · te aborda si se acerca', 'Botín: 🧨 Pólvora, 🥇 Oro', st.s_pirate || 0));
     return `<p class="muted small">Todas las criaturas del Mar de Bruma. Toca a un enemigo y pulsa ⚔️ para atacar.</p><div class="bgrid">${list.join('')}</div>`;
   }
@@ -307,10 +350,19 @@ export class Panels {
       ['🕹️ Moverse', 'Toca el suelo y tu personaje irá por la cuadrícula. También puedes usar el joystick. En PC: WASD o flechas.'],
       ['🏃 Correr y estamina', 'Pulsa el botón de correr (o Shift). Correr y atacar gastan estamina (barra amarilla). Se recupera al caminar o descansar. ¡Los enemigos te persiguen y atacan aunque te muevas!'],
       ['⚔️ Combate', 'Solo atacas cuando pulsas el botón ⚔️ (mantenlo pulsado para seguir atacando). Funciona andando o corriendo con el joystick: golpea al enemigo más cercano a tu alcance o da un tajo al aire. Tocar a un enemigo lo selecciona. Sin estamina pegas la mitad.'],
-      ['🗺️ Islas del Mar de Bruma', 'Oeste: Isla Duna (desierto, Oasis de Sal, ámbar). Norte: Isla Selva (Aldea Liana, jade, tigres y murciélagos). Sur: Bastión de la Guardia Naval y Villa Grillete. Sureste lejano: Isla Ceniza (volcán, obsidiana, gólems). Cada isla tiene sus encargos y su historia.'],
-      ['💣 Combate naval', 'Navegando, pulsa 💣 Cañones (tecla F) para disparar por las bandas hacia el enemigo más cercano. Los barcos de la Guardia y los piratas te disparan y pueden abordarte. Si te acercas a uno, pulsa 🪝 Abordar y lucha en su cubierta con tu tripulación. Si tu barco llega a 0 se hunde.'],
+      ['🎯 Botones', 'El botón grande ⚔️ siempre ataca (navegando dispara los cañones). El botón azul de al lado sirve para hablar, abrir, talar, entrar, mirar carteles, retar a piratas... Así puedes pelear aunque tu pareja o tu tripulación estén pegados a ti.'],
+      ['✨ Clases y habilidades', 'Tu clase depende del arma: espada = Espadachín, hacha = Bárbaro, lanza o tridente = Lancero. Cada clase tiene 5 habilidades (barra encima del botón de ataque) que se desbloquean en los niveles 2, 6, 12, 20 y 30. Gastan estamina y tienen recarga.'],
+      ['🧘 Meditar', 'Pulsa 🧘 fuera de combate y quédate quieto 3 segundos: ganas Concentración (más daño, más defensa y regeneración) durante 90 s. Se recarga en 2 minutos.'],
+      ['🏴‍☠️ Bando', 'Al crear tu personaje eliges Pirata o Marina. Pirata: tu recompensa nunca se borra y la Marina te caza. Marina: los marines son tus aliados, subes de rango cazando piratas y los piratas atacan tus pueblos y tu barco.'],
+      ['☠ Piratas famosos', 'Hay 16 piratas famosos (10 leyendas muy fuertes) que viajan de isla en isla, cazan monstruos y ven subir su recompensa. Mira los tablones de Se busca de los pueblos o tabernas (o la Bitácora) para ver su cara, su recompensa y dónde los vieron. Acércate y pulsa Retar: combaten con combos, esquivas, bloqueos y golpes especiales.'],
+      ['⚓ Tripulación activa', 'Solo 3 tripulantes te acompañan a la vez; los demás esperan en el barco y suben a cubierta al zarpar. Desde la Bitácora puedes dejarlos recolectando en una isla. Tu tripulación y tu pareja suben de nivel hasta 100. Navegando, en ⚙️ Barco puedes poner un timonel que explora y combate solo, pasear por la cubierta o bajar a la bodega (que crece al ampliar el barco).'],
+      ['🌦️ Clima y estaciones', 'Hay primavera, verano, otoño e invierno (cada 3 días). Puede llover, haber tormenta con rayos, niebla o nieve en invierno. Por la noche la gente se va a dormir a casa y al atardecer algunos van a la taberna; con lluvia, muchos se refugian.'],
+      ['🔨 Construir', 'Botón 🔨: empalizadas, muros, torres de vigía, cañones, fogatas, tiendas y huertos de 2×2 casillas con tus materiales. Los líderes de los pueblos aceptan materiales para levantar defensas que los asaltantes intentarán destruir; tú puedes repararlas y reforzarlas.'],
+      ['💗 Pareja', 'Con tu pareja puedes besaros, abrazaros, bailar juntos, pasear de la mano o llevarla en brazos.'],
+      ['🗺️ Islas del Mar de Bruma', 'Oeste: Isla Duna (desierto, Oasis de Sal, ámbar). Norte: Isla Selva (Aldea Liana, jade, tigres y murciélagos). Sur: Bastión de la Marina y Villa Grillete. Sureste lejano: Isla Ceniza (volcán, obsidiana, gólems). Cada isla tiene sus encargos y su historia.'],
+      ['💣 Combate naval', 'Navegando, pulsa 💣 Cañones (tecla F) para disparar por las bandas hacia el enemigo más cercano. Los barcos de la Marina y los piratas te disparan y pueden abordarte. Si te acercas a uno, pulsa 🪝 Abordar y lucha en su cubierta con tu tripulación. Si tu barco llega a 0 se hunde.'],
       ['⚓ Astillero', 'La Astillera Marga, en Puerto Salitre, repara tu barco y lo mejora: casco (más vida), cañones (más daño y recarga), velas (más velocidad) y ampliación (barco más grande, más cañones y más tripulación). El barco se repara despacio atracado.'],
-      ['☠ Recompensa', 'Cada enemigo que vences sube tu recompensa (☠ en el panel). A partir de 300 la Guardia Naval te ataca al verte, pregunta por ti en los pueblos, desembarca para buscarte (los vecinos te defienden) y manda fragatas. El Teniente Ferro de Villa Grillete acepta sobornos...'],
+      ['☠ Recompensa', 'Cada enemigo que vences sube tu recompensa (☠ en el panel). A partir de 300 la Marina te ataca al verte, pregunta por ti en los pueblos, desembarca para buscarte (los vecinos te defienden) y manda fragatas. El Teniente Ferro de Villa Grillete acepta sobornos...'],
       ['👕 Cosméticos', 'En la mochila hay 3 ranuras de Aspecto (sombrero, ropa y capa). Se ven por encima de la armadura, pero tu armadura sigue contando. Se compran al Sastre Selim (Oasis de Sal) o caen de enemigos (capa de lobo, de tigre...).'],
       ['🐾 Bestiario y armería', 'En la Bitácora verás todos los enemigos (zona, nivel, botín y cuántos has vencido) y todas las armas y armaduras (cómo se consiguen y cuáles tienes).'],
       ['🎒 Mochila y equipo', 'Abre la mochila: toca un objeto para equiparlo, comerlo o beberlo. Toca una ranura para quitarte esa pieza. Todo lo que equipas se ve en tu personaje.'],

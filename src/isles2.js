@@ -1,7 +1,7 @@
 // Islas del segundo capítulo: cada una con su bioma, pueblo, enemigos y minerales.
 //  - Isla Duna (desierto, Oasis de Sal) al oeste
 //  - Isla Selva (jungla, Aldea Liana) al norte
-//  - Bastión de la Guardia Naval (fortaleza) y Villa Grillete al sur
+//  - Bastión de la Marina (fortaleza) y Villa Grillete al sur
 //  - Isla Ceniza (volcán) al sureste lejano
 import { makeIslet, populate } from './regions.js';
 import { T } from './world.js';
@@ -99,14 +99,14 @@ export function makeNewIslets() {
     out.push(R);
   }
 
-  // ------------------------------------------------- Bastión de la Guardia Naval
+  // ------------------------------------------------- Bastión de la Marina
   {
-    const R = makeIslet({ id: 'bastion', name: 'Bastión de la Guardia Naval', ox: 16, oz: 166, N: 66, seed: 83, dockDir: [0, -1], biome: 'fort' });
+    const R = makeIslet({ id: 'bastion', name: 'Bastión de la Marina', ox: 16, oz: 166, N: 66, seed: 83, dockDir: [0, -1], biome: 'fort' });
     const { x: cx, z: cz } = R.center;
     const { prop, house, npc, wall } = helpers(R);
     // Villa Grillete (pueblo al norte, junto al muelle)
     R.towns.push({ name: 'Villa Grillete', x: cx, z: cz - 9, r: 7 });
-    R.towns.push({ name: 'Fortaleza de la Guardia', x: cx, z: cz + 8, r: 13 });
+    R.towns.push({ name: 'Fortaleza de la Marina', x: cx, z: cz + 8, r: 13 });
     R.reserve(cx, cz - 9, 6);
     house('grillete_1', cx - 7, cz - 13, 3, 3, 'e', { wall: 0xe8dcc0, roof: 0x7a4a3a, timber: true });
     house('grillete_2', cx + 4, cz - 13, 3, 3, 'w', { wall: 0xd8ccb0, roof: 0x6a5a4a });

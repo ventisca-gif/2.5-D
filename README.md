@@ -24,10 +24,13 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **Navegación**: sube al barco en el muelle, gobiérnalo con el joystick (o tocando el mar) y atraca en los muelles de cada isla.
 - **Más de 25 NPCs** con nombre y diálogo, con cuerpos estructurados (cara, articulaciones, armaduras, capas).
 - **Cadena de 10 misiones**: el jefe Capitán Huesoamargo y el tesoro de la Isla Calavera.
-- **Combate manual** (botón ⚔️, también andando o corriendo) contra lobos, jabalíes, cangrejos, piratas esqueleto, escorpiones rojos, tigres, murciélagos, gólems, calaveras llameantes, la Guardia Naval y jefes. **Bestiario** y **armería** en la bitácora.
-- **Mar de Bruma**: Isla Duna (desierto), Isla Selva (jungla), Bastión de la Guardia Naval con Villa Grillete e Isla Ceniza (volcán), cada una con pueblo, historia y encargos propios.
-- **Combate naval**: cañones, fragatas de la Guardia y piratas rivales, serpiente marina, **abordajes** por pasarela, el barco se hunde si llega a 0; la Astillera Marga lo repara y lo mejora (casco, cañones, velas, tamaño).
-- **Recompensa (Se busca)**: sube con cada victoria; la Guardia te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
+- **Combate manual** (botón ⚔️, también andando o corriendo) contra lobos, jabalíes, cangrejos, piratas esqueleto, escorpiones rojos, tigres, murciélagos, gólems, calaveras llameantes, la Marina y jefes. **Bestiario** y **armería** en la bitácora.
+- **Mar de Bruma**: Isla Duna (desierto), Isla Selva (jungla), Bastión de la Marina con Villa Grillete e Isla Ceniza (volcán), cada una con pueblo, historia y encargos propios.
+- **Combate naval**: cañones, fragatas de la Marina y piratas rivales, serpiente marina, **abordajes** por pasarela, el barco se hunde si llega a 0; la Astillera Marga lo repara y lo mejora (casco, cañones, velas, tamaño).
+- **Mundo vivo**: 16 piratas famosos que viajan y luchan con inteligencia, tablones de Se busca con retrato, clima (lluvia, tormentas, niebla, nieve) y estaciones, vecinos que duermen de noche y van a la taberna.
+- **Clases y habilidades**: Espadachín, Bárbaro o Lancero según tu arma, 5 habilidades cada una; meditación con mejora temporal.
+- **Bando**: pirata o Marina. **Construcción** de estructuras 2×2 y defensas de pueblo. Tripulación activa de 3, recolección en islas, timonel automático y cubierta caminable. Gestos de pareja (beso, abrazo, baile, en brazos).
+- **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.
 - **Creador de personaje**: Caballero, Corsario, Exploradora o Mercenario + tono de piel.
