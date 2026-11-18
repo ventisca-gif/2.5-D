@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2, OUTLINE } from './chars2.js';
 import { animateModel } from './characters.js';
 import { buildLook, HAIR_M, HAIR_F } from './items.js';
+import { HAIR_AF, HAIR_AM, FACES_F, FACES_M, HAIR_COLORS_A, EYE_COLORS } from './anime.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio));
@@ -40,7 +41,20 @@ ground.receiveShadow = true;
 scene.add(ground);
 
 const HAIRMODE = new URLSearchParams(location.search).get('hair') === '1';
-const cast = HAIRMODE ? [
+const ANIME = Number(new URLSearchParams(location.search).get('anime') || 0);
+const ACL = [0x3a6aa0, 0x9a2a2a, 0x3a7a3a, 0x6a3d8f, 0x8a6a3a, 0x2a2a30];
+const AW = { weapon: 'espada_madera', feet: 'botas_cuero' };
+const animeGirl = (i, extra = {}) => ({ ...buildLook({ gender: 'f', hair: 0, hairColor: 0, skin: [0, 1, 2, 1, 0, 3][i % 6], clothes: i % 6 }, AW), anime: true, faceRes: 512, noAutoLegs: true,
+  hairStyle: HAIR_AF[i % 6].id, hair: HAIR_COLORS_A[[1, 3, 7, 6, 4, 5][i % 6]], face: FACES_F[i % 4].id, eyeColor: [1, 2, 4, 0, 5, 7][i % 6], bust: [2, 1, 3, 2, 1, 2][i % 6], ...extra });
+const animeBoy = (i, extra = {}) => ({ ...buildLook({ gender: 'm', hair: 0, hairColor: 0, skin: [1, 2, 0, 3, 1, 0][i % 6], clothes: (i + 2) % 6 }, AW), anime: true, faceRes: 512, noAutoLegs: true,
+  hairStyle: HAIR_AM[i % 6].id, hair: HAIR_COLORS_A[[0, 2, 5, 1, 8, 9][i % 6]], face: FACES_M[i % 4].id, eyeColor: [0, 1, 3, 6, 2, 4][i % 6], ...extra });
+const cast = ANIME === 1 ? HAIR_AF.map((h, i) => ({ name: `${h.name} · ${FACES_F[i % 4].name}`, model: makeHumanoid2(animeGirl(i)) }))
+  : ANIME === 2 ? HAIR_AM.map((h, i) => ({ name: `${h.name} · ${FACES_M[i % 4].name}`, model: makeHumanoid2(animeBoy(i)) }))
+  : ANIME === 3 ? [
+    ...[0, 1, 2, 3].map((b) => ({ name: `Busto ${['plano', 'pequeño', 'medio', 'grande'][b]}`, model: makeHumanoid2(animeGirl(0, { bust: b, hairStyle: 'melena', hair: HAIR_COLORS_A[1], eyeColor: 0 })) })),
+    ...[1, 2, 4, 5, 3, 7].map((e, k) => ({ name: `Ojos ${EYE_COLORS[e].name}`, model: makeHumanoid2(k % 2 ? animeBoy(k, { eyeColor: e, face: 'heroico' }) : animeGirl(k, { eyeColor: e, face: 'dulce' })) })),
+  ]
+  : HAIRMODE ? [
   ...HAIR_M.map((h, i) => ({ name: '♂ ' + h.name, model: makeHumanoid2({ ...buildLook({ gender: 'm', hair: i, hairColor: i % 6, skin: i % 4, clothes: i % 6, beard: i === 4 }, { weapon: 'espada_madera', feet: 'botas_cuero' }), noAutoLegs: true }) })),
   ...HAIR_F.map((h, i) => ({ name: '♀ ' + h.name, model: makeHumanoid2({ ...buildLook({ gender: 'f', hair: i, hairColor: (i + 2) % 6, skin: (i + 1) % 4, clothes: (i + 3) % 6 }, { weapon: 'espada_madera', feet: 'botas_cuero' }), noAutoLegs: true }) })),
 ] : [
@@ -57,8 +71,9 @@ const cast = HAIRMODE ? [
 ];
 const labels = [];
 cast.forEach((ch, i) => {
-  const row = i < 6 ? 0 : 1;
-  const col = row === 0 ? i : i - 6;
+  const perRow = ANIME === 3 ? 4 : 6;
+  const row = i < perRow ? 0 : 1;
+  const col = row === 0 ? i : i - perRow;
   const px = -3.2 + col * 1.3 + (row ? 0.65 : 0);
   const pz = row ? 1.5 : 0;
   // colocamos sobre una diagonal de pantalla
@@ -87,12 +102,24 @@ function resize() {
 }
 addEventListener('resize', resize);
 resize();
-camera.position.set(0.5, 0, 0.75).add(new THREE.Vector3(1, 1.25, 1).normalize().multiplyScalar(30));
-camera.lookAt(0.5, 0.55, 0.75);
-OUTLINE.uniforms.thick.value = ((camera.top - camera.bottom) / innerHeight) * 1.6;
+const FRONT = params0.get('front') === '1';
+const PORTRAIT = params0.get('portrait') === '1';
+camera.position.set(0.5, 0, 0.75).add((FRONT ? new THREE.Vector3(1, 0.42, 1) : new THREE.Vector3(1, 1.25, 1)).normalize().multiplyScalar(30));
+camera.lookAt(0.5, FRONT ? 0.8 : 0.55, 0.75);
+OUTLINE.uniforms.thick.value = PORTRAIT ? 0.0045 : ((camera.top - camera.bottom) / innerHeight) * 1.6;
 if (params0.get('nooutline') === '1') OUTLINE.visible = false;
 
 const params = new URLSearchParams(location.search);
+// cámara de retrato (fotos de cara)
+const pcam = new THREE.PerspectiveCamera(22, innerWidth / innerHeight, 0.1, 50);
+if (PORTRAIT) {
+  const n = cast.length;
+  cast.forEach((ch, i) => { ch.model.root.position.set((i - (n - 1) / 2) * 0.78, 0, 0); ch.model.root.rotation.y = 0.18 * ((i % 2) ? -1 : 1); });
+  const CLOSE = params0.get('close') === '1';
+  pcam.position.set(0, CLOSE ? 1.08 : 1.25, CLOSE ? 2.2 + n * 0.42 : 4.2 + n * 0.55);
+  pcam.lookAt(0, CLOSE ? 0.96 : 0.82, 0);
+  sun.position.set(-2, 6, 8);
+}
 const walk = params.get('walk') === '1';
 let last = performance.now();
 const v = new THREE.Vector3();
@@ -107,10 +134,10 @@ function loop(t) {
       ch.st.attackT -= dt;
     }
     animateModel(ch.model, ch.st, dt);
-    v.set(ch.model.root.position.x, ch.model.height + 0.1, ch.model.root.position.z).project(camera);
+    v.set(ch.model.root.position.x, ch.model.height + 0.12, ch.model.root.position.z).project(PORTRAIT ? pcam : camera);
     labels[i].style.transform = `translate(${(v.x * 0.5 + 0.5) * innerWidth}px, ${(-v.y * 0.5 + 0.5) * innerHeight}px) translate(-50%, -100%)`;
   });
-  renderer.render(scene, camera);
+  renderer.render(scene, PORTRAIT ? pcam : camera);
 }
 requestAnimationFrame(loop);
 window.ready = true;

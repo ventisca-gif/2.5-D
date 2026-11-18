@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { faceTexture, animeHeadGeo, animeHair, BUST, EYE_COLORS } from './anime.js';
 
 // ------------------------------------------------------------------ geometrías base (cacheadas)
 const G = new Map();
@@ -222,6 +223,7 @@ export function makeHumanoid2(look = {}) {
   const hairC = look.hair;
 
   const parts = [];
+  const extraMats = [];
   const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
 
   // ---------------- piernas (pivote en la cadera)
@@ -272,7 +274,8 @@ export function makeHumanoid2(look = {}) {
     torso.add(lathe([[0.001, 0.0], [0.135, 0.0], [0.148, 0.08], [0.17, 0.2], [0.175, 0.29], [0.15, 0.35], [0.09, 0.385], [0.001, 0.39]]), chest, 0, 0, 0, 0, 0, 0, fx, 1, 0.74);
     if (look.female) {
       const bc = look.coat ? (look.vest ?? shirt) : chest;
-      for (const sx of [-1, 1]) torso.add(sph(0.058, 12, 8), bc, sx * 0.062, 0.245, 0.095, 0, 0, 0, 1, 0.9, 0.85);
+      const bk = BUST[look.bust ?? 2];
+      if (bk > 0) for (const sx of [-1, 1]) torso.add(sph(0.058 * bk, 12, 8), bc, sx * 0.062 * (0.85 + bk * 0.15), 0.245, 0.095 + (bk - 1) * 0.02, 0, 0, 0, 1, 0.9, 0.85);
     }
     if (look.armor) {
       torso.add(torus(0.172, 0.014), trim, 0, 0.27, 0, Math.PI / 2, 0, 0, 1, 0.74, 1);
@@ -464,6 +467,23 @@ export function makeHumanoid2(look = {}) {
     head.add(sph(0.035, 8, 6), eye, 0.055, 0.14, 0.105, 0, 0, 0, 1, 1.1, 0.6);
     head.add(cone(0.016, 0.03, 3), 0x141010, 0, 0.09, 0.118, Math.PI, 0, 0);
     for (let i = 0; i < 4; i++) head.add(rbox(0.018, 0.022, 0.01, 0.004), 0xf8f4e8, -0.03 + i * 0.02, 0.035, 0.11);
+  } else if (look.anime) {
+    // cabeza anime: malla propia con la cara pintada en textura
+    head.add(sph(0.032, 8, 6), skin, -0.15, 0.135, 0.0, 0, 0, 0, 0.55, 1.1, 0.85);
+    head.add(sph(0.032, 8, 6), skin, 0.15, 0.135, 0.0, 0, 0, 0, 0.55, 1.1, 0.85);
+    const fmat = new THREE.MeshPhongMaterial({
+      map: faceTexture({ skin, eye: EYE_COLORS[look.eyeColor ?? 0].c, face: look.face || (look.female ? 'dulce' : 'heroico'), female: !!look.female, hair: hairC ?? 0x3a2a1a, size: look.faceRes || 256 }),
+      shininess: 10, specular: 0x111111,
+    });
+    fmat.userData.baseEmissive = new THREE.Color(0);
+    const fm = new THREE.Mesh(animeHeadGeo(), fmat);
+    fm.position.set(0, 0.15, 0);
+    fm.castShadow = true;
+    const fo = new THREE.Mesh(animeHeadGeo(), OUTLINE);
+    fo.position.copy(fm.position);
+    fo.rotation.copy(fm.rotation);
+    head.g.add(fm, fo);
+    extraMats.push(fmat);
   } else {
     head.add(rbox(0.27, 0.26, 0.25, 0.085), skin, 0, 0.14, 0);
     head.add(sph(0.045, 8, 6), skin, -0.136, 0.13, 0, 0, 0, 0, 0.5, 1, 0.8);
@@ -484,7 +504,9 @@ export function makeHumanoid2(look = {}) {
     }
   }
   const H = head;
-  if (hairC != null && !bone && look.hairStyle) {
+  if (hairC != null && !bone && look.anime && look.hairStyle) {
+    animeHair(H, look.hairStyle, hairC, look.hat && look.hat !== 'hood' ? true : look.hat === 'hood' ? 'hood' : false);
+  } else if (hairC != null && !bone && look.hairStyle) {
     hairStyle(H, look.hairStyle, hairC, !!look.hat, look.hat === 'hood');
   } else if (hairC != null && !bone && look.hat !== 'hood') {
     H.add(rbox(0.29, 0.1, 0.27, 0.045), hairC, 0, 0.27, -0.005);
@@ -583,12 +605,12 @@ export function makeHumanoid2(look = {}) {
       H.add(sph(0.175, 14, 10), c, 0, 0.16, -0.025, 0, 0, 0, 1, 1.05, 1);
       H.add(cone(0.1, 0.2, 10), c, 0, 0.2, -0.17, -1.9, 0, 0);
       // abertura de la cara
-      H.add(rbox(0.2, 0.17, 0.06, 0.06), skin, 0, 0.13, 0.12);
-      for (const s of [-1, 1]) {
+      if (!look.anime) H.add(rbox(0.2, 0.17, 0.06, 0.06), skin, 0, 0.13, 0.12);
+      if (!look.anime) for (const s of [-1, 1]) {
         H.add(sph(0.022, 8, 6), 0x1a1414, s * 0.05, 0.15, 0.152, 0, 0, 0, 1, 1.35, 0.5);
         H.add(sph(0.007, 4, 3), 0xffffff, s * 0.05 + 0.006, 0.16, 0.16);
       }
-      H.add(rbox(0.04, 0.01, 0.01, 0.004), 0x7a3a30, 0, 0.075, 0.152);
+      if (!look.anime) H.add(rbox(0.04, 0.01, 0.01, 0.004), 0x7a3a30, 0, 0.075, 0.152);
       if (hairC != null) H.add(rbox(0.14, 0.04, 0.03, 0.015), hairC, 0.02, 0.215, 0.14);
       break;
     }
@@ -596,6 +618,7 @@ export function makeHumanoid2(look = {}) {
 
   // hornear todas las partes
   for (const p of parts) p.bake(p === cape ? capeMat : mat);
+  const allMats = [mat, capeMat, ...extraMats];
 
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.3, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.22, depthWrite: false }));
   shadow.rotation.x = -Math.PI / 2;
@@ -605,7 +628,7 @@ export function makeHumanoid2(look = {}) {
   return {
     root,
     parts: { body, torso: torso.g, head: head.g, legL: legs[0].g, legR: legs[1].g, armL: arms[0].g, armR: arms[1].g, weapon: weapon && weapon.g, cape: cape && cape.g },
-    mats: [mat, capeMat],
+    mats: allMats,
     kind: 'humanoid',
     height: 1.18,
   };
