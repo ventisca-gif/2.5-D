@@ -83,6 +83,14 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Defensas de enemigos por tipo (`defenseKind`/`enemyDefend`, envuelve `damageEnemy`): parry (+contraataque al 2º bloqueo, poción <30%), dodge/evade, shell (caparazón a media vida), stone (piel de piedra si le golpeas 4 veces en 2,5 s). Los famosos usan su propia IA.
 - NPCs en duelo/pelea: bloquean, esquivan, poción en duelos (`npcDefend`, envuelve `damageNPC`) y técnica especial según arma cada 6-9 s (`npcFightSkill`, `pending.r/k`).
 
+## v3.5 (more7.js)
+- El usuario quiere que la tripulación y la pareja NO sean inmortales: vida como un jugador de su nivel (`compStats`: 60+12·(nivel-1)+vida de armadura `crewGear(compLevel)`), `chp/cmax/cdef`, los enemigos les eligen como objetivo (`enemyTarget` envuelto, `e.lock`), golpes vía `hitTarget` (main, extra superTick), `hurtCompanion` (bloqueo 12%), desmayo `knockOut` 30 s (`n.ko`), reanimar con poción (`Reanimar`), regeneración fuera de combate, pociones propias `soc.pots` (regalar pociones), retirada <20%. Etiqueta verde `.lbl.comp`.
+- Expediciones `role: 'explore'` 8 min (`exploreMenu`/`sendExplore`/`updateExplore`): nivel, oro, materiales, pociones y `soc.gearB` (+10 niveles de armadura por punto, máx 3; `crewGearLevel` en rebuildCrewLook).
+- Órdenes `crewOrder` (follow/attack/defend/gather/wait) en Atajos (`btnOrders`), `crewFoe` envuelto, `crewGatherTick`.
+- Celos (`soc.jeal`, envuelve addFriend), rival que reta a duelo (`updateRival`, NPC id 'rival', envuelve endFight), hijo/hija tras casarse (`child`, NPC 'hijo', crece 4 niveles/día, reclutable a nivel 10 vía RECRUITABLE).
+- Enemigos huyen a <20% (30%) y vuelven con 2 refuerzos (`updateFlee`, estado 'flee'). Mercado negro nocturno (NPC 'sombra' en Tortuga 20-5h, contrabando `smuggle` → envuelve `dock`). Carreras de monturas (Lucía/Zaid/Helga, `mrace`, apuesta ×3). Faros en cada muelle (`faros`, 10 madera + 2 hierro, `travelMenu`/`fastTravel` 50 oro, `btnTravel`).
+- El usuario NO quiere motín.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

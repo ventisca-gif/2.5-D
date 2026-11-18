@@ -191,7 +191,7 @@ export function installExtra(Game, D) {
         if (this.dead) return;
         g.ring(x, z, r, col);
         g.camShake = 0.3;
-        if (!p.dead && Math.hypot(p.x - x, p.z - z) < r) { if (p.isRemote) g.net.hurtRemote(p.id, this.atk * 2.2, this.idx); else g.damagePlayer(this, this.atk * 2.2); }
+        if (!p.dead && Math.hypot(p.x - x, p.z - z) < r) { if (g.hitTarget) g.hitTarget(p, this, this.atk * 2.2); else if (p.isRemote) g.net.hurtRemote(p.id, this.atk * 2.2, this.idx); else g.damagePlayer(this, this.atk * 2.2); }
         for (const n of g.npcs) if (!n.onShip && g.soc(n.id).crew && Math.hypot(n.x - x, n.z - z) < r) g.ui.float('¡Ay!', 'dmg', n.x, 1.4, n.z);
       }, 1000);
     }

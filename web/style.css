@@ -495,3 +495,4 @@ body.photo #photoFrame { display: block; }
 .lbl.enemy.esp .nm::before { content: '🖤 '; }
 .lbl.enemy.esp .nm { color: #ff7ac8 !important; text-shadow: 0 0 6px #2a0030, 0 1px 2px #000; }
 .skb.espk { background: radial-gradient(circle, #2a0a2a, #0a0010) !important; border-color: #ff3a8a !important; box-shadow: 0 0 10px rgba(255,58,138,0.6); }
+.lbl.comp .hpb i { background: linear-gradient(#8aff8a, #2a9a3a); }

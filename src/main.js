@@ -33,6 +33,7 @@ import { LOGROS } from './more2.js';
 import { installMore4, makeIslands4, makeGrotto } from './more4.js';
 import { installMore5, makeNewbornIslet } from './more5.js';
 import { installMore6 } from './more6.js';
+import { installMore7 } from './more7.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -538,6 +539,7 @@ class NPC extends Actor {
       this.st.moving = false;
       return;
     }
+    if (g.companionTick && !this.fight && g.companionTick(this, dt)) return;
     if (this.fight) { this.updateFight(dt); return; }
     if (this.talking) {
       this.path = this.path.slice(0, 1);
@@ -558,6 +560,7 @@ class NPC extends Actor {
       return;
     } else if (s.crew && !s.wait) {
       this.speed = p.speed * 1.08;
+      if (g.crewGatherTick && g.crewGatherTick(this, dt)) return;
       const d = this.dist(p);
       if (d > 18 || g.W.isInterior(p.x) !== g.W.isInterior(this.x)) { g.placeNear(this, p.tx, p.tz); return; }
       const foe = g.crewFoe();
@@ -871,7 +874,8 @@ class Enemy extends Actor {
       if (this.pending.t <= 0) {
         this.pending = null;
         if (!p.dead && this.dist(p) < 2.0) {
-          if (p.isRemote) g.net.hurtRemote(p.id, this.atk, this.idx);
+          if (g.hitTarget) g.hitTarget(p, this, this.atk);
+          else if (p.isRemote) g.net.hurtRemote(p.id, this.atk, this.idx);
           else g.damagePlayer(this, this.atk);
         }
       }
@@ -887,7 +891,7 @@ class Enemy extends Actor {
       }
       if (!p.dead && dP < this.def.aggro && this.hostile()) this.state = 'chase';
     } else if (this.state === 'chase') {
-      if (p.dead || fromHome > (this.temp ? 60 : 15)) {
+      if (p.dead || p.ko || fromHome > (this.temp ? 60 : 15)) {
         this.state = 'return';
         this.goTo(this.home.x, this.home.z, false, 3000);
       } else {
@@ -1401,6 +1405,8 @@ class Game {
     $('btnGuide').addEventListener('click', () => this.panels.openGuide());
     $('btnNet').addEventListener('click', () => { if (this.started) this.panels.openNet(); });
     if (this.setupHud4) this.setupHud4();
+    $('btnOrders').addEventListener('click', () => { if (this.started) this.ordersMenu(); });
+    $('btnTravel').addEventListener('click', () => { if (this.started) this.travelMenu(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1805,6 +1811,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c7 = this.contextAction7 && this.contextAction7();
+    if (c7) return c7;
     const cap = this.canCapture && this.canCapture();
     if (cap) return { icon: '⛓️', label: 'Capturar', fn: () => this.capture(cap) };
     const inRoom = this.roomAt(p.x, p.z);
@@ -2276,7 +2284,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
-      esp: this.esp || null, hunts: this.hunts || null, fishDex: this.fishDex || {},
+      esp: this.esp || null, hunts: this.hunts || null, fishDex: this.fishDex || {}, child: this.child || null, childDay: this.childDay ?? null, crewOrder: this.crewOrder || 'follow', smuggle: this.smuggle || null,
       bounty: this.bounty || 0, honor: this.honor || 0, shipUp: this.shipUp, shipHp: Math.round(this.boat.hp || 0), side: this.side || {},
     };
   }
@@ -2474,6 +2482,7 @@ class Game {
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
     this.esp = data.esp || null; this.hunts = data.hunts || null; this.fishDex = data.fishDex || {};
+    this.child = data.child || null; this.childDay = data.childDay ?? undefined; this.crewOrder = data.crewOrder || 'follow'; this.smuggle = data.smuggle || null;
     if (data.famous) { this.famousInit(); for (const [k, v] of Object.entries(data.famous)) if (this.famous[k]) Object.assign(this.famous[k], v); }
     if (data.weather) this.weather = data.weather;
     this.jobs = data.jobs || {};
@@ -2787,11 +2796,12 @@ class Game {
     this.ui.toast(s.wait ? `⏸ ${n.name} te espera aquí` : `▶ ${n.name} te sigue`);
   }
   rebuildCrewLook(n) {
-    const tier = crewTier(n.level);
+    const gl = this.crewGearLevel ? this.crewGearLevel(n) : n.level;
+    const tier = crewTier(gl);
     if (tier === n.tier) return;
     n.tier = tier;
     const look = { ...n.look0, noAutoLegs: true };
-    for (const id of Object.values(crewGear(n.level))) Object.assign(look, EQUIP[id].look);
+    for (const id of Object.values(crewGear(gl))) Object.assign(look, EQUIP[id].look);
     n.rebuild(look);
   }
   crewGainXp(xp) {
@@ -2972,6 +2982,7 @@ class Game {
       this.updateEspShots(dt);
       this.updateNewborn(dt);
       this.updateRescue();
+      this.updateMore7(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3186,6 +3197,8 @@ installMore3(Game, { sfx });
 installMore4(Game, { sfx, EQUIP, ITEMS, OUTLINE });
 installMore5(Game, { sfx });
 installMore6(Game, { sfx });
+installMore7(Game, { sfx, NPC });
+LOGROS.push({ id: 'jinete', name: 'Jinete veloz', title: 'Jinete veloz', desc: 'Gana una carrera de monturas', ok: (g) => (g.stats.mraces || 0) >= 1 });
 LOGROS.push(
   { id: 'islas', name: 'Señor de las islas', title: 'Señor de las islas', desc: 'Derrota a Glacia, Ferrum y Bizcochón', ok: (g) => (g.stats.k_reina_hielo || 0) >= 1 && (g.stats.k_gran_automata || 0) >= 1 && (g.stats.k_rey_pastel || 0) >= 1 },
   { id: 'pesca', name: 'Campeón de pesca', title: 'Rey del anzuelo', desc: 'Gana el torneo de pesca', ok: (g) => (g.stats.fishCups || 0) >= 1 },

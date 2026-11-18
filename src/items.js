@@ -25,6 +25,7 @@ export const ITEMS = {
   mapa_tesoro: { name: 'Mapa del tesoro', icon: '🗺️', type: 'mat', value: 0, desc: 'Míralo en la Bitácora (Mapas). Busca la X y cava.' },
   anillo_boda: { name: 'Anillo de compromiso', icon: '💍', type: 'mat', value: 0, desc: 'Para pedir matrimonio a tu pareja (o a otro jugador).' },
   huevo_dragon: { name: 'Huevo de dragón', icon: '🥚', type: 'mat', value: 0, desc: 'Úsalo en Bitácora › Vida para que nazca tu cría de dragón.' },
+  caja_contrabando: { name: 'Caja de contrabando', icon: '📦', type: 'mat', value: 0, desc: 'Llévala al puerto que te dijo Sombra.' },
   cristal: { name: 'Cristal de escarcha', icon: '❄️', type: 'mat', value: 45, desc: 'Se pica en las rocas de la Isla Escarcha.' },
   meteorito: { name: 'Fragmento de meteorito', icon: '☄️', type: 'mat', value: 70, desc: 'Rocas de la Isla Engranaje.' },
   azucar: { name: 'Azúcar cristalizado', icon: '🍬', type: 'ingr', value: 10, desc: 'Rocas dulces de la Isla Merengue.' },

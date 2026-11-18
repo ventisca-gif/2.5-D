@@ -81,6 +81,7 @@ export class Panels {
     if (act === 'cjob') { g.cycleCrewJob(b.dataset.id); return this.openBitacora('crew'); }
     if (act === 'title') { g.title = b.dataset.t || null; g.applyTitle(); return this.openBitacora('logros'); }
     if (act === 'stash') { g.stashMove(b.dataset.id, Number(b.dataset.n), b.dataset.d); return; }
+    if (act === 'explore') { this.close(); return g.exploreMenu(g.npcById(b.dataset.id)); }
     if (act === 'crewrole') {
       const r = b.dataset.role;
       if (r === 'collect') { const n = g.npcById(b.dataset.id), s = g.soc(n.id); const f = { ...s.farm }; g.collectFarm(n); s.farm = { ...f, t0: g.playtime }; }
@@ -275,13 +276,15 @@ export class Panels {
       const pt = g.partner();
       const rows = crew.map((n) => {
         const s = g.soc(n.id);
-        const role = s.role === 'jail' ? '⛓ Preso en el Bastión' : s.role === 'farm' ? `⛏ Recolectando en ${esc(s.farm ? s.farm.isle : '?')}` : s.role === 'ship' ? '⚓ En el barco' : s.wait ? '⏸ Esperando' : '▶ Te acompaña';
+        const role = s.role === 'explore' ? `🧭 Explorando (${Math.max(1, Math.ceil(((s.explore ? s.explore.start + s.explore.dur : 0) - g.playtime) / 60))} min)` : s.role === 'jail' ? '⛓ Preso en el Bastión' : s.role === 'farm' ? `⛏ Recolectando en ${esc(s.farm ? s.farm.isle : '?')}` : s.role === 'ship' ? '⚓ En el barco' : s.wait ? '⏸ Esperando' : '▶ Te acompaña';
         const y = s.role === 'farm' ? g.farmYield(n) : null;
         const btn = (r, label) => `<button class="pbtn small" data-p="crewrole" data-id="${n.id}" data-role="${r}">${label}</button>`;
         const job = s.cjob ? CREW_JOBS[s.cjob] : null;
-        const btns = [`<button class="pbtn small" data-p="cjob" data-id="${n.id}">${job ? job.icon + ' ' + job.name : '🎓 Sin puesto'}</button>`, s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : ''].join('');
+        const btns = [`<button class="pbtn small" data-p="cjob" data-id="${n.id}">${job ? job.icon + ' ' + job.name : '🎓 Sin puesto'}</button>`, s.role ? btn('', '▶ Acompañar') : '', s.role !== 'ship' ? btn('ship', '⚓ Al barco') : '', s.role !== 'farm' ? btn('farm', '⛏ Recolectar aquí') : btn('collect', `🎒 Recoger (${Math.floor(y.min)} min)`), !s.role ? `<button class="pbtn small" data-p="crewtoggle" data-id="${n.id}">${s.wait ? '▶ Seguir' : '⏸ Esperar'}</button>` : '', (!s.role || s.role === 'ship') ? `<button class="pbtn small" data-p="explore" data-id="${n.id}">🧭 Explorar</button>` : ''].join('');
+        g.compStats(n);
+        const hpTxt = n.ko > 0 ? '💫 Desmayado' : `❤ ${Math.round(n.chp)}/${n.cmax} · 🍶 ${s.pots ?? 2}`;
         return `<div class="frow crewrow"><b>${esc(n.name)}${s.partner ? ' 💗' : ''}</b><span class="lv">Nv. ${n.level}</span>
-          <span class="muted t${n.tier}">${TIER_NAMES[n.tier] || ''}</span><span class="muted">${role}${g.autoHelm === n.id ? ' · 🧭 Timonel' : ''}</span><div class="cbtns">${btns}</div></div>`;
+          <span class="muted t${n.tier}">${TIER_NAMES[n.tier] || ''}</span><span class="muted">${role}${g.autoHelm === n.id ? ' · 🧭 Timonel' : ''}</span><span class="muted small">${hpTxt}</span><div class="cbtns">${btns}</div></div>`;
       }).join('');
       body = `<p>Tripulación: <b>${crew.length}/${MAX_CREW}</b> · te acompañan <b>${g.activeCrew().length}/3</b>${pt && !g.soc(pt.id).crew ? ` · Pareja: <b>${esc(pt.name)}</b> (Nv. ${pt.level})` : ''}</p>${rows || '<p class="muted">Aún no tienes tripulación. Haz amistad (3 corazones) y pídeles que se unan.</p>'}
         <p class="muted small">Solo 3 te acompañan a la vez; el resto espera en el barco y sube a cubierta al zarpar. Puedes dejarlos recolectando en la isla donde estás (madera, piedra, menas y oro según la isla, hasta 60 min) y recogerlo luego. Suben de nivel hasta 100, igual que tú. Navegando, pon a uno de timonel desde el botón ⚙️ Barco.</p>`;
@@ -483,6 +486,12 @@ export class Panels {
       ['🌦 Clima de cada isla', 'Ventisca en Escarcha, lluvia de azúcar en Merengue, marea de pompas en Burbuja y nubes de vapor en Engranaje.'],
       ['💔 Romper con la pareja', 'Habla con tu pareja y elige «Romper la relación» (o «Divorciarse» si estáis casados). La amistad baja y no querrá volver contigo en 7 días, pero podrás declararte a otra persona.'],
       ['🛡 Los enemigos se defienden', 'Cada tipo se defiende a su manera: los que llevan arma paran tus golpes (y contraatacan si paran dos seguidos) y beben pociones; las bestias y los voladores esquivan; cangrejos y escorpiones se esconden en el caparazón; gólems, yetis y autómatas endurecen la piel si les golpeas muy seguido. En los duelos, los NPCs también bloquean, esquivan, beben pociones y usan técnicas especiales.'],
+      ['❤️ Vida de la tripulación', 'Tu tripulación y tu pareja tienen la vida de un jugador de su nivel y su armadura. Los enemigos también les atacan. Bloquean, beben pociones (regálales pociones para que lleven más), se retiran si van mal y se desmayan: reanímales con una poción o espera 30 s.'],
+      ['🧭 Expediciones', 'En Bitácora › Tripulación pulsa «Explorar» y elige una isla. En 8 minutos vuelven con nivel, oro, materiales, pociones y a veces armadura mejor. Si la isla es demasiado peligrosa pueden volver heridos.'],
+      ['📣 Órdenes', '⚡ Atajos › Órdenes: seguirte, atacar a tu objetivo, defenderte, recolectar madera y piedra a tu alrededor o esperar.'],
+      ['💢 Celos, rivales y familia', 'Si tienes pareja y te haces muy amigo de otros, se pondrá celosa. A veces aparece un rival que te reta a duelo. Tras casaros llegará un hijo o una hija que crece cada día y a nivel 10 puede unirse a tu tripulación.'],
+      ['🌙 Mercado negro y carreras', 'De noche aparece el Contrabandista Sombra en Isla Tortuga: objetos raros y trabajos de contrabando (lleva la caja a otro puerto). Lucía, Zaid y Helga organizan carreras de monturas con apuestas.'],
+      ['🗼 Faros', 'Junto a cada muelle hay un faro. Enciéndelo con 10 de madera y 2 de hierro y podrás viajar allí desde ⚡ Atajos › Viajar (50 oro).'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],
