@@ -14,8 +14,11 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
   - **Villarroca**: ciudad amurallada con torres y vigías, plaza con fuente, mercado, Ayuntamiento, Herrería, Taberna y Torre del Reloj.
   - **Puerto Salitre**: muelles, barco pirata *Gaviota Negra*, faro, taberna La Sirena Tuerta y almacén.
   - **Bosque Norte**, **Pedregal del Oeste**, **Granja de los Trigales** y **Cala de los Huesos** (barco hundido).
-- **14 NPCs** con nombre y diálogo (alcaldesa, herrero, tabernera, capitana pirata, mercader, guardias…).
-- **Cadena de 9 misiones** hasta el jefe final, el Capitán Huesoamargo.
+- **Isla Tortuga** (refugio de contrabandistas) e **Isla Calavera** (roca-calavera, piratas esqueleto y cofre maldito), alcanzables **navegando en barco**.
+- **Interiores**: Ayuntamiento, dos tabernas, Herrería, Almacén, Taller de Bruno y Granja, con muebles y NPCs dentro.
+- **Navegación**: sube al barco en el muelle, gobiérnalo con el joystick (o tocando el mar) y atraca en los muelles de cada isla.
+- **Más de 25 NPCs** con nombre y diálogo, con cuerpos estructurados (cara, articulaciones, armaduras, capas).
+- **Cadena de 10 misiones**: el jefe Capitán Huesoamargo y el tesoro de la Isla Calavera.
 - **Combate** contra lobos, jabalíes, cangrejos y piratas esqueleto; experiencia, niveles y oro.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.
@@ -31,6 +34,8 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 | Ron curativo | Botón 🍶 | Q |
 | Zoom | Pellizcar | Rueda |
 | Mapa grande | Tocar el minimapa | M |
+| Entrar / salir de casas | Tocar la puerta o la alfombra de salida | Clic / Espacio |
+| Barco | Tocar el barco → joystick o tocar el mar → botón ⚓ Atracar | WASD / Espacio |
 | Menú | ☰ o botón Atrás | Esc |
 
 ## Desarrollo
@@ -58,7 +63,10 @@ GitHub Actions (`.github/workflows/apk.yml`) recompila la APK en cada push y la 
 src/world.js        mapa en cuadrícula: isla, ciudad, puerto, NPCs y zonas de enemigos
 src/terrain.js      terreno texturizado + agua con espuma
 src/props.js        casas, murallas, torres, barco, árboles, decoración (mallas fusionadas)
-src/characters.js   personajes de bloques y animaciones
+src/chars2.js       personajes (humanos, esqueletos, animales) horneados en pocas mallas
+src/characters.js   animaciones
+src/regions.js      islas extra e interiores (comparten la cuadrícula)
+src/interiors.js    salas y muebles
 src/pathfinding.js  A* en 8 direcciones
 src/quests.js       misiones y diálogos
 src/ui.js           HUD, minimapa, joystick, diálogos

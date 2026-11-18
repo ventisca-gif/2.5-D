@@ -7,17 +7,17 @@ import {
   createMaterials, makeBuilding, makeWall, makeTower, makeProp, makeLamp, makeDocks,
   makeShip, makeRowboat, makeWreck, treeGeometries, StaticBatcher,
 } from './props.js';
-import { makeHumanoid, makeQuadruped, makeCrab, animateModel, OUTFITS, SKINS } from './characters.js';
+import { animateModel, SKINS } from './characters.js';
 import { findPath } from './pathfinding.js';
 import { QUESTS, dialogFor } from './quests.js';
 import { sfx, audio } from './audio.js';
 import { UI } from './ui.js';
-import { makeHumanoid2, makeBeast2, OUTFITS2 } from './chars2.js';
+import { makeIslets, makeInteriors, attachRegions } from './regions.js';
+import { buildRoom } from './interiors.js';
+import { makeHumanoid2, makeBeast2, makeCrab2, OUTFITS2 } from './chars2.js';
 
-// Personajes v2 (prueba): ?v2=1
-const V2 = (typeof __V2__ !== 'undefined' && __V2__) || /[?&]v2=1/.test(location.search);
-const HUM = V2 ? makeHumanoid2 : makeHumanoid;
-const OUTF = V2 ? OUTFITS2 : OUTFITS;
+const HUM = makeHumanoid2;
+const OUTF = OUTFITS2;
 
 const $ = (id) => document.getElementById(id);
 const SAVE_KEY = 'islabruma_save_v1';
@@ -60,10 +60,10 @@ class Actor {
   get tz() { return Math.round(this.z); }
   dist(o) { return Math.hypot(o.x - this.x, o.z - this.z); }
   nextTile() { return this.path.length ? this.path[0] : { x: this.tx, z: this.tz }; }
-  goTo(x, z, adjacent = false, maxIter = 6000) {
+  goTo(x, z, adjacent = false, maxIter = 6000, range = 1) {
     const moving = this.path.length > 0;
     const s = this.nextTile();
-    const p = findPath(this.g.W, s.x, s.z, x, z, { adjacent, maxIter });
+    const p = findPath(this.g.W, s.x, s.z, x, z, { adjacent, maxIter, range });
     if (!p) {
       this.path = moving ? [s] : [];
       return false;
@@ -195,6 +195,7 @@ class Player extends Actor {
         }
       }
     }
+    if (g.sailing) return;
     const joy = g.joyVector();
     if (joy) {
       this.target = null;
@@ -205,6 +206,8 @@ class Player extends Actor {
         const d = g.joyToGrid(joy);
         let step = null;
         const ok = (dx, dz) => g.W.walkable(from.x + dx, from.z + dz) && (!(dx && dz) || (g.W.walkable(from.x + dx, from.z) && g.W.walkable(from.x, from.z + dz)));
+        const door = !this.path.length && g.doorAt(from.x + d[0], from.z + d[1]);
+        if (door && door.front.x === from.x && door.front.z === from.z) { g.enterRoom(door); return; }
         if (ok(d[0], d[1])) step = d;
         else if (d[0] && d[1] && ok(d[0], 0)) step = [d[0], 0];
         else if (d[0] && d[1] && ok(0, d[1])) step = [0, d[1]];
@@ -264,7 +267,8 @@ class Player extends Actor {
     } else if (t.kind === 'npc') {
       const n = t.ref;
       const cheb = Math.max(Math.abs(n.tx - this.nextTile().x), Math.abs(n.tz - this.nextTile().z));
-      if (cheb <= 1 && this.dist(n) < 1.8) {
+      const rng = t.range || 1;
+      if (cheb <= rng && this.dist(n) < rng + 0.8) {
         if (this.path.length > 1) this.path = [this.path[0]];
         if (!this.path.length) {
           this.target = null;
@@ -274,12 +278,26 @@ class Player extends Actor {
         this.repathT -= dt;
         if (this.repathT <= 0) {
           this.repathT = 0.6;
-          if (!this.goTo(n.tx, n.tz, true)) {
-            this.target = null;
-            g.ui.toast('No hay camino');
+          if (!this.goTo(n.tx, n.tz, true, 6000, t.range || 1)) {
+            if (!t.range) { t.range = 2; this.repathT = 0; }
+            else { this.target = null; g.ui.toast('No hay camino'); }
           }
         }
       }
+    } else if (t.kind === 'door') {
+      const r = t.ref;
+      if (this.tx === r.front.x && this.tz === r.front.z && !this.path.length) { this.target = null; g.enterRoom(r); }
+      else if (!this.path.length && !this.goTo(r.front.x, r.front.z)) { this.target = null; g.ui.toast('No hay camino'); }
+    } else if (t.kind === 'ship') {
+      if (g.canBoard()) { this.target = null; this.path = []; g.board(); }
+      else if (!this.path.length) {
+        const d = g.docks.find((k) => k.id === g.boat.docked);
+        if (!d || (this.tx === d.land.x && this.tz === d.land.z) || !this.goTo(d.land.x, d.land.z)) { this.target = null; if (!g.canBoard()) g.ui.toast('Acércate al barco por el muelle'); }
+      }
+    } else if (t.kind === 'chest') {
+      const c = t.ref;
+      if (Math.max(Math.abs(c.x - this.tx), Math.abs(c.z - this.tz)) <= 1 && !this.path.length) { this.target = null; g.openChest(c); }
+      else if (!this.path.length && !this.goTo(c.x, c.z, true)) { this.target = null; g.ui.toast('No hay camino'); }
     } else if (t.kind === 'tree' || t.kind === 'rock') {
       const o = t.ref;
       if (o.down) {
@@ -315,6 +333,8 @@ class Player extends Actor {
     this.lastCombat = this.g.time;
     sfx('swing');
   }
+
+  onTile() { this.g.checkTriggers(this); }
 
   usePotion() {
     if (this.dead) return;
@@ -376,12 +396,12 @@ function model_scale(model, s) {
 class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
-    if (type === 'wolf' || type === 'boar') model = V2 ? makeBeast2(type) : makeQuadruped(type);
-    else if (type === 'crab') model = makeCrab();
+    if (type === 'wolf' || type === 'boar') model = makeBeast2(type);
+    else if (type === 'crab') model = makeCrab2();
     else if (type === 'boss') {
-      model = HUM({ bone: 0xe8e2cc, shirt: 0x8a1a1a, hat: 'tricorn', coat: true, sword: true, blade: 0xffd070, bladeGlow: 0x6a3a00, eyeGlow: 0xff3020, cape: 0x5a0a0a });
+      model = HUM({ bone: 0xe8e2cc, shirt: 0x8a1a1a, hat: 'tricorn', feather: 0xd83a3a, sword: true, blade: 0xffd070, guard: 0xffd070, eyeGlow: 0xff3020, cape: 0x5a0a0a, pauldron: 0x8a1a1a, trim: 0xe0b040 });
     } else {
-      model = HUM({ bone: 0xe8e2cc, hat: 'bandana', capColor: [0xb02a2a, 0x2a4ab0, 0x2a2a2a][Math.floor(Math.random() * 3)], sword: true, blade: 0x9a8a7a });
+      model = HUM({ bone: 0xe8e2cc, hat: 'bandana', capColor: [0xb02a2a, 0x2a4ab0, 0x2a2a2a][Math.floor(Math.random() * 3)], sword: true, blade: 0x9a8a7a, eyepatch: Math.random() < 0.3 });
     }
     super(game, model, 0, 0);
     if (type === 'boss') model_scale(model, 1.5);
@@ -538,6 +558,17 @@ class Game {
     this.scene.add(this.torch);
 
     this.W = generateWorld();
+    this.islets = makeIslets();
+    this.rooms = makeInteriors(this.W.buildings);
+    attachRegions(this.W, [...this.islets, ...this.rooms]);
+    this.docks = [
+      { id: 'salitre', name: 'Puerto Salitre', shipX: this.W.ship.x, shipZ: this.W.ship.z, heading: 0, land: { x: 51, z: 92 } },
+      ...this.islets.map((r) => r.dock),
+    ];
+    this.boat = { x: this.W.ship.x, z: this.W.ship.z, heading: 0, speed: 0, docked: 'salitre', waypoint: null };
+    this.sailing = false;
+    this.flags = {};
+    this.chests = [];
     this.ui = new UI(this);
     this.buildWorld();
     this.buildMarkers();
@@ -581,6 +612,11 @@ class Game {
     this.scene.add(ground, sides);
     this.water = buildWater(W);
     this.scene.add(this.water);
+    for (const r of this.islets) {
+      const tex = TX.makeGroundTexture(r, 20);
+      const t = buildTerrain(r, tex);
+      this.scene.add(t.ground, t.sides);
+    }
 
     const batch = new StaticBatcher();
     const addDyn = (dyn) => {
@@ -598,13 +634,23 @@ class Game {
         this.smokeSrc = group.localToWorld(group.userData.smoke.clone());
       }
     }
-    for (const w of W.walls) batch.add(makeWall(w, M));
+    const regB = this.islets.flatMap((r) => r.buildings);
+    for (const b of regB) batch.add(makeBuilding(b, M).group);
+    const allWalls = [...W.walls, ...this.islets.flatMap((r) => r.walls)];
+    for (const w of allWalls) batch.add(makeWall(w, M));
     for (const t of W.towers) batch.add(makeTower(t, M));
-    for (const p of W.props) {
+    for (const p of [...W.props, ...this.islets.flatMap((r) => r.props)]) {
       const { group, dyn } = makeProp(p, M);
       batch.add(group);
       addDyn(dyn);
+      if (p.type === 'chest') this.chests.push({ id: p.id || `cofre_${p.x}_${p.z}`, x: p.x, z: p.z, loot: p.loot || { gold: 30 } });
     }
+    for (const r of this.rooms) {
+      const { group, dyn } = buildRoom(r, M);
+      batch.add(group);
+      for (const d of dyn) { this.scene.add(d); this.dyn.push(d); }
+    }
+    for (const r of this.islets) batch.add(makeDocks(r, M));
     for (const l of W.lamps) batch.add(makeLamp(l, M));
     batch.add(makeDocks(W, M));
     const wreck = makeWreck(M, tx);
@@ -613,7 +659,7 @@ class Game {
     batch.build(this.scene);
 
     this.ship = makeShip(M, tx);
-    this.ship.position.set(W.ship.x, -0.05, W.ship.z);
+    this.ship.position.set(this.boat.x, -0.05, this.boat.z);
     this.scene.add(this.ship);
     this.rowboat = makeRowboat(M);
     this.rowboat.position.set(W.rowboat.x, -0.02, W.rowboat.z);
@@ -629,7 +675,10 @@ class Game {
     this.rockMap = new Map();
     this.regrow = [];
     const byType = {};
-    for (const t of W.trees) (byType[t.type] = byType[t.type] || []).push(t);
+    const allTrees = [...W.trees, ...this.islets.flatMap((r) => r.trees)];
+    const allRocks = [...W.rocks, ...this.islets.flatMap((r) => r.rocks)];
+    const allDecor = [...W.decor, ...this.islets.flatMap((r) => r.decor)];
+    for (const t of allTrees) (byType[t.type] = byType[t.type] || []).push(t);
     for (const [type, list] of Object.entries(byType)) {
       const im = new THREE.InstancedMesh(TG[type], vmat, list.length);
       list.forEach((t, i) => {
@@ -639,27 +688,27 @@ class Game {
         if (type === 'autumn') col.setRGB(1, 0.75 + (t.hue ?? 0.5) * 0.25, 0.75 + (t.hue ?? 0.5) * 0.25);
         else col.setRGB(k, k + 0.02, k);
         im.setColorAt(i, col);
-        this.treeMap.set(W.idx(t.x, t.z), t);
+        this.treeMap.set(W.key(t.x, t.z), t);
       });
       im.castShadow = true;
       im.receiveShadow = true;
       im.instanceMatrix.needsUpdate = true;
       this.scene.add(im);
     }
-    const rim = new THREE.InstancedMesh(TG.rock, vmat, W.rocks.length);
-    W.rocks.forEach((r, i) => {
+    const rim = new THREE.InstancedMesh(TG.rock, vmat, allRocks.length);
+    allRocks.forEach((r, i) => {
       r.mesh = rim; r.index = i; r.hp = 3; r.down = false; r.rot = (r.x * 7 + r.z * 13) % 6.28;
       this.setInst(rim, i, r.x, 0, r.z, r.rot, r.s * 1.6);
       const k = 0.85 + ((r.x * 31 + r.z * 17) % 10) / 70;
       rim.setColorAt(i, col.setRGB(k, k, k * 0.98));
-      this.rockMap.set(W.idx(r.x, r.z), r);
+      this.rockMap.set(W.key(r.x, r.z), r);
     });
     rim.castShadow = true;
     rim.receiveShadow = true;
     this.scene.add(rim);
 
     const decoBy = {};
-    for (const d of W.decor) (decoBy[d.type] = decoBy[d.type] || []).push(d);
+    for (const d of allDecor) (decoBy[d.type] = decoBy[d.type] || []).push(d);
     const flowerCols = [0xf05a8a, 0xf8e050, 0xffffff, 0xa070f0];
     for (const [type, list] of Object.entries(decoBy)) {
       const im = new THREE.InstancedMesh(TG[type], vmat, list.length);
@@ -704,9 +753,14 @@ class Game {
 
   spawnActors() {
     const W = this.W;
-    for (const d of W.npcs) this.npcs.push(new NPC(this, d));
-    for (const s of W.spawns) {
+    const npcDefs = [...W.npcs, ...this.islets.flatMap((r) => r.npcs), ...this.rooms.flatMap((r) => r.npcs)];
+    for (const d of npcDefs) this.npcs.push(new NPC(this, d));
+    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns)]) {
       for (let i = 0; i < s.count; i++) this.enemies.push(new Enemy(this, s.type, s, s.lvl));
+    }
+    for (const r of this.rooms) {
+      r.doorLabel = this.ui.makeLabel('door', '🚪 ' + r.name);
+      r.exitLabel = this.ui.makeLabel('door', '🚪 Salir');
     }
     for (const t of W.towers) {
       if (!t.guard) continue;
@@ -865,6 +919,11 @@ class Game {
     const p = this.player;
     if (p.dead) return;
     sfx('click');
+    if (this.sailing) {
+      const hp = this.groundPoint(sx, sy);
+      if (hp) { this.boat.waypoint = { x: hp.x, z: hp.z }; this.showCursor(Math.round(hp.x), Math.round(hp.z)); }
+      return;
+    }
     // 1. personajes (en espacio de pantalla, para tocar la figura completa)
     let best = null, bd = 46;
     const consider = (a, kind) => {
@@ -888,6 +947,24 @@ class Game {
       }
       return;
     }
+    // 1b. barco, puertas y cofres
+    const inRoom = this.roomAt(p.x, p.z);
+    if (!inRoom && this.boat.docked) {
+      const s = this.screenOf(this.boat.x, 1.0, this.boat.z);
+      if (Math.hypot(s.x - sx, s.y - sy) < 75 && Math.hypot(this.boat.x - p.x, this.boat.z - p.z) < 30) { p.setTarget({ kind: 'ship' }); return; }
+    }
+    if (!inRoom) {
+      for (const r of this.rooms) {
+        if (Math.hypot(r.front.x - p.x, r.front.z - p.z) > 25) continue;
+        const s = this.screenOf((r.door.x + r.front.x) / 2, 0.55, (r.door.z + r.front.z) / 2);
+        if (Math.hypot(s.x - sx, s.y - sy) < 42) { p.setTarget({ kind: 'door', ref: r }); this.showCursor(r.front.x, r.front.z); return; }
+      }
+    }
+    for (const c of this.chests) {
+      if (Math.hypot(c.x - p.x, c.z - p.z) > 25) continue;
+      const s = this.screenOf(c.x, 0.3, c.z);
+      if (Math.hypot(s.x - sx, s.y - sy) < 38) { p.setTarget({ kind: 'chest', ref: c }); return; }
+    }
     // 2. punto del suelo
     const ndc = new THREE.Vector2((sx / this.width) * 2 - 1, -(sy / this.height) * 2 + 1);
     const rc = new THREE.Raycaster();
@@ -898,7 +975,7 @@ class Game {
     // 3. árboles y rocas (copas incluidas)
     let res = null, rd = 40;
     for (let dz = -3; dz <= 1; dz++) for (let dx = -3; dx <= 1; dx++) {
-      const k = this.W.idx(tx + dx, tz + dz);
+      const k = this.W.key(tx + dx, tz + dz);
       for (const [map, kind, yy] of [[this.treeMap, 'tree', 0.9], [this.rockMap, 'rock', 0.25]]) {
         const o = map.get(k);
         if (!o || o.down) continue;
@@ -933,6 +1010,152 @@ class Game {
     p.setTarget({ kind: 'tile', x: gx, z: gz });
     this.showCursor(gx, gz);
   }
+  groundPoint(sx, sy) {
+    const ndc = new THREE.Vector2((sx / this.width) * 2 - 1, -(sy / this.height) * 2 + 1);
+    const rc = new THREE.Raycaster();
+    rc.setFromCamera(ndc, this.camera);
+    const hit = new THREE.Vector3();
+    return rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit) ? hit : null;
+  }
+
+  // ------------------------------------------------------------- interiores
+  roomAt(x, z) { const r = this.W.regionAt(x, z); return r && r.kind === 'interior' ? r : null; }
+  doorAt(x, z) { return this.rooms.find((r) => r.door.x === x && r.door.z === z) || null; }
+  checkTriggers(p) {
+    const r = this.roomAt(p.x, p.z);
+    if (r && p.tx === r.exit.x && p.tz === r.exit.z) this.exitRoom(r);
+  }
+  enterRoom(r) {
+    const p = this.player;
+    p.x = r.inside.x; p.z = r.inside.z; p.path = []; p.target = null;
+    p.face = Math.PI;
+    this.selection.visible = false;
+    this.camTarget.set(p.x, 0, p.z);
+    for (const e of this.enemies) if (e.state === 'chase') { e.state = 'return'; e.path = []; }
+    this.ui.toast(r.name, 'area');
+    this.lastArea = r.name;
+    sfx('click');
+  }
+  exitRoom(r) {
+    const p = this.player;
+    p.x = r.front.x; p.z = r.front.z; p.path = []; p.target = null;
+    p.face = Math.atan2(r.front.x - r.door.x, r.front.z - r.door.z);
+    this.camTarget.set(p.x, 0, p.z);
+    sfx('click');
+  }
+
+  // ------------------------------------------------------------- barco
+  shipLocal(px, pz) {
+    const b = this.boat;
+    const dx = px - b.x, dz = pz - b.z;
+    const fx = Math.sin(b.heading), fz = Math.cos(b.heading);
+    return { lz: dx * fx + dz * fz, lx: dx * fz - dz * fx };
+  }
+  canBoard() {
+    if (this.sailing || !this.boat.docked) return false;
+    const p = this.player;
+    if (this.W.isInterior(p.x)) return false;
+    const { lx, lz } = this.shipLocal(p.x, p.z);
+    return Math.abs(lz) <= 4.2 && Math.abs(lx) <= 3.3;
+  }
+  board() {
+    const p = this.player, b = this.boat;
+    this.lastDock = b.docked;
+    this.sailing = true;
+    b.docked = null;
+    b.speed = 0;
+    b.waypoint = null;
+    p.target = null; p.path = []; p.st.moving = false; p.st.gather = 0;
+    this.selection.visible = false;
+    this.ship.add(p.model.root);
+    p.model.root.position.set(0, 1.42, -2.75);
+    p.model.root.rotation.set(0, 0, 0);
+    this.viewTarget = Math.max(this.viewTarget, isMobile ? 16 : 18);
+    this.ui.toast('⛵ ¡A navegar! Joystick o toca el mar');
+    sfx('quest');
+  }
+  nearDock() {
+    const b = this.boat;
+    for (const d of this.docks) if (Math.hypot(b.x - d.shipX, b.z - d.shipZ) < 7) return d;
+    return null;
+  }
+  dock(d) {
+    const p = this.player, b = this.boat;
+    b.x = d.shipX; b.z = d.shipZ; b.heading = d.heading; b.speed = 0; b.docked = d.id; b.waypoint = null;
+    this.sailing = false;
+    this.scene.add(p.model.root);
+    p.model.root.rotation.set(0, 0, 0);
+    p.x = d.land.x; p.z = d.land.z; p.path = [];
+    this.camTarget.set(p.x, 0, p.z);
+    this.viewTarget = isMobile ? 11.5 : 13;
+    this.ui.toast('⚓ ' + d.name, 'area');
+    sfx('coin');
+    this.save();
+  }
+  shipBlocked(x, z, h) {
+    const fx = Math.sin(h), fz = Math.cos(h), rx = Math.cos(h), rz = -Math.sin(h);
+    for (const [a, c] of [[3.6, 0], [1.6, 1.15], [1.6, -1.15], [-1.4, 1.15], [-1.4, -1.15], [-3.4, 0.6], [-3.4, -0.6]]) {
+      const px = x + fx * a + rx * c, pz = z + fz * a + rz * c;
+      if (this.W.tileAll(Math.round(px), Math.round(pz)) !== T.WATER) return true;
+    }
+    return x < -26 || z < -26 || x > 166 || z > 166;
+  }
+  updateBoat(dt) {
+    const b = this.boat, p = this.player;
+    const j = this.joyVector();
+    let want = null, throttle = 0;
+    if (j) {
+      b.waypoint = null;
+      want = Math.atan2(j.x - j.y, -j.x - j.y);
+      throttle = Math.min(1, Math.hypot(j.x, j.y));
+    } else if (b.waypoint) {
+      const dx = b.waypoint.x - b.x, dz = b.waypoint.z - b.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 2) b.waypoint = null;
+      else { want = Math.atan2(dx, dz); throttle = Math.min(1, d / 5); }
+    }
+    let target = 0, diff = 0;
+    const prevHeading = b.heading;
+    if (want !== null) {
+      diff = want - b.heading;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      const rate = 1.3 + Math.abs(b.speed) * 0.08;
+      b.heading += clamp(diff, -rate * dt, rate * dt);
+      target = 5.5 * throttle * Math.max(0.2, Math.cos(diff));
+    }
+    b.speed += (target - b.speed) * Math.min(1, dt * (target > b.speed ? 0.9 : 1.3));
+    const nx = b.x + Math.sin(b.heading) * b.speed * dt;
+    const nz = b.z + Math.cos(b.heading) * b.speed * dt;
+    if (!this.shipBlocked(nx, nz, b.heading)) { b.x = nx; b.z = nz; }
+    else {
+      // el giro choca: seguimos con el rumbo anterior si se puede
+      b.heading = prevHeading;
+      const ox = b.x + Math.sin(prevHeading) * b.speed * dt, oz = b.z + Math.cos(prevHeading) * b.speed * dt;
+      if (!this.shipBlocked(ox, oz, prevHeading)) { b.x = ox; b.z = oz; }
+      else b.speed *= -0.3;
+    }
+    b.roll = (b.roll || 0) + ((-clamp(diff, -1, 1) * 0.07 * Math.min(1, Math.abs(b.speed) / 3)) - (b.roll || 0)) * Math.min(1, dt * 3);
+    p.x = b.x; p.z = b.z;
+  }
+
+  openChest(c) {
+    const p = this.player;
+    if (this.flags[c.id]) return this.ui.toast('El cofre está vacío');
+    this.flags[c.id] = true;
+    const gold = c.loot.gold || 0, pot = c.loot.potion || 0;
+    p.gold += gold;
+    p.inv.potion += pot;
+    this.ui.float(`+${gold} oro`, 'gold', c.x, 1.0, c.z);
+    if (pot) setTimeout(() => this.ui.float(`+${pot} 🍶`, 'info', c.x, 1.3, c.z), 300);
+    this.ui.toast(`🎁 ¡Tesoro! +${gold} oro${pot ? ` y ${pot} ron` : ''}`);
+    sfx('coin');
+    setTimeout(() => sfx('quest'), 250);
+    const cur = QUESTS[this.quest.stage];
+    if (cur && cur.type === 'chest' && cur.target === c.id) this.advanceQuest();
+    this.save();
+  }
+
   showCursor(x, z) {
     this.cursor.visible = true;
     this.cursor.position.set(x, this.W.groundY(x, z) + 0.02, z);
@@ -942,6 +1165,19 @@ class Game {
   // ------------------------------------------------------------- acciones
   contextAction() {
     const p = this.player;
+    if (this.sailing) {
+      const d = this.nearDock();
+      return d ? { icon: '⚓', label: 'Atracar', fn: () => this.dock(d) } : { icon: '⛵', label: 'Navegar', fn: () => this.ui.toast('Usa el joystick o toca el mar') };
+    }
+    const inRoom = this.roomAt(p.x, p.z);
+    if (inRoom && Math.hypot(p.x - inRoom.exit.x, p.z - inRoom.exit.z) < 2.3) return { icon: '🚪', label: 'Salir', fn: () => this.exitRoom(inRoom) };
+    if (!inRoom) {
+      for (const r of this.rooms) if (Math.hypot(p.x - r.front.x, p.z - r.front.z) < 1.6) return { icon: '🚪', label: 'Entrar', fn: () => p.setTarget({ kind: 'door', ref: r }) };
+      if (this.canBoard()) return { icon: '⛵', label: 'Zarpar', fn: () => this.board() };
+    }
+    for (const c of this.chests) {
+      if (!this.flags[c.id] && Math.max(Math.abs(c.x - p.tx), Math.abs(c.z - p.tz)) <= 1) return { icon: '🎁', label: 'Abrir', fn: () => p.setTarget({ kind: 'chest', ref: c }) };
+    }
     if (p.target && p.target.kind === 'enemy') return { icon: '⚔️', label: 'Atacar', fn: null };
     let ne = null, nd = 5;
     for (const e of this.enemies) { if (e.dead) continue; const d = e.dist(p); if (d < nd) { nd = d; ne = e; } }
@@ -950,7 +1186,7 @@ class Game {
     if (nn && (!ne || nnd < 1.8)) return { icon: '💬', label: 'Hablar', fn: () => p.setTarget({ kind: 'npc', ref: nn }) };
     if (ne) return { icon: '⚔️', label: 'Atacar', fn: () => { p.setTarget({ kind: 'enemy', ref: ne }); this.selection.visible = true; this.selTarget = ne; } };
     for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-      const k = this.W.idx(p.tx + dx, p.tz + dz);
+      const k = this.W.key(p.tx + dx, p.tz + dz);
       const t = this.treeMap.get(k);
       if (t && !t.down) return { icon: '🪓', label: 'Talar', fn: () => p.setTarget({ kind: 'tree', ref: t }) };
       const r = this.rockMap.get(k);
@@ -998,7 +1234,7 @@ class Game {
       o.down = true;
       o.downT = 0;
       this.setInst(o.mesh, o.index, o.x, 0, o.z, o.rot, kind === 'tree' ? o.s * 0.18 : 0.001);
-      this.W.blocked[this.W.idx(o.x, o.z)] = 0;
+      this.W.setBlocked(o.x, o.z, 0);
       this.regrow.push({ o, kind, t: kind === 'tree' ? 50 : 70 });
       p.target = null;
       p.st.gather = 0;
@@ -1077,6 +1313,11 @@ class Game {
     p.gold -= lost;
     p.model.root.rotation.z = 0;
     if (lost) this.ui.toast(`Perdiste ${lost} de oro`);
+    if (this.boat.docked !== 'salitre') {
+      const d = this.docks[0];
+      Object.assign(this.boat, { x: d.shipX, z: d.shipZ, heading: d.heading, speed: 0, docked: d.id });
+      setTimeout(() => this.ui.toast('⛵ La tripulación devolvió el barco a Puerto Salitre'), 1500);
+    }
     for (const e of this.enemies) if (e.state === 'chase') { e.state = 'return'; e.path = []; }
   }
 
@@ -1106,6 +1347,7 @@ class Game {
     this.quest.progress = 0;
     const nq = QUESTS[this.quest.stage];
     setTimeout(() => this.ui.toast('Nueva misión: ' + nq.title), 900);
+    if (nq.type === 'chest' && this.flags[nq.target]) setTimeout(() => this.advanceQuest(), 2500);
     sfx('quest');
     this.save();
   }
@@ -1134,6 +1376,10 @@ class Game {
       const z = zones[cur.target];
       return { x: z[0], z: z[1] };
     }
+    if (cur.type === 'chest') {
+      const c = this.chests.find((k) => k.id === cur.target);
+      return c ? { x: c.x, z: c.z } : null;
+    }
     if (cur.type === 'gather') {
       if (this.player.inv[cur.target] >= cur.count) return npc(cur.giver);
       return cur.target === 'wood' ? { x: 50, z: 28 } : { x: 20, z: 41 };
@@ -1158,7 +1404,10 @@ class Game {
     const p = this.player;
     store(SAVE_KEY, {
       v: 1, name: p.name, outfit: p.outfit, skin: p.skin, level: p.level, xp: p.xp, gold: p.gold, hp: p.hp,
-      weapon: p.weapon, armor: p.armor, inv: p.inv, quest: this.quest, x: p.tx, z: p.tz, tod: this.tod,
+      weapon: p.weapon, armor: p.armor, inv: p.inv, quest: this.quest, tod: this.tod, flags: this.flags,
+      ...(this.sailing
+        ? (() => { const d = this.docks.find((k) => k.id === this.lastDock) || this.docks[0]; return { x: d.land.x, z: d.land.z, boatDock: d.id }; })()
+        : { x: p.tx, z: p.tz, boatDock: this.boat.docked }),
     });
   }
 
@@ -1265,6 +1514,9 @@ class Game {
     p.x = data.x; p.z = data.z;
     if (!this.W.walkable(p.x, p.z)) { p.x = this.W.landmarks.spawn.x; p.z = this.W.landmarks.spawn.z; }
     this.quest = data.quest || { stage: 0, progress: 0 };
+    this.flags = data.flags || {};
+    const bd = this.docks.find((k) => k.id === data.boatDock) || this.docks[0];
+    Object.assign(this.boat, { x: bd.shipX, z: bd.shipZ, heading: bd.heading, speed: 0, docked: bd.id });
     if (data.tod) this.tod = data.tod;
     this.started = true;
     document.body.classList.add('playing');
@@ -1312,11 +1564,21 @@ class Game {
     this.updateLighting();
     const p = this.player;
     if (this.started) {
-      p.update(dt);
+      if (this.sailing) this.updateBoat(dt);
+      else p.update(dt);
       for (const n of this.npcs) n.update(dt);
       for (const e of this.enemies) e.update(dt);
     }
-    p.sync(dt);
+    if (this.sailing) { p.st.moving = false; animateModel(p.model, p.st, dt); } else p.sync(dt);
+    // interior: fondo oscuro y luz cálida
+    const room = this.roomAt(p.x, p.z);
+    this.water.visible = !room;
+    if (room) {
+      this.scene.background.set(0x07090e);
+      this.torch.position.set(room.X + room.w / 2, 2.6, room.Z + room.d / 2);
+      this.torch.distance = 16;
+      this.torch.intensity = 5;
+    } else this.torch.distance = 8;
     for (const n of this.npcs) n.sync(dt);
     for (const e of this.enemies) if (!e.dead || e.model.root.visible) { if (e.dist(p) < 34 || e.st.moving) e.sync(dt); }
     for (const gd of this.guards) {
@@ -1358,9 +1620,42 @@ class Game {
     // animaciones del entorno
     const t = this.time;
     this.water.material.uniforms.time.value = t;
-    this.ship.rotation.z = Math.sin(t * 0.9) * 0.025;
+    this.ship.rotation.order = 'YXZ';
+    this.ship.rotation.y = this.boat.heading;
+    this.ship.rotation.z = Math.sin(t * 0.9) * 0.025 + (this.boat.roll || 0);
     this.ship.rotation.x = Math.sin(t * 0.6) * 0.012;
-    this.ship.position.y = -0.05 + Math.sin(t * 1.1) * 0.04;
+    this.ship.position.set(this.boat.x, -0.05 + Math.sin(t * 1.1) * 0.04, this.boat.z);
+    // estela de espuma
+    if (!this.wake) {
+      this.wake = [];
+      const wg = new THREE.CircleGeometry(0.5, 10);
+      for (let i = 0; i < 40; i++) {
+        const m = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
+        m.rotation.x = -Math.PI / 2;
+        m.visible = false;
+        this.scene.add(m);
+        this.wake.push({ m, life: 0 });
+      }
+      this.wakeT = 0;
+      this.wakeI = 0;
+    }
+    this.wakeT -= dt;
+    if (this.sailing && Math.abs(this.boat.speed) > 0.8 && this.wakeT <= 0) {
+      this.wakeT = 0.09;
+      const b = this.boat, w = this.wake[this.wakeI++ % this.wake.length];
+      const side = (this.wakeI % 2 ? 1 : -1) * 0.5;
+      w.m.position.set(b.x - Math.sin(b.heading) * 3.3 + Math.cos(b.heading) * side, -0.06, b.z - Math.cos(b.heading) * 3.3 - Math.sin(b.heading) * side);
+      w.life = 1.6;
+      w.m.visible = true;
+    }
+    for (const w of this.wake) {
+      if (w.life <= 0) continue;
+      w.life -= dt;
+      const k = Math.max(0, w.life / 1.6);
+      w.m.material.opacity = 0.55 * k;
+      w.m.scale.setScalar(0.6 + (1 - k) * 1.8);
+      if (w.life <= 0) w.m.visible = false;
+    }
     this.rowboat.rotation.z = Math.sin(t * 1.3 + 1) * 0.05;
     this.ship.traverse((o) => {
       if (o.userData.flag) {
@@ -1395,11 +1690,10 @@ class Game {
       r.t -= dt;
       if (r.t <= 0) {
         const o = r.o;
-        const k = this.W.idx(o.x, o.z);
         if (Math.round(p.x) === o.x && Math.round(p.z) === o.z) { r.t = 3; continue; }
         o.down = false;
         o.hp = 3;
-        this.W.blocked[k] = 1;
+        this.W.setBlocked(o.x, o.z, 1);
         this.setInst(o.mesh, o.index, o.x, 0, o.z, o.rot, r.kind === 'tree' ? o.s : o.s * 1.6);
         this.regrow.splice(i, 1);
       }
@@ -1407,7 +1701,14 @@ class Game {
 
     // etiquetas
     p.label.el.style.display = this.started ? '' : 'none';
-    if (this.started) this.ui.placeLabel(p.label, p.x, this.W.groundY(p.x, p.z) + p.model.height + 0.12, p.z);
+    if (this.started) this.ui.placeLabel(p.label, p.x, this.sailing ? 2.9 : this.W.groundY(p.x, p.z) + p.model.height + 0.12, p.z);
+    for (const r of this.rooms) {
+      const near = !room && Math.hypot(r.front.x - p.x, r.front.z - p.z) < 9;
+      if (near) this.ui.placeLabel(r.doorLabel, (r.door.x + r.front.x) / 2, 1.3, (r.door.z + r.front.z) / 2);
+      else if (r.doorLabel._vis) { r.doorLabel._vis = false; r.doorLabel.el.style.display = 'none'; }
+      if (room === r) this.ui.placeLabel(r.exitLabel, r.exit.x, 0.5, r.exit.z);
+      else if (r.exitLabel._vis) { r.exitLabel._vis = false; r.exitLabel.el.style.display = 'none'; }
+    }
     for (const n of this.npcs) {
       if (n.dist(p) > 22) { if (n.label._vis) { n.label._vis = false; n.label.el.style.display = 'none'; } continue; }
       this.ui.setMark(n.label, this.npcMark(n));

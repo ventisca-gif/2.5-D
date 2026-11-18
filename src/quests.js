@@ -10,7 +10,8 @@ export const QUESTS = [
   { title: 'Piedra para la forja', desc: 'Pica rocas y lleva 4 de piedra al Herrero Tadeo.', type: 'gather', target: 'stone', count: 4, giver: 'tadeo', reward: { gold: 30, xp: 60, weapon: 1 } },
   { title: 'La tripulación maldita', desc: 'Derrota 5 piratas esqueleto en la Cala de los Huesos (este).', type: 'kill', target: 'skeleton', count: 5, giver: 'nerea', reward: { gold: 80, xp: 140 } },
   { title: 'El Capitán Huesoamargo', desc: 'Vence al Capitán Huesoamargo junto al barco hundido de la cala.', type: 'kill', target: 'boss', count: 1, giver: 'nerea', reward: { gold: 250, xp: 400 } },
-  { title: 'Leyenda de Isla Bruma', desc: 'Has salvado la isla. Explora, caza y mejora tu equipo.', type: 'done' },
+  { title: 'El tesoro de la Isla Calavera', desc: 'Sube al barco en el muelle de Puerto Salitre, navega al sureste hasta la Isla Calavera y abre el cofre maldito.', type: 'chest', target: 'calavera_cofre', reward: { gold: 0, xp: 250 } },
+  { title: 'Leyenda de Isla Bruma', desc: 'Has salvado la isla. Explora el mar, visita Isla Tortuga y mejora tu equipo.', type: 'done' },
 ];
 
 export const NPC_LINES = {
@@ -18,7 +19,7 @@ export const NPC_LINES = {
   bruno: ['Con buena madera se construyen casas... ¡y barcos!', 'Los robles del norte dan la mejor madera.'],
   tadeo: ['El acero no miente. Trae oro y piedra y mejoraré tu equipo.', '¡Clang, clang! Perdona, no te oía.'],
   rosa: ['¡Bienvenido a El Ancla Torcida! Aquí siempre hay sopa caliente.', 'Un trago de ron curativo y como nuevo.'],
-  nerea: ['El mar es libre, pero no gratis.', 'Mi barco, la Gaviota Negra, es el más rápido de estas aguas.'],
+  nerea: ['El mar es libre, pero no gratis.', 'Mi barco, la Gaviota Negra, está amarrado en el muelle. Súbete cuando quieras y navega con el joystick.'],
   ilyas: ['Compro madera y piedra a buen precio. ¡Palabra de mercader!', 'Telas, especias, mapas... y algún que otro rumor.'],
   lucia: ['Los jabalíes del Pedregal se comen mi trigo.', 'El trigo de este año viene dorado como el oro.'],
   ramiro: ['Puerta norte vigilada. Cuidado con los lobos del bosque.', 'Nadie pasa sin que yo lo vea.'],
@@ -27,7 +28,18 @@ export const NPC_LINES = {
   clara: ['¡Juguemos a los piratas! Yo soy la capitana.', '¿Tú también tienes espada? ¡Qué guay!'],
   gaspar: ['Shhh... que espantas a los peces.', 'Hoy pican poco. Será por los esqueletos de la cala.'],
   rufo: ['¡Arrr! Un día tendré mi propio barco.', 'En la Sirena Tuerta el ron corre como el agua.'],
-  tomasa: ['Desde el faro veo toda la isla.', 'Barco a la vista... ah no, es una gaviota.'],
+  tomasa: ['Desde el faro veo toda la isla... y la Isla Tortuga al noreste.', 'Barco a la vista... ah no, es una gaviota.'],
+  lope: ['Registro cada casa, cada barco y cada moneda de Villarroca.', 'La alcaldesa trabaja sin descanso. Yo, con mucho papeleo.'],
+  ines: ['La sopa de Rosa es la mejor de la isla.', 'Mi marido es pescador; zarpa antes del alba.'],
+  telmo: ['♪ Oh, Isla Bruma, de brumas y velas... ♪', '¿Una canción? Por una moneda te canto la balada del Capitán Huesoamargo.'],
+  nico: ['El maestro Tadeo dice que algún día forjaré espadas como él.', 'Cuidado, ¡la forja quema!'],
+  coral: ['Bienvenido a la Sirena Tuerta, marinero.', 'Aquí el ron es fuerte y las historias, más.'],
+  quino: ['He navegado hasta Isla Tortuga. Allí los contrabandistas venden barato.', 'En el mar, si sopla el viento, todo se arregla.'],
+  olga: ['Dicen que el cofre de la Isla Calavera está maldito... a mí me da igual.', 'Mi espada y yo hemos visto siete mares.'],
+  tito: ['Cajas, sacos, barriles... y vuelta a empezar.', 'Ilyas paga poco, pero paga.'],
+  ramon: ['En mis tiempos los jabalíes eran más grandes.', 'Lucía es mi nieta. Trabaja más que nadie.'],
+  mara: ['En Tortuga no hacemos preguntas.', 'Si buscas tesoros, la Isla Calavera está al sur de aquí... llena de huesos andantes.'],
+  pepe: ['¡Algún día seré capitán!', 'Mara dice que limpie la cubierta. ¡Pero si no tenemos barco!'],
 };
 
 // Devuelve { text, options[] } según el estado del juego.
@@ -56,7 +68,7 @@ export function dialogFor(id, G) {
           ? 'Buen trabajo, marinero. Lucía, la granjera del oeste, también necesita una espada. Ve a la granja.'
           : cur.target === 'skeleton'
             ? 'La tripulación maldita ha caído... pero su capitán, Huesoamargo, sigue junto al barco hundido. Termina con él.'
-            : '¡Lo lograste! Huesoamargo ya no aterrorizará estas aguas. Toma este tesoro: eres leyenda de Isla Bruma.',
+            : '¡Lo lograste! Huesoamargo ya no aterrorizará estas aguas. Su tesoro está en la Isla Calavera, al sureste. Llévate mi barco del muelle: súbete y navega con el joystick.',
         lucia: '¡Mis cosechas están a salvo! Tadeo, el herrero, busca piedra para su forja. Ayúdale y te forjará algo bueno.',
       }[id] || '¡Excelente trabajo!';
       opts.push({ label: 'Entregar misión', action: () => G.advanceQuest() });
@@ -90,8 +102,11 @@ export function dialogFor(id, G) {
     text = text || NPC_LINES.tadeo[0];
     opts.push({ label: `Mejorar arma Nv.${P.weapon + 1} (${wc} oro, ${ws} piedra)`, action: () => G.buy({ gold: wc, stone: ws }, () => { P.weapon++; G.toast('⚔️ Arma mejorada'); }) });
     opts.push({ label: `Mejorar armadura Nv.${P.armor + 1} (${ac} oro, ${aw} madera)`, action: () => G.buy({ gold: ac, wood: aw }, () => { P.armor++; P.recalc(); G.toast('🛡️ Armadura mejorada'); }) });
-  } else if (id === 'rosa') {
-    text = text || NPC_LINES.rosa[Math.floor(Math.random() * 2)];
+  } else if (id === 'mara') {
+    text = text || NPC_LINES.mara[Math.floor(Math.random() * 2)];
+    opts.push({ label: 'Ron de contrabando (10 oro)', action: () => G.buy({ gold: 10 }, () => { P.inv.potion++; G.toast('🍶 +1 Ron curativo'); }) });
+  } else if (id === 'rosa' || id === 'coral') {
+    text = text || NPC_LINES[id][Math.floor(Math.random() * 2)];
     opts.push({ label: 'Ron curativo (15 oro)', action: () => G.buy({ gold: 15 }, () => { P.inv.potion++; G.toast('🍶 +1 Ron curativo'); }) });
     opts.push({ label: 'Sopa caliente: curar todo (5 oro)', action: () => G.buy({ gold: 5 }, () => { P.hp = P.maxHp; G.toast('❤️ Salud al máximo'); }) });
   } else if (id === 'ilyas') {

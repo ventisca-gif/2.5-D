@@ -9,11 +9,13 @@ export function buildTerrain(W, groundTex) {
     const t = W.tile(x, z);
     return t !== T.WATER && t !== T.DOCK;
   };
-  for (let z = 0; z < N; z++) {
-    for (let x = 0; x < N; x++) {
+  const RN = W.N, ox = W.ox || 0, oz = W.oz || 0;
+  for (let lz = 0; lz < RN; lz++) {
+    for (let lx = 0; lx < RN; lx++) {
+      const x = ox + lx, z = oz + lz;
       if (!isSolid(x, z)) continue;
       const x0 = x - 0.5, x1 = x + 0.5, z0 = z - 0.5, z1 = z + 0.5;
-      const u0 = x / N, u1 = (x + 1) / N, v0 = 1 - z / N, v1 = 1 - (z + 1) / N;
+      const u0 = lx / RN, u1 = (lx + 1) / RN, v0 = 1 - lz / RN, v1 = 1 - (lz + 1) / RN;
       pos.push(x0, 0, z0, x0, 0, z1, x1, 0, z1, x0, 0, z0, x1, 0, z1, x1, 0, z0);
       uv.push(u0, v0, u0, v1, u1, v1, u0, v0, u1, v1, u1, v0);
       for (let k = 0; k < 6; k++) nrm.push(0, 1, 0);
@@ -42,41 +44,44 @@ export function buildTerrain(W, groundTex) {
   return { ground, sides };
 }
 
+export const SEA = { x0: -30, z0: -30, size: 200 };
 export function buildWater(W) {
-  // distancia (en casillas) a la tierra más cercana, para agua somera y espuma
+  // distancia (en casillas) a la tierra más cercana, para agua somera y espuma (todo el mar navegable)
   const MAXD = 8;
-  const dist = new Float32Array(N * N).fill(MAXD);
+  const S = SEA.size;
+  const tileAt = W.tileAll || W.tile;
+  const dist = new Float32Array(S * S).fill(MAXD);
   const q = [];
-  for (let z = 0; z < N; z++) for (let x = 0; x < N; x++) {
-    const t = W.tile(x, z);
+  for (let j = 0; j < S; j++) for (let i = 0; i < S; i++) {
+    const t = tileAt(SEA.x0 + i, SEA.z0 + j);
     if (t !== T.WATER && t !== T.DOCK) {
-      dist[z * N + x] = 0;
-      q.push(z * N + x);
+      dist[j * S + i] = 0;
+      q.push(j * S + i);
     }
   }
   let head = 0;
   while (head < q.length) {
     const k = q[head++];
-    const x = k % N, z = (k / N) | 0;
+    const x = k % S, z = (k / S) | 0;
     for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = x + dx, nz = z + dz;
-      if (nx < 0 || nz < 0 || nx >= N || nz >= N) continue;
-      const nk = nz * N + nx;
+      if (nx < 0 || nz < 0 || nx >= S || nz >= S) continue;
+      const nk = nz * S + nx;
       if (dist[nk] > dist[k] + 1) {
         dist[nk] = dist[k] + 1;
         q.push(nk);
       }
     }
   }
-  const data = new Uint8Array(N * N * 4);
-  for (let i = 0; i < N * N; i++) {
+  const data = new Uint8Array(S * S * 4);
+  for (let i = 0; i < S * S; i++) {
     const v = Math.min(255, Math.round((dist[i] / MAXD) * 255));
     data[i * 4] = v;
     data[i * 4 + 1] = v;
     data[i * 4 + 2] = v;
     data[i * 4 + 3] = 255;
   }
-  const tex = new THREE.DataTexture(data, N, N, THREE.RGBAFormat);
+  const tex = new THREE.DataTexture(data, S, S, THREE.RGBAFormat);
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearFilter;
   tex.needsUpdate = true;
@@ -101,7 +106,7 @@ export function buildWater(W) {
       uniform sampler2D distTex; uniform float time; uniform vec3 light, deep, shallow, foam;
       varying vec2 vW;
       void main(){
-        vec2 uv = (vW + 0.5) / ${N}.0;
+        vec2 uv = (vW - vec2(${SEA.x0}.0, ${SEA.z0}.0) + 0.5) / ${S}.0;
         float d = 1.0;
         if (uv.x > 0.0 && uv.x < 1.0 && uv.y > 0.0 && uv.y < 1.0) d = texture2D(distTex, uv).r;
         vec3 col = mix(shallow, deep, smoothstep(0.0, 0.55, d));
@@ -120,6 +125,7 @@ export function buildWater(W) {
   mat.uniforms.foam.value.convertLinearToSRGB();
   const water = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), mat);
   water.rotation.x = -Math.PI / 2;
-  water.position.set(N / 2, -0.12, N / 2);
+  water.position.set(70, -0.12, 70);
+  water.scale.set(1.3, 1.3, 1);
   return water;
 }

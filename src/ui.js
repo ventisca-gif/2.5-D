@@ -21,7 +21,7 @@ export class UI {
     $('minimapWrap').addEventListener('click', () => {
       this.mmBig = !this.mmBig;
       $('minimapWrap').classList.toggle('big', this.mmBig);
-      const s = this.mmBig ? 520 : 200;
+      const s = this.mmBig ? 560 : 200;
       this.mm.width = s;
       this.mm.height = s;
       this.drawMinimap();
@@ -217,7 +217,7 @@ export class UI {
     const h = Math.floor(g.tod), m = Math.floor((g.tod % 1) * 60);
     const night = g.tod < 6.5 || g.tod > 19.5;
     this.set('clock', `${night ? '☾' : '☀'} ${String(h).padStart(2, '0')}:${String(Math.floor(m / 10) * 10).padStart(2, '0')}`);
-    this.set('coords', `${p.tx}, ${p.tz}`);
+    this.set('coords', g.W.isInterior(p.x) ? 'interior' : `${p.tx}, ${p.tz}`);
     const q = g.questInfo();
     this.set('qtitle', q.title);
     this.set('qdesc', q.desc);
@@ -229,37 +229,39 @@ export class UI {
 
   // ---------------------------------------------------------- minimapa
   buildMinimapBase() {
-    const W = this.g.W;
+    const g = this.g, W = g.W;
+    const B = { x0: -30, z0: -30, size: 200 };
     const c = document.createElement('canvas');
-    const S = 3;
-    c.width = W.N * S;
-    c.height = W.N * S;
+    const S = 2;
+    c.width = B.size * S;
+    c.height = B.size * S;
     const ctx = c.getContext('2d');
     const col = {
       [T.WATER]: '#2f7fb8', [T.SAND]: '#e2cd96', [T.GRASS]: '#6aa848', [T.DARK]: '#5a983e',
       [T.DIRT]: '#b4895a', [T.STONE]: '#b4b2ac', [T.DOCK]: '#8a6a44', [T.FIELD]: '#c9a24a',
     };
-    for (let z = 0; z < W.N; z++) for (let x = 0; x < W.N; x++) {
-      ctx.fillStyle = col[W.tile(x, z)];
-      ctx.fillRect(x * S, z * S, S, S);
+    for (let j = 0; j < B.size; j++) for (let i = 0; i < B.size; i++) {
+      ctx.fillStyle = col[W.tileAll(B.x0 + i, B.z0 + j)];
+      ctx.fillRect(i * S, j * S, S, S);
     }
+    const X = (x) => (x - B.x0) * S, Z = (z) => (z - B.z0) * S;
+    const isl = g.islets || [];
     ctx.fillStyle = '#2e6a32';
-    for (const t of W.trees) ctx.fillRect(t.x * S + 0.5, t.z * S + 0.5, S - 1, S - 1);
+    for (const t of [...W.trees, ...isl.flatMap((r) => r.trees)]) ctx.fillRect(X(t.x), Z(t.z), S, S);
     ctx.fillStyle = '#8a8a86';
-    for (const r of W.rocks) ctx.fillRect(r.x * S + 0.5, r.z * S + 0.5, S - 1, S - 1);
+    for (const r of [...W.rocks, ...isl.flatMap((q) => q.rocks)]) ctx.fillRect(X(r.x), Z(r.z), S, S);
     ctx.fillStyle = '#6a6660';
-    for (const w of W.walls) ctx.fillRect(w.x * S, w.z * S, S, S);
-    for (const t of W.towers) ctx.fillRect(t.x * S - 1, t.z * S - 1, S + 2, S + 2);
-    for (const b of W.buildings) {
+    for (const w of [...W.walls, ...isl.flatMap((r) => r.walls)]) ctx.fillRect(X(w.x), Z(w.z), S, S);
+    for (const t of W.towers) ctx.fillRect(X(t.x) - 1, Z(t.z) - 1, S + 2, S + 2);
+    for (const b of [...W.buildings, ...isl.flatMap((r) => r.buildings)]) {
       ctx.fillStyle = '#' + b.roof.toString(16).padStart(6, '0');
-      ctx.fillRect(b.x0 * S, b.z0 * S, b.w * S, b.d * S);
-      ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-      ctx.strokeRect(b.x0 * S + 0.5, b.z0 * S + 0.5, b.w * S - 1, b.d * S - 1);
+      ctx.fillRect(X(b.x0), Z(b.z0), b.w * S, b.d * S);
     }
     ctx.fillStyle = '#5ab8e8';
-    ctx.fillRect(49 * S, 49 * S, 3 * S, 3 * S);
+    ctx.fillRect(X(49), Z(49), 3 * S, 3 * S);
     this.mmBase = c;
     this.mmS = S;
+    this.mmB = B;
   }
   drawMinimap() {
     if (!this.mmBase) this.buildMinimapBase();
@@ -271,25 +273,51 @@ export class UI {
     ctx.fillStyle = '#123a5a';
     ctx.fillRect(0, 0, size, size);
     ctx.translate(size / 2, size / 2);
+    const B = this.mmB;
+    const room = g.roomAt && g.roomAt(p.x, p.z);
+    if (room) {
+      ctx.restore();
+      ctx.fillStyle = '#1a1410';
+      ctx.fillRect(0, 0, size, size);
+      ctx.save();
+      ctx.translate(size / 2, size / 2);
+      ctx.rotate(Math.PI / 4);
+      const k = (size * 0.55) / Math.max(room.w, room.d);
+      ctx.fillStyle = '#8a6a44';
+      ctx.fillRect(-room.w * k / 2, -room.d * k / 2, room.w * k, room.d * k);
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc((p.x - room.X - (room.w - 1) / 2) * k, (p.z - room.Z - (room.d - 1) / 2) * k, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#c83a2a';
+      ctx.fillRect((room.exit.x - room.X - (room.w - 1) / 2) * k - 4, (room.exit.z - room.Z - (room.d - 1) / 2) * k - 4, 8, 8);
+      ctx.restore();
+      ctx.fillStyle = '#e3bb55';
+      ctx.font = '12px Georgia, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(room.name, size / 2, size - 10);
+      return;
+    }
     let scale, cx, cz;
     if (this.mmBig) {
-      scale = (size / (g.W.N * S)) * 1.38;
-      cx = g.W.N / 2; cz = g.W.N / 2;
+      scale = (size / (B.size * S)) * 1.3;
+      cx = B.x0 + B.size / 2 - 5; cz = B.z0 + B.size / 2 - 5;
     } else {
-      scale = 1.25;
+      scale = 1.6;
       cx = p.x; cz = p.z;
     }
     ctx.rotate(Math.PI / 4);
     ctx.scale(scale, scale);
-    ctx.translate(-cx * S - S / 2, -cz * S - S / 2);
+    ctx.translate(-(cx - B.x0) * S - S / 2, -(cz - B.z0) * S - S / 2);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(this.mmBase, 0, 0);
     const dot = (x, z, color, r) => {
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(x * S + S / 2, z * S + S / 2, r / scale, 0, Math.PI * 2);
+      ctx.arc((x - B.x0) * S + S / 2, (z - B.z0) * S + S / 2, r / scale, 0, Math.PI * 2);
       ctx.fill();
     };
+    if (!g.sailing) dot(g.boat.x, g.boat.z, '#6a3a1a', this.mmBig ? 4 : 5);
     for (const e of g.enemies) if (!e.dead) dot(e.x, e.z, e.type === 'boss' ? '#ff00aa' : '#e8302a', this.mmBig ? 2.5 : 3);
     for (const n of g.npcs) dot(n.x, n.z, '#ffe04a', this.mmBig ? 2.5 : 3);
     const qm = g.questMarker();
@@ -298,7 +326,7 @@ export class UI {
       ctx.strokeStyle = '#ffd23a';
       ctx.lineWidth = 2 / scale;
       ctx.beginPath();
-      ctx.arc(qm.x * S + S / 2, qm.z * S + S / 2, (pulse + 3) / scale, 0, Math.PI * 2);
+      ctx.arc((qm.x - B.x0) * S + S / 2, (qm.z - B.z0) * S + S / 2, (pulse + 3) / scale, 0, Math.PI * 2);
       ctx.stroke();
       dot(qm.x, qm.z, '#ffd23a', 3);
     }
@@ -306,7 +334,7 @@ export class UI {
     ctx.strokeStyle = '#000';
     ctx.lineWidth = 1.5 / scale;
     ctx.beginPath();
-    ctx.arc(p.x * S + S / 2, p.z * S + S / 2, 4 / scale, 0, Math.PI * 2);
+    ctx.arc((p.x - B.x0) * S + S / 2, (p.z - B.z0) * S + S / 2, 4 / scale, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.restore();

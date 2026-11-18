@@ -29,6 +29,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lbl.npc .nm { color: #fff3c8; }
 .lbl.enemy .nm { font-size: 12px; }
 .lbl.player .nm { color: #ffe9a8; }
+.lbl.door .nm { font-size: 11px; color: #bfe6ff; background: rgba(10,16,28,0.6); padding: 1px 6px; border-radius: 6px; }
 .lbl .tag { display: inline-block; font-size: 10px; font-weight: 700; color: #d9c2ff; background: rgba(60,30,100,0.7); border-radius: 6px; padding: 0 5px; margin-bottom: 1px; }
 .lbl .mark { font-size: 20px; font-weight: 900; color: var(--gold); text-shadow: 0 0 4px #000, 0 2px 0 #7a5a10; line-height: 1; animation: bob 1s ease-in-out infinite; }
 .lbl .mark.q { color: #cfd6e6; }

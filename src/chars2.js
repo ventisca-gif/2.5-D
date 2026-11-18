@@ -445,3 +445,47 @@ export const OUTFITS2 = [
   { id: 'exploradora', name: 'Exploradora', look: { shirt: 0x3a7a3a, pants: 0x5a4030, hat: 'hood', hatColor: 0x2e5e2e, sword: true, longHair: true, hair: 0xb06a2a, skin: 0xf0c49a, cape: 0x2e5e2e, bracers: true, bracerColor: 0x6a4a2a } },
   { id: 'mercenario', name: 'Mercenario', look: { shirt: 0x1e1a22, pants: 0x161218, hat: 'horned', hatColor: 0xd8a838, armor: true, armorColor: 0xcf9f30, trim: 0x8a6a10, pauldron: 0x6a7a3a, robe: 0x1a161c, cape: 0x141016, sword: true, blade: 0xe8e8f0, skin: 0xc68a5a, gloves: 0x1a1612, boots: 0x1a1612 } },
 ];
+
+// ------------------------------------------------------------------ cangrejo v2
+export function makeCrab2() {
+  const mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 40, specular: 0x303030 });
+  mat.userData.baseEmissive = new THREE.Color(0);
+  const root = new THREE.Group();
+  const body = new THREE.Group();
+  root.add(body);
+  const red = 0xd8452a, light = 0xf07a4a, belly = 0xf2c8a0;
+  const parts = [];
+  const P = (parent, x, y, z) => { const p = new Part(parent, x, y, z); parts.push(p); return p; };
+  const torso = P(body, 0, 0.17, 0);
+  torso.add(sph(0.22, 16, 10), red, 0, 0, 0, 0, 0, 0, 1.15, 0.5, 0.85);
+  torso.add(sph(0.18, 14, 8), light, 0, 0.04, -0.01, 0, 0, 0, 1.05, 0.4, 0.75);
+  torso.add(sph(0.2, 14, 8), belly, 0, -0.04, 0, 0, 0, 0, 1.05, 0.25, 0.8);
+  for (let i = 0; i < 4; i++) torso.add(sph(0.025, 6, 4), shade(red, 0.75), -0.09 + i * 0.06, 0.1, 0.05 - (i % 2) * 0.05);
+  for (const s of [-1, 1]) {
+    torso.add(cyl(0.012, 0.014, 0.12, 6), red, s * 0.06, 0.12, 0.13, 0.3, 0, 0);
+    torso.add(sph(0.03, 8, 6), 0x111111, s * 0.06, 0.19, 0.15);
+    torso.add(sph(0.01, 4, 3), 0xffffff, s * 0.065, 0.2, 0.175);
+  }
+  const claws = [];
+  for (const s of [-1, 1]) {
+    const c = P(torso.g, s * 0.2, 0.0, 0.14);
+    c.add(cap(0.03, 0.1), red, s * 0.03, 0, 0.04, Math.PI / 2, 0, s * 0.4);
+    c.add(sph(0.075, 10, 8), light, s * 0.08, 0.02, 0.15, 0, 0, 0, 1, 0.8, 1.2);
+    c.add(cone(0.035, 0.12, 6), light, s * 0.05, 0.02, 0.25, Math.PI / 2, 0, 0);
+    c.add(cone(0.028, 0.1, 6), red, s * 0.11, 0.0, 0.24, Math.PI / 2, 0, 0);
+    claws.push(c);
+  }
+  const legs = [];
+  for (let i = 0; i < 3; i++) for (const s of [-1, 1]) {
+    const l = P(torso.g, s * 0.2, -0.02, -0.1 + i * 0.1);
+    l.add(cap(0.018, 0.1), red, s * 0.07, 0.01, 0, 0, 0, s * 1.1);
+    l.add(cap(0.015, 0.09), shade(red, 0.85), s * 0.15, -0.07, 0, 0, 0, s * 0.35);
+    legs.push(l);
+  }
+  for (const p of parts) p.bake(mat);
+  const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.32, 16), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.22, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.012;
+  root.add(shadow);
+  return { root, parts: { body, torso: torso.g, claws: claws.map((c) => c.g), legs: legs.map((l) => l.g) }, mats: [mat], kind: 'crab', height: 0.45 };
+}

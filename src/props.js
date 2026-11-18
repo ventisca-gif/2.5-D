@@ -111,7 +111,7 @@ export function createMaterials(tx) {
     stoneDark: mat(0xa8a49c, { map: tx.stone }),
     plank: mat(0xb88a5a, { map: tx.plank }),
     plankDark: mat(0x7a5434, { map: tx.plank }),
-    deck: mat(0xc8a070, { map: tx.plank }),
+    deck: mat(0x7a5634, { map: tx.plank }),
     iron: mat(0x3a3a40),
     gold: mat(0xe0b040, { emissive: 0x3a2a00 }),
     glass: new THREE.MeshLambertMaterial({ color: 0x9ec3d8, emissive: 0xffc860, emissiveIntensity: 0 }),
@@ -331,6 +331,14 @@ export function makeBuilding(b, M) {
 // ---------------------------------------------------------------- murallas y torres
 export function makeWall(w, M) {
   const g = new THREE.Group();
+  if (w.ruin) {
+    const h = 0.4 + ((w.x * 7 + w.z * 3) % 5) * 0.15;
+    box(g, 1.0, h, 0.55, M.stoneDark, 0, h / 2, 0, 1.1);
+    box(g, 0.35, 0.3, 0.5, M.stoneDark, 0.3, 0.15, 0.55, 1.1).rotation.y = 0.5;
+    g.position.set(w.x, 0, w.z);
+    if (w.dir === 'z') g.rotation.y = Math.PI / 2;
+    return g;
+  }
   box(g, 1.0, 1.15, 0.55, M.stone, 0, 0.575, 0, 1.1);
   box(g, 1.0, 0.1, 0.65, M.stoneDark, 0, 1.2, 0, 1);
   box(g, 0.32, 0.3, 0.6, M.stone, -0.25, 1.4, 0, 1.1);
@@ -502,7 +510,37 @@ export function makeProp(p, M) {
       dyn.push(f);
       break;
     }
+    case 'skullrock': {
+      const rockM = mat(0x9a968e);
+      const sk = new THREE.Mesh(new THREE.IcosahedronGeometry(1.4, 1), rockM);
+      sk.scale.set(1.1, 1.0, 0.95);
+      sk.position.y = 1.1;
+      g.add(sk);
+      const jaw = new THREE.Mesh(new THREE.IcosahedronGeometry(0.9, 1), rockM);
+      jaw.scale.set(1.1, 0.6, 0.9);
+      jaw.position.set(0, 0.35, 0.45);
+      g.add(jaw);
+      for (const sx of [-0.45, 0.45]) {
+        const e = new THREE.Mesh(new THREE.SphereGeometry(0.33, 10, 8), mat(0x141210));
+        e.position.set(sx, 1.25, 1.12);
+        e.scale.set(1, 1.1, 0.6);
+        g.add(e);
+      }
+      const n = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.3, 3), mat(0x141210));
+      n.rotation.x = Math.PI;
+      n.position.set(0, 0.85, 1.28);
+      g.add(n);
+      for (let i = 0; i < 5; i++) box(g, 0.14, 0.18, 0.1, mat(0xd8d2c0), -0.36 + i * 0.18, 0.55, 1.18);
+      break;
+    }
     case 'chest': {
+      if (p.big) {
+        for (let i = 0; i < 14; i++) {
+          const c = cyl(g, 0.07, 0.07, 0.02, M.gold, Math.cos(i * 2.3) * (0.35 + (i % 3) * 0.12), 0.01 + (i % 4) * 0.012, Math.sin(i * 2.3) * (0.35 + (i % 3) * 0.12), 8);
+          c.rotation.x = (i % 3) * 0.3;
+        }
+        g.scale.setScalar(1.35);
+      }
       box(g, 0.6, 0.35, 0.4, M.wood, 0, 0.175, 0);
       const lid = cyl(g, 0.2, 0.2, 0.6, M.wood, 0, 0.35, 0, 8);
       lid.rotation.z = Math.PI / 2;
@@ -546,8 +584,9 @@ export function makeLamp(l, M) {
 export function makeDocks(W, M) {
   const g = new THREE.Group();
   const T_DOCK = 5;
-  for (let z = 0; z < W.N; z++) {
-    for (let x = 0; x < W.N; x++) {
+  const ox = W.ox || 0, oz = W.oz || 0;
+  for (let z = oz; z < oz + W.N; z++) {
+    for (let x = ox; x < ox + W.N; x++) {
       if (W.tile(x, z) !== T_DOCK) continue;
       const p = box(g, 1.0, 0.1, 1.0, M.deck, x, 0.09, z, 1.2);
       if ((x + z) % 2) p.rotation.y = Math.PI / 2;
@@ -561,7 +600,7 @@ export function makeDocks(W, M) {
     }
   }
   // bolardos
-  for (const [x, z] of [[49, 92], [51, 94], [49, 96], [44, 98], [56, 97]]) {
+  for (const [x, z] of (W.ox ? [] : [[49, 92], [51, 94], [49, 96], [44, 98], [51, 97]])) {
     cyl(g, 0.08, 0.1, 0.3, M.iron, x - 0.42, 0.28, z, 6);
   }
   return g;
@@ -596,12 +635,12 @@ export function makeShip(M, tx) {
   ship.add(hullLayer(len * 0.82, wid * 0.62, 0.5, dark, -0.7));
   ship.add(hullLayer(len * 0.92, wid * 0.85, 0.4, hullMat, -0.2));
   ship.add(hullLayer(len, wid, 0.55, hullMat, 0.2));
-  ship.add(hullLayer(len, wid, 0.08, mat(0xb08a3a), 0.75));
+  ship.add(hullLayer(len, wid, 0.08, mat(0x5a3a22), 0.75));
   const deck = hullLayer(len * 0.96, wid * 0.92, 0.05, M.deck, 0.62);
   ship.add(deck);
   // castillo de popa
   box(ship, wid * 0.8, 0.7, 1.5, hullMat, 0, 1.0, -len / 2 + 0.85, 1.2);
-  box(ship, wid * 0.84, 0.08, 1.56, mat(0xb08a3a), 0, 1.38, -len / 2 + 0.85);
+  box(ship, wid * 0.84, 0.08, 1.56, mat(0x5a3a22), 0, 1.38, -len / 2 + 0.85);
   for (let i = 0; i < 3; i++) box(ship, 0.25, 0.22, 0.05, M.lantern, -0.6 + i * 0.6, 1.0, -len / 2 + 0.08);
   // cañones laterales
   for (let i = 0; i < 3; i++) {

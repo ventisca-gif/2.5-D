@@ -19,7 +19,7 @@ export function generateWorld() {
   };
   const idx = (x, z) => z * N + x;
   const inb = (x, z) => x >= 0 && z >= 0 && x < N && z < N;
-  W.idx = idx;
+  W.idx = (x, z) => (inb(x, z) ? idx(x, z) : -1);
   W.inb = inb;
   W.tile = (x, z) => (inb(x, z) ? tiles[idx(x, z)] : T.WATER);
   const setT = (x, z, t) => { if (inb(x, z)) tiles[idx(x, z)] = t; };
@@ -175,12 +175,12 @@ export function generateWorld() {
 
   const lamp = (x, z) => { W.lamps.push({ x, z }); block(x, z); };
   [[45, 45], [55, 45], [45, 55], [55, 55], [48, 41], [48, 60], [48, 64], [52, 70], [48, 76], [52, 84],
-    [48, 35], [52, 29], [36, 48], [30, 53], [64, 48], [70, 47], [47, 88], [53, 88], [48, 98], [52, 98]].forEach(([x, z]) => lamp(x, z));
+    [48, 35], [52, 29], [36, 48], [30, 53], [64, 48], [70, 47], [47, 88], [53, 88], [48, 98], [45, 98]].forEach(([x, z]) => lamp(x, z));
 
   // ---------- 7. Muelles y barco ----------
   rect(49, 89, 51, 98, T.DOCK);
-  rect(44, 97, 56, 98, T.DOCK);
-  W.ship = { x: 55.6, z: 92.4 };
+  rect(44, 97, 51, 98, T.DOCK);
+  W.ship = { x: 53.7, z: 93 };
   W.rowboat = { x: 46.4, z: 92 };
   prop('cannon', 45, 86, Math.PI, true); prop('cannon', 55, 86, Math.PI, true);
   prop('barrel', 55, 82); prop('barrel', 56, 82); prop('crate', 61, 82); prop('crate', 61, 83);
@@ -276,8 +276,7 @@ export function generateWorld() {
   const npc = (d) => { W.npcs.push(d); blocked[idx(d.x, d.z)] = 0; };
   npc({ id: 'marisol', name: 'Alcaldesa Marisol', x: 43, z: 44, wander: 2, look: { shirt: 0x6a3d8f, pants: 0x3b2a4a, hair: 0xb8b8b8, hat: 'circlet', skin: 0xe8b98f, dress: true } });
   npc({ id: 'bruno', name: 'Carpintero Bruno', x: 44, z: 53, wander: 2, look: { shirt: 0x8a6a3a, pants: 0x4a3a28, hair: 0x5a3a20, beard: 0x5a3a20, skin: 0xd9a066, apron: 0xb08a5a } });
-  npc({ id: 'tadeo', name: 'Herrero Tadeo', x: 56, z: 44, wander: 1, look: { shirt: 0x7a3a2a, pants: 0x2e2a28, hair: null, beard: 0x2a1a10, skin: 0xb8784a, apron: 0x2a2a2a } });
-  npc({ id: 'rosa', name: 'Tabernera Rosa', x: 43, z: 56, wander: 1, look: { shirt: 0xb83a3a, pants: 0x5a2a2a, hair: 0x8a3a1a, skin: 0xf0c49a, dress: true, apron: 0xf0ead8 } });
+  npc({ id: 'tadeo', name: 'Herrero Tadeo', x: 58, z: 44, wander: 1, look: { shirt: 0x7a3a2a, pants: 0x2e2a28, hair: null, beard: 0x2a1a10, skin: 0xb8784a, apron: 0x2a2a2a } });
   npc({ id: 'nerea', name: 'Capitana Nerea', x: 50, z: 88, wander: 1, look: { shirt: 0x9a1f24, pants: 0x1e1a1a, hair: 0x1a1210, hat: 'tricorn', skin: 0xc68a5a, coat: true, longHair: true } });
   npc({ id: 'ilyas', name: 'Mercader Ilyas', x: 58, z: 82, wander: 1, look: { shirt: 0x1f7a7a, pants: 0xd8c8a0, hair: 0x1a1a1a, hat: 'turban', skin: 0xa86a3a, beard: 0x1a1a1a } });
   npc({ id: 'lucia', name: 'Granjera Lucía', x: 27, z: 58, wander: 3, look: { shirt: 0x6a9a3a, pants: 0x5a4a3a, hair: 0xd8a040, hat: 'straw', skin: 0xf0c49a, dress: true } });

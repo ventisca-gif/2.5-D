@@ -46,11 +46,10 @@ const DIRS = [
 
 // walkable(x,z) -> bool; goal: {x,z}; adjacent: si true basta con llegar al lado del objetivo.
 export function findPath(W, sx, sz, gx, gz, opts = {}) {
-  const { adjacent = false, maxIter = 6000, extraBlocked = null } = opts;
-  const N = W.N;
+  const { adjacent = false, range = 1, maxIter = 6000, extraBlocked = null } = opts;
   const walk = (x, z) => W.walkable(x, z) && !(extraBlocked && extraBlocked(x, z));
   const isGoal = adjacent
-    ? (x, z) => Math.max(Math.abs(x - gx), Math.abs(z - gz)) <= 1 && !(x === gx && z === gz)
+    ? (x, z) => Math.max(Math.abs(x - gx), Math.abs(z - gz)) <= range && !(x === gx && z === gz)
     : (x, z) => x === gx && z === gz;
   if (!adjacent && !walk(gx, gz)) return null;
   if (isGoal(sx, sz)) return [];
@@ -61,7 +60,8 @@ export function findPath(W, sx, sz, gx, gz, opts = {}) {
   const g = new Map();
   const came = new Map();
   const open = new Heap();
-  const k0 = sz * N + sx;
+  const KEY = (x, z) => (z + 1024) * 4096 + (x + 1024);
+  const k0 = KEY(sx, sz);
   g.set(k0, 0);
   open.push({ x: sx, z: sz, f: h(sx, sz), k: k0 });
   let it = 0;
@@ -71,7 +71,7 @@ export function findPath(W, sx, sz, gx, gz, opts = {}) {
       const path = [];
       let k = cur.k;
       while (k !== k0) {
-        path.push({ x: k % N, z: Math.floor(k / N) });
+        path.push({ x: (k % 4096) - 1024, z: Math.floor(k / 4096) - 1024 });
         k = came.get(k);
       }
       return path.reverse();
@@ -81,7 +81,7 @@ export function findPath(W, sx, sz, gx, gz, opts = {}) {
       const nx = cur.x + dx, nz = cur.z + dz;
       if (!walk(nx, nz)) continue;
       if (dx && dz && (!walk(cur.x + dx, cur.z) || !walk(cur.x, cur.z + dz))) continue;
-      const nk = nz * N + nx;
+      const nk = KEY(nx, nz);
       const ng = cg + c;
       if (ng < (g.get(nk) ?? Infinity)) {
         g.set(nk, ng);

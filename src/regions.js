@@ -1,0 +1,285 @@
+// Regiones extra que comparten el sistema de coordenadas del mapa principal:
+//  - islas nuevas (alcanzables en barco)
+//  - interiores de casas (salas situadas lejos, en x >= 1000)
+import { mulberry32, fbm } from './rng.js';
+import { T } from './world.js';
+
+export const INTERIOR_X0 = 1000;
+export const ROOM_STRIDE = 30;
+const KEY = (x, z) => (z + 1024) * 4096 + (x + 1024);
+export { KEY };
+
+// ======================================================================= islas
+function makeIslet(def) {
+  const { id, name, ox, oz, N, seed, dockDir } = def;
+  const rnd = mulberry32(seed);
+  const tiles = new Uint8Array(N * N);
+  const blocked = new Uint8Array(N * N);
+  const reserved = new Uint8Array(N * N);
+  const li = (lx, lz) => lz * N + lx;
+  const linb = (lx, lz) => lx >= 0 && lz >= 0 && lx < N && lz < N;
+  const c = (N - 1) / 2;
+  for (let lz = 0; lz < N; lz++) for (let lx = 0; lx < N; lx++) {
+    const dx = lx - c, dz = lz - c;
+    const r = Math.hypot(dx, dz);
+    const a = Math.atan2(dz, dx);
+    const R = N / 2 - 10 + (fbm(Math.cos(a) * 1.6 + seed, Math.sin(a) * 1.6, seed, 3) - 0.5) * 6;
+    tiles[li(lx, lz)] = r < R ? (r > R - 2.4 ? T.SAND : T.GRASS) : T.WATER;
+  }
+  const R = {
+    id, name, ox, oz, N, tiles, blocked, kind: 'islet',
+    trees: [], rocks: [], decor: [], props: [], buildings: [], walls: [], npcs: [], spawns: [],
+  };
+  const lt = (x, z) => { const lx = x - ox, lz = z - oz; return linb(lx, lz) ? tiles[li(lx, lz)] : T.WATER; };
+  R.contains = (x, z) => x >= ox && z >= oz && x < ox + N && z < oz + N;
+  R.tile = lt;
+  R.walkable = (x, z) => { const lx = x - ox, lz = z - oz; return linb(lx, lz) && !blocked[li(lx, lz)] && tiles[li(lx, lz)] !== T.WATER; };
+  R.setBlocked = (x, z, v) => { const lx = x - ox, lz = z - oz; if (linb(lx, lz)) blocked[li(lx, lz)] = v; };
+  R.groundY = (x, z) => (lt(Math.round(x), Math.round(z)) === T.DOCK ? 0.14 : 0);
+  R.areaName = () => name;
+  const block = (x, z) => R.setBlocked(x, z, 1);
+  const reserve = (x, z, r) => {
+    for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) {
+      const lx = x - ox + dx, lz = z - oz + dz;
+      if (linb(lx, lz)) reserved[li(lx, lz)] = 1;
+    }
+  };
+  // muelle: del centro hacia dockDir hasta el agua, y 5 casillas mar adentro (2 de ancho)
+  const cx = ox + Math.round(c), cz = oz + Math.round(c);
+  let x = cx, z = cz;
+  while (lt(x + dockDir[0], z + dockDir[1]) !== T.WATER) { x += dockDir[0]; z += dockDir[1]; }
+  const coast = { x, z };
+  const perp = [-dockDir[1], dockDir[0]];
+  for (let k = 1; k <= 6; k++) {
+    for (const w of [0, 1]) {
+      const dx = x + dockDir[0] * k + perp[0] * w, dz = z + dockDir[1] * k + perp[1] * w;
+      const lx = dx - ox, lz = dz - oz;
+      if (linb(lx, lz)) tiles[li(lx, lz)] = T.DOCK;
+    }
+  }
+  const end = { x: x + dockDir[0] * 6, z: z + dockDir[1] * 6 };
+  for (let k = 0; k <= 6; k++) reserve(x + dockDir[0] * k, z + dockDir[1] * k, 1);
+  R.dock = {
+    id, name,
+    shipX: end.x - dockDir[0] * 2.5 - perp[0] * 2.7, shipZ: end.z - dockDir[1] * 2.5 - perp[1] * 2.7,
+    heading: Math.atan2(dockDir[0], dockDir[1]),
+    land: { x: x + dockDir[0] * 4, z: z + dockDir[1] * 4 },
+  };
+  R.center = { x: cx, z: cz };
+  R.reserve = reserve;
+  R.block = block;
+  R.rnd = rnd;
+  R.coast = coast;
+  R._reserved = (x, z) => { const lx = x - ox, lz = z - oz; return !linb(lx, lz) || reserved[li(lx, lz)]; };
+  return R;
+}
+
+function populate(R, density = 1) {
+  const { rnd } = R;
+  let id = 0;
+  for (let z = R.oz; z < R.oz + R.N; z++) for (let x = R.ox; x < R.ox + R.N; x++) {
+    const t = R.tile(x, z);
+    if (t === T.WATER || t === T.DOCK || !R.walkable(x, z) || R._reserved(x, z)) continue;
+    const r = rnd();
+    if (t === T.SAND && r < 0.09 * density) { R.trees.push({ id: id++, type: 'palm', x, z, s: 0.85 + rnd() * 0.45, rot: rnd() * 6.28 }); R.block(x, z); }
+    else if (t === T.GRASS && r < 0.14 * density) {
+      const k = rnd();
+      R.trees.push({ id: id++, type: k < 0.45 ? 'palm' : k < 0.75 ? 'oak' : 'pine', x, z, s: 0.8 + rnd() * 0.4, rot: rnd() * 6.28, hue: rnd() });
+      R.block(x, z);
+    } else if (r > 0.965) { R.rocks.push({ id: id++, x, z, s: 0.45 + rnd() * 0.4 }); R.block(x, z); }
+  }
+  for (let z = R.oz; z < R.oz + R.N; z++) for (let x = R.ox; x < R.ox + R.N; x++) {
+    const t = R.tile(x, z);
+    if (!R.walkable(x, z)) continue;
+    const r = rnd();
+    const ox = (rnd() - 0.5) * 0.7, oz = (rnd() - 0.5) * 0.7;
+    if (t === T.GRASS && r < 0.25) R.decor.push({ type: r < 0.04 ? 'flower' : 'tuft', x: x + ox, z: z + oz, rot: rnd() * 6, s: 0.8 + rnd() * 0.5, c: Math.floor(rnd() * 4) });
+    else if (t === T.SAND && r < 0.07) R.decor.push({ type: r < 0.03 ? 'shell' : 'pebble', x: x + ox, z: z + oz, rot: rnd() * 6, s: 1 });
+  }
+}
+
+export function makeIslets() {
+  // Isla Tortuga: refugio de contrabandistas (noreste)
+  const tor = makeIslet({ id: 'tortuga', name: 'Isla Tortuga', ox: 108, oz: -2, N: 42, seed: 41, dockDir: [-1, 0] });
+  const tc = tor.center;
+  tor.reserve(tc.x, tc.z, 5);
+  const hut = (x0, z0, door) => {
+    const b = { id: 'choza' + x0, x0, z0, w: 3, d: 3, door, wall: 0x8a6a44, roof: 0xc9a24a, thatch: true, plank: true, h: 1.3 };
+    tor.buildings.push(b);
+    for (let z = z0; z < z0 + 3; z++) for (let x = x0; x < x0 + 3; x++) tor.block(x, z);
+  };
+  hut(tc.x - 4, tc.z - 5, 's');
+  hut(tc.x + 2, tc.z - 5, 's');
+  const tprop = (type, x, z, rot = 0, blocks = true, extra = {}) => { tor.props.push({ type, x, z, rot, ...extra }); if (blocks) tor.block(x, z); };
+  tprop('campfire', tc.x, tc.z);
+  tprop('barrel', tc.x - 3, tc.z + 2); tprop('barrel', tc.x - 3, tc.z + 3); tprop('crate', tc.x + 3, tc.z + 2);
+  tprop('tent', tc.x + 3, tc.z + 4, 0.6);
+  tprop('chest', tc.x - 1, tc.z - 1, 0, true, { id: 'tortuga_cofre', loot: { gold: 60, potion: 1 } });
+  tor.npcs.push({ id: 'mara', name: 'Contrabandista Mara', x: tc.x + 1, z: tc.z + 1, wander: 2, look: { shirt: 0x2a5a5a, pants: 0x3a2a1a, hair: 0x1a1a1a, longHair: true, hat: 'bandana', capColor: 0x6a2a8a, skin: 0xa86a3a, coat: true, sword: true } });
+  tor.npcs.push({ id: 'pepe', name: 'Grumete Pepe', x: tc.x - 2, z: tc.z + 2, wander: 3, small: true, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0xd8a040, skin: 0xf0c49a, hat: 'bandana', capColor: 0x2a6ab0 } });
+  populate(tor, 1);
+  tor.spawns.push({ type: 'crab', count: 4, area: [tor.ox, tor.oz, tor.ox + tor.N - 1, tor.oz + tor.N - 1], lvl: [3, 5], sand: true });
+
+  // Isla Calavera: tesoro maldito (sureste)
+  const cal = makeIslet({ id: 'calavera', name: 'Isla Calavera', ox: 112, oz: 96, N: 44, seed: 77, dockDir: [-1, 0] });
+  const cc = cal.center;
+  cal.reserve(cc.x, cc.z, 5);
+  const cprop = (type, x, z, rot = 0, blocks = true, extra = {}) => { cal.props.push({ type, x, z, rot, ...extra }); if (blocks) cal.block(x, z); };
+  cprop('skullrock', cc.x, cc.z - 3, 0, false);
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) cal.block(cc.x + dx, cc.z - 3 + dz);
+  cprop('chest', cc.x, cc.z + 1, 0, true, { id: 'calavera_cofre', loot: { gold: 300, potion: 3 }, big: true });
+  cprop('campfire', cc.x - 3, cc.z + 2);
+  cprop('barrel', cc.x + 3, cc.z + 2);
+  for (const [dx, dz, dir] of [[-5, -5, 'x'], [-4, -5, 'x'], [4, -5, 'x'], [5, -4, 'z'], [-5, 4, 'z'], [5, 5, 'x']]) {
+    cal.walls.push({ x: cc.x + dx, z: cc.z + dz, dir, ruin: true });
+    cal.block(cc.x + dx, cc.z + dz);
+  }
+  populate(cal, 0.8);
+  cal.spawns.push({ type: 'skeleton', count: 6, area: [cc.x - 7, cc.z - 7, cc.x + 7, cc.z + 7], lvl: [9, 12] });
+
+  return [tor, cal];
+}
+
+// ======================================================================= interiores
+// muebles: [tipo, x, z, rot, ancho, fondo, bloquea]
+export const ROOMS = [
+  {
+    id: 'ayto', name: 'Ayuntamiento', w: 9, d: 7, floor: 0xb08a5a, wall: 0xefe4cc, wood: 0x6a4428,
+    items: [
+      ['bookshelf', 1, 0], ['bookshelf', 2, 0], ['banner', 4, 0, 0, 1, 1, false], ['window', 6, 0, 0, 1, 1, false],
+      ['chest', 7, 0], ['plant', 8, 0], ['desk', 4.5, 2, 0, 2, 1], ['chair', 4.5, 1, Math.PI, 1, 1, false],
+      ['rug', 4, 4.5, 0, 3, 2, false], ['fireplace', 0, 3, Math.PI / 2], ['plant', 0, 6], ['plant', 8, 6], ['bench', 8, 3, -Math.PI / 2],
+      ['painting', 0, 1, Math.PI / 2, 1, 1, false],
+    ],
+    npcs: [{ id: 'lope', name: 'Escribano Lope', x: 5, z: 1, wander: 1, look: { shirt: 0x3a3a6a, pants: 0x2a2a3a, hair: 0x9a9a9a, beard: 0x9a9a9a, skin: 0xe8b98f, robe: 0x3a3a6a } }],
+  },
+  {
+    id: 'taberna', name: 'Taberna El Ancla Torcida', w: 9, d: 7, floor: 0xa07a4a, wall: 0xe8d6b0, wood: 0x5a3a20,
+    items: [
+      ['counter', 2.5, 1, 0, 4, 1], ['shelf', 2.5, 0, 0, 3, 1, false], ['barrel', 0, 0], ['barrel', 5, 0], ['barrel', 6, 0],
+      ['fireplace', 0, 4, Math.PI / 2], ['table', 6, 3], ['stool', 5, 3, 0, 1, 1, false], ['stool', 7, 3, 0, 1, 1, false],
+      ['table', 3, 4], ['stool', 2, 4, 0, 1, 1, false], ['stool', 4, 4, 0, 1, 1, false], ['table', 7, 5], ['stool', 8, 5, 0, 1, 1, false],
+      ['window', 7, 0, 0, 1, 1, false], ['plant', 8, 0], ['rug', 4, 6, 0, 2, 1, false],
+    ],
+    npcs: [
+      { id: 'rosa', name: 'Tabernera Rosa', x: 2, z: 0, wander: 1, look: { shirt: 0xb83a3a, pants: 0x5a2a2a, hair: 0x8a3a1a, skin: 0xf0c49a, dress: true, apron: 0xf0ead8, longHair: true } },
+      { id: 'ines', name: 'Aldeana Inés', x: 2, z: 5, wander: 0, look: { shirt: 0x5a8aba, pants: 0x3a3a4a, hair: 0x3a2a1a, skin: 0xe8b98f, dress: true, dressColor: 0x3a5a8a } },
+      { id: 'telmo', name: 'Bardo Telmo', x: 7, z: 2, wander: 1, look: { shirt: 0x8a3a8a, pants: 0x3a2a4a, hair: 0xd8a040, hat: 'cap', capColor: 0x6a2a6a, skin: 0xf0c49a, cape: 0x5a2a5a } },
+    ],
+  },
+  {
+    id: 'herreria', name: 'Herrería', w: 7, d: 6, floor: 0x7a7470, wall: 0xb8b0a4, wood: 0x4a3424, stoneFloor: true,
+    items: [
+      ['forge', 0, 1, Math.PI / 2, 1, 2], ['anvil', 2, 2], ['weaponrack', 4, 0, 0, 2, 1], ['barrel', 6, 0], ['crate', 6, 1],
+      ['table', 5, 3], ['chest', 0, 5], ['window', 2, 0, 0, 1, 1, false],
+    ],
+    npcs: [{ id: 'nico', name: 'Aprendiz Nico', x: 3, z: 3, wander: 1, look: { shirt: 0x6a5a4a, pants: 0x3a3a3a, hair: 0x2a1a10, skin: 0xd9a066, apron: 0x3a2a1a } }],
+  },
+  {
+    id: 'sirena', name: 'Taberna La Sirena Tuerta', w: 9, d: 7, floor: 0x6a4a2e, wall: 0x7a5a3a, wood: 0x3a2414,
+    items: [
+      ['counter', 5.5, 1, 0, 4, 1], ['shelf', 5.5, 0, 0, 3, 1, false], ['barrel', 8, 0], ['barrel', 8, 1], ['barrel', 0, 0], ['barrel', 1, 0],
+      ['wheel', 3, 0, 0, 1, 1, false], ['anchor', 0, 3, Math.PI / 2], ['map', 0, 5, Math.PI / 2, 1, 1, false],
+      ['table', 2, 4], ['stool', 1, 4, 0, 1, 1, false], ['stool', 3, 4, 0, 1, 1, false],
+      ['table', 6, 4], ['stool', 5, 4, 0, 1, 1, false], ['stool', 7, 4, 0, 1, 1, false], ['crate', 8, 6],
+    ],
+    npcs: [
+      { id: 'coral', name: 'Tabernera Coral', x: 5, z: 0, wander: 1, look: { shirt: 0x2a6a7a, pants: 0x2a2a2a, hair: 0xb03a2a, longHair: true, skin: 0xe0aa80, hat: 'bandana', capColor: 0x1a1a1a, eyepatch: true } },
+      { id: 'quino', name: 'Marinero Quino', x: 1, z: 5, wander: 1, look: { shirt: 0xe8e0d0, pants: 0x2a3a6a, hair: 0x2a1a10, beard: 0x2a1a10, skin: 0xc68a5a, hat: 'cap', capColor: 0x1a2a4a } },
+      { id: 'olga', name: 'Pirata Olga', x: 7, z: 5, wander: 1, look: { shirt: 0x6a1a1a, pants: 0x1a1a1a, hair: 0xe0d0b0, longHair: true, skin: 0xf0c49a, hat: 'tricorn', coat: true, sword: true } },
+    ],
+  },
+  {
+    id: 'almacen', name: 'Almacén del Puerto', w: 8, d: 7, floor: 0x9a7a52, wall: 0x8a6a44, wood: 0x4a3020,
+    items: [
+      ['crate', 0, 0], ['crate', 1, 0], ['crate', 0, 1], ['crate', 6, 0], ['crate', 7, 0], ['crate', 7, 1], ['crate', 7, 3],
+      ['sacks', 3, 0], ['sacks', 4, 0], ['barrel', 0, 4], ['barrel', 0, 5], ['barrel', 1, 5], ['table', 4, 3], ['window', 5, 0, 0, 1, 1, false],
+    ],
+    npcs: [{ id: 'tito', name: 'Estibador Tito', x: 3, z: 2, wander: 2, look: { shirt: 0x8a8a6a, pants: 0x4a3a2a, hair: null, beard: 0x5a3a20, skin: 0xa86a3a, bracers: true, bracerColor: 0x5a3a20 } }],
+  },
+  {
+    id: 'casa3', name: 'Taller de Bruno', w: 6, d: 5, floor: 0xb89062, wall: 0xf0e4c8, wood: 0x6a4428,
+    items: [['workbench', 1.5, 0, 0, 2, 1], ['logs', 4, 0], ['bed', 5, 2, Math.PI / 2, 1, 2], ['chest', 0, 2], ['plant', 0, 4], ['window', 3, 0, 0, 1, 1, false]],
+    npcs: [],
+  },
+  {
+    id: 'granja', name: 'Casa de la Granja', w: 7, d: 5, floor: 0xb08a5a, wall: 0xf0e0b8, wood: 0x6a4428,
+    items: [['hay', 0, 0], ['hay', 0, 1], ['bed', 6, 1, Math.PI / 2, 1, 2], ['table', 3, 1], ['stool', 3, 2, 0, 1, 1, false], ['barrel', 6, 4], ['fireplace', 3, 0, 0, 1, 1, true], ['window', 5, 0, 0, 1, 1, false]],
+    npcs: [{ id: 'ramon', name: 'Abuelo Ramón', x: 2, z: 2, wander: 1, look: { shirt: 0x7a6a4a, pants: 0x4a3a2a, hair: 0xe0e0e0, beard: 0xe8e8e8, hat: 'straw', skin: 0xe0aa80 } }],
+  },
+];
+
+export function makeInteriors(buildings) {
+  const SIDE = { s: [0, 1], n: [0, -1], e: [1, 0], w: [-1, 0] };
+  const out = [];
+  ROOMS.forEach((room, i) => {
+    const b = buildings.find((bb) => bb.id === room.id);
+    if (!b) return;
+    const X = INTERIOR_X0 + i * ROOM_STRIDE, Z = 0;
+    const { w, d } = room;
+    const blocked = new Uint8Array(w * d);
+    for (const it of room.items) {
+      const [, x, z, , fw = 1, fd = 1, blocks = true] = it;
+      if (!blocks) continue;
+      const x0 = Math.round(x - (fw - 1) / 2), z0 = Math.round(z - (fd - 1) / 2);
+      for (let dz = 0; dz < fd; dz++) for (let dx = 0; dx < fw; dx++) {
+        const lx = x0 + dx, lz = z0 + dz;
+        if (lx >= 0 && lz >= 0 && lx < w && lz < d) blocked[lz * w + lx] = 1;
+      }
+    }
+    const exit = { x: X + Math.floor(w / 2), z: Z + d };
+    // puerta exterior
+    const [nx, nz] = SIDE[b.door];
+    let doorX, doorZ;
+    if (b.door === 's' || b.door === 'n') {
+      doorX = Math.floor(b.x0 + (b.w - 1) / 2);
+      doorZ = b.door === 's' ? b.z0 + b.d - 1 : b.z0;
+    } else {
+      doorZ = Math.floor(b.z0 + (b.d - 1) / 2);
+      doorX = b.door === 'e' ? b.x0 + b.w - 1 : b.x0;
+    }
+    const R = {
+      kind: 'interior', id: room.id, name: room.name, room, X, Z, w, d, blocked, exit, building: b,
+      door: { x: doorX, z: doorZ }, front: { x: doorX + nx, z: doorZ + nz },
+      inside: { x: exit.x, z: exit.z - 1 },
+      npcs: room.npcs.map((n) => ({ ...n, x: X + n.x, z: Z + n.z })),
+    };
+    R.contains = (x, z) => x >= X - 1 && x <= X + w && z >= Z - 1 && z <= Z + d;
+    R.walkable = (x, z) => {
+      if (x === exit.x && z === exit.z) return true;
+      const lx = x - X, lz = z - Z;
+      if (lx < 0 || lz < 0 || lx >= w || lz >= d) return false;
+      return !blocked[lz * w + lx];
+    };
+    R.tile = (x, z) => (R.walkable(x, z) || (x - X >= 0 && x - X < w && z - Z >= 0 && z - Z < d) ? T.STONE : T.WATER);
+    R.setBlocked = (x, z, v) => { const lx = x - X, lz = z - Z; if (lx >= 0 && lz >= 0 && lx < w && lz < d) blocked[lz * w + lx] = v; };
+    R.groundY = () => 0;
+    R.areaName = () => room.name;
+    out.push(R);
+  });
+  return out;
+}
+
+// Conecta las regiones al mundo principal: walkable/tile/... funcionan en todas partes.
+export function attachRegions(W, regions) {
+  const main = { walkable: W.walkable, tile: W.tile, groundY: W.groundY, areaName: W.areaName };
+  const inMain = (x, z) => x >= 0 && z >= 0 && x < W.N && z < W.N;
+  const at = (x, z) => {
+    if (inMain(x, z)) return null;
+    for (const r of regions) if (r.contains(x, z)) return r;
+    return undefined;
+  };
+  W.regions = regions;
+  W.regionAt = (x, z) => at(Math.round(x), Math.round(z));
+  W.walkable = (x, z) => { const r = at(x, z); return r === null ? main.walkable(x, z) : r ? r.walkable(x, z) : false; };
+  W.tileAll = (x, z) => { const r = at(x, z); return r === null ? main.tile(x, z) : r ? r.tile(x, z) : T.WATER; };
+  W.groundY = (x, z) => { const r = at(Math.round(x), Math.round(z)); return r === null ? main.groundY(x, z) : r ? r.groundY(x, z) : 0; };
+  W.areaName = (x, z) => {
+    const r = at(x, z);
+    if (r === null) return main.tile(x, z) === T.WATER ? 'Mar de Bruma' : main.areaName(x, z);
+    return r ? r.areaName(x, z) : 'Mar de Bruma';
+  };
+  W.setBlocked = (x, z, v) => { const r = at(x, z); if (r === null) W.blocked[W.idx(x, z)] = v; else if (r) r.setBlocked(x, z, v); };
+  W.isInterior = (x) => x >= INTERIOR_X0 - 2;
+  W.key = KEY;
+}

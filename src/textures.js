@@ -31,6 +31,7 @@ const PALETTE = {
 };
 
 export function makeGroundTexture(W, pxPerTile = 24) {
+  const N = W.N, ox = W.ox || 0, oz = W.oz || 0;
   const LO = 8; // resolución base con bordes orgánicos
   const lw = N * LO;
   const lo = canvas(lw, lw);
@@ -42,12 +43,12 @@ export function makeGroundTexture(W, pxPerTile = 24) {
     for (let px = 0; px < lw; px++) {
       const u = px / LO - 0.5 + 0.5 / LO; // en coordenadas de casilla
       const v = py / LO - 0.5 + 0.5 / LO;
-      const bt = W.tile(Math.round(u), Math.round(v));
+      const bt = W.tile(ox + Math.round(u), oz + Math.round(v));
       let t = bt;
       if (!crisp(bt)) {
         const wx = (valueNoise(u * 0.9, v * 0.9, 11) - 0.5) * 1.1;
         const wz = (valueNoise(u * 0.9 + 40, v * 0.9 + 40, 12) - 0.5) * 1.1;
-        const st = W.tile(Math.round(u + wx), Math.round(v + wz));
+        const st = W.tile(ox + Math.round(u + wx), oz + Math.round(v + wz));
         if (!crisp(st)) t = st;
       }
       const c = PALETTE[t] || PALETTE[T.GRASS];
@@ -71,11 +72,11 @@ export function makeGroundTexture(W, pxPerTile = 24) {
   const P = pxPerTile;
   for (let z = 0; z < N; z++) {
     for (let x = 0; x < N; x++) {
-      const t = W.tile(x, z);
-      const ox = x * P, oy = z * P;
+      const t = W.tile(ox + x, oz + z);
+      const px0 = x * P, oy = z * P;
       if (t === T.GRASS || t === T.DARK) {
         for (let k = 0; k < 7; k++) {
-          const gx = ox + rnd() * P, gy = oy + rnd() * P;
+          const gx = px0 + rnd() * P, gy = oy + rnd() * P;
           ctx.strokeStyle = rnd() < 0.5 ? 'rgba(60,120,40,0.45)' : 'rgba(150,205,100,0.4)';
           ctx.lineWidth = 1.2;
           ctx.beginPath();
@@ -88,7 +89,7 @@ export function makeGroundTexture(W, pxPerTile = 24) {
           ctx.fillStyle = t === T.DIRT
             ? (rnd() < 0.5 ? 'rgba(120,88,55,0.5)' : 'rgba(215,180,135,0.5)')
             : (rnd() < 0.5 ? 'rgba(190,165,110,0.55)' : 'rgba(250,236,200,0.6)');
-          ctx.fillRect(ox + rnd() * P, oy + rnd() * P, 1.6, 1.6);
+          ctx.fillRect(px0 + rnd() * P, oy + rnd() * P, 1.6, 1.6);
         }
       } else if (t === T.STONE) {
         // adoquines
@@ -96,23 +97,23 @@ export function makeGroundTexture(W, pxPerTile = 24) {
         const rh = P / rows;
         for (let r = 0; r < rows; r++) {
           const off = ((r + x + z) % 2) * (P / 4);
-          let cx = ox - off;
-          while (cx < ox + P) {
+          let cx = px0 - off;
+          while (cx < px0 + P) {
             const w = P / 2 + (hash2(Math.floor(cx), oy + r, 9) - 0.5) * 3;
             const shade = 150 + Math.floor(hash2(Math.floor(cx), oy + r, 5) * 40);
             ctx.fillStyle = `rgb(${shade},${shade - 2},${shade - 8})`;
-            const x0 = Math.max(cx, ox), x1 = Math.min(cx + w, ox + P);
+            const x0 = Math.max(cx, px0), x1 = Math.min(cx + w, px0 + P);
             if (x1 > x0) ctx.fillRect(x0 + 0.6, oy + r * rh + 0.6, x1 - x0 - 1.2, rh - 1.2);
             cx += w;
           }
         }
         ctx.strokeStyle = 'rgba(90,88,84,0.35)';
         ctx.lineWidth = 1;
-        ctx.strokeRect(ox + 0.5, oy + 0.5, P - 1, P - 1);
+        ctx.strokeRect(px0 + 0.5, oy + 0.5, P - 1, P - 1);
       } else if (t === T.FIELD) {
         for (let r = 0; r < 4; r++) {
           ctx.fillStyle = r % 2 ? 'rgba(100,70,40,0.6)' : 'rgba(165,125,80,0.5)';
-          ctx.fillRect(ox + r * (P / 4), oy, P / 4, P);
+          ctx.fillRect(px0 + r * (P / 4), oy, P / 4, P);
         }
       }
     }
