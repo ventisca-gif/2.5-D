@@ -81,6 +81,7 @@ export class Panels {
     if (act === 'cjob') { g.cycleCrewJob(b.dataset.id); return this.openBitacora('crew'); }
     if (act === 'title') { g.title = b.dataset.t || null; g.applyTitle(); return this.openBitacora('logros'); }
     if (act === 'stash') { g.stashMove(b.dataset.id, Number(b.dataset.n), b.dataset.d); return; }
+    if (act === 'elixir') { g.drinkElixir(this.sel); if (!p.inv[this.sel]) this.sel = null; return this.renderInv(); }
     if (act === 'relic') { g.toggleRelic(this.sel); this.sel = null; return this.renderInv(); }
     if (act === 'relicoff') { g.toggleRelic(b.dataset.id); return this.openBitacora('guia'); }
     if (act === 'crewgive') { const id = this.sel; this.close(); return g.giveCrewItemMenu(id); }
@@ -127,6 +128,7 @@ export class Panels {
       const it = ITEMS[this.sel];
       let btn = '';
       if (it.type === 'equip') btn = `<button class="pbtn" data-p="equip">Equipar</button>${!it.cos && g.crew().length + (g.partner() ? 1 : 0) ? ' <button class="pbtn" data-p="crewgive">🎽 Dar a tripulante</button>' : ''}`;
+      if (it.type === 'elixir') btn = `<button class="pbtn" data-p="elixir">🧪 Beber</button>`;
       if (it.type === 'relic') btn = `<button class="pbtn" data-p="relic">🗿 Activar reliquia</button> <span class="muted small">Activas: ${(g.relics || []).length}/2</span>`;
       if (it.type === 'spell') btn = `<button class="pbtn" data-p="cast">✨ Lanzar</button>`;
       if (it.type === 'food' || it.type === 'heal') btn = `<button class="pbtn" data-p="eat">${it.type === 'heal' ? 'Beber' : 'Comer'}</button>`;
@@ -523,6 +525,14 @@ export class Panels {
       ['🏆 Concurso de barcos', 'Una vez por semana Nerea organiza un concurso: los vecinos votan según los muebles del camarote, tu bandera, las mejoras y el tipo de barco.'],
       ['💎 Amuletos', 'Tadeo o Helga engarzan 3 gemas en un amuleto (500 oro). Cada gema da algo distinto (ámbar daño, jade vida, perla experiencia, obsidiana defensa, meteorito todo...). Tres iguales hacen un amuleto puro (+50%). Elige cuál llevar hablando con ellos.'],
       ['💖 Historia de tu pareja', 'Con 5 corazones, tu pareja te contará un secreto: una carta misteriosa, cazadores del pasado, un medallón enterrado y el Capitán Varek. Al final ganáis la Diadema del destino, un título y lealtad total.'],
+      ['🏴‍☠️ Islas conquistadas', 'De vez en cuando un pirata famoso conquista una isla con pueblo: allí los precios suben un 20%. Ve, derrota a sus hombres y a su capitán, y elige liberarla (oro y amistad) o quedártela (tributo de 400 oro al día que cobras hablando con sus vecinos).'],
+      ['⚗️ Alquimia y joyería', 'La Bruja Mambé y la Inventora Volta preparan elixires (poción mayor, fuerza, piel de piedra, sabio) que se beben desde la Mochila. Tadeo y Helga tallan tus amuletos (+25%, hasta 3 veces). Hay dos oficios nuevos: Alquimista y Joyero.'],
+      ['🎉 Eventos de temporada', 'Otoño: Halloween pirata con calabazas en Villarroca y fantasmas de noche que sueltan caramelos (cámbialos con Marisol por disfraces). Invierno: Navidad con nieve y un árbol en Villarroca con regalo diario. Primavera: Carnaval en Tortuga con confeti, baile y máscaras de Mara.'],
+      ['🔔 Pecios hundidos', 'Con la campana de buceo, acércate en barco a los puntos azul oscuro del minimapa y pulsa «Pecio». Dentro hay tiburones y 3 cofres que se rellenan cada día. ¡Vigila el aire!'],
+      ['💣 Defensa del puerto', 'Cuando visitas tu puerto, a veces llegan piratas a saquearlo. Ponte junto a un cañón de la orilla y pulsa «Cañón» para hundirlos antes de que destruyan la muralla.'],
+      ['🎭 Rasgos de la tripulación', 'Cada tripulante tiene un rasgo: Valiente (+15% daño, nunca se retira), Cobarde (esquiva pero huye antes), Glotón (las pociones le curan más), Afortunado (encuentra oro), Sabio (+10% de experiencia para todos) o Fuerte (+20% vida). Míralo hablando con ellos.'],
+      ['🗺 Mapa del mundo', '⚡ Atajos › Mapa: un mapa dibujado que se va revelando a medida que exploras el mar y las islas.'],
+      ['👑 La Leyenda de la Bruma', 'Marisol te cuenta la leyenda: reúne los 5 fragmentos de la Corona de la Bruma venciendo a la Reina de Hielo, el Gran Autómata, el Rey Pastel, el Guardián Errante y la Sombra del Abismo. Luego une la corona y enfréntate al Rey de la Bruma en Villarroca: el jefe definitivo.'],
       ['🎯 Día de la caza', 'En multijugador, el ranking de recompensas está en Novedades. El anfitrión puede iniciar el Día de la caza: el más buscado debe sobrevivir 5 minutos en PvP y los demás intentan cazarlo.'],
       ['🎣 Pesca', 'Junto al agua pulsa 🎣 Pescar y quédate quieto: peces, perlas, bolsas de oro y, con suerte, un baúl con ropa.'],
       ['👕 Armario', 'Los cosméticos se guardan en tu armario (toca una ranura de Aspecto en la mochila). Hay más de 50: tienda de Selim, gremio, eventos, pesca y superjefes.'],

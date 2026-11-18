@@ -37,6 +37,7 @@ import { installMore7 } from './more7.js';
 import { installMore8 } from './more8.js';
 import { installMore9, makeWanderIslets } from './more9.js';
 import { installMore10, makeOwnPort, makeIceBridge } from './more10.js';
+import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -117,6 +118,8 @@ const ENEMY_DEF = {
   bestia_golem: { name: 'Coloso de Musgo legendario', hp: (L) => 3500 + L * 80, atk: (L) => 24 + L * 3, speed: 2.0, xp: (L) => 1800 + L * 45, gold: (L) => 350 + L * 6, aggro: 8, cd: 1.8, boss: true },
   sombra_abismo: { name: 'Sombra del Abismo', hp: () => 16000, atk: () => 240, speed: 3.0, xp: () => 20000, gold: () => 5000, aggro: 9, cd: 1.2, boss: true, super: 'sombra', sCol: 0x2a0a4a, sTxt: '¡Pesadilla!', sMin: 'skull', bounty: 3000 },
   guardian_errante: { name: 'Guardián de la Isla Errante', hp: () => 18000, atk: () => 250, speed: 2.0, xp: () => 20000, gold: () => 5000, aggro: 9, cd: 1.7, boss: true, super: 'errante', sCol: 0x7af0e0, sTxt: '¡Ira de las ruinas!', sMin: 'golem', bounty: 2500 },
+  tiburon: { name: 'Tiburón del pecio', hp: (L) => 50 + 15 * L, atk: (L) => 7 + 2.5 * L, speed: 3.4, xp: (L) => 20 + 8 * L, gold: (L) => 8 + Math.floor(Math.random() * (6 + L)), aggro: 6, cd: 1.2, fly: true },
+  rey_bruma: { name: 'El Rey de la Bruma', hp: () => 60000, atk: () => 320, speed: 2.8, xp: () => 50000, gold: () => 10000, aggro: 12, cd: 1.3, boss: true, super: 'bruma', sCol: 0x6a3aaa, sTxt: '¡Abrazo de la bruma!', sMin: 'skull', bounty: 10000 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 export { ENEMY_DEF };
@@ -676,6 +679,18 @@ function makeTentacleModel(head) {
   return { root, parts: {}, mats, kind: 'tentacle', height: 2.4 };
 }
 
+function makeSharkModel() {
+  const root = new THREE.Group(), body = new THREE.Group(), torso = new THREE.Group();
+  root.add(body); body.add(torso);
+  const mat = new THREE.MeshPhongMaterial({ color: 0x6a8a9a, shininess: 40 }); mat.userData.baseEmissive = new THREE.Color(0);
+  const belly = new THREE.MeshPhongMaterial({ color: 0xe8eef0 });
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 10), mat); b.scale.set(0.8, 0.7, 2.0); b.position.y = 0.7; torso.add(b);
+  const bl = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 8), belly); bl.scale.set(0.7, 0.45, 1.7); bl.position.set(0, 0.6, 0.05); torso.add(bl);
+  const fin = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 4), mat); fin.position.set(0, 1.05, 0); fin.rotation.x = -0.4; torso.add(fin);
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.45, 4), mat); tail.position.set(0, 0.75, -0.7); tail.rotation.x = -Math.PI / 2; torso.add(tail);
+  for (const s of [-1, 1]) { const f = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.03, 0.18), mat); f.position.set(s * 0.25, 0.55, 0.15); f.rotation.z = s * 0.4; torso.add(f); const e = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5), new THREE.MeshBasicMaterial({ color: 0x111111 })); e.position.set(s * 0.12, 0.78, 0.5); torso.add(e); }
+  return { root, parts: { body, torso, flames: new THREE.Group() }, mats: [mat], kind: 'skull', height: 1.1 };
+}
 function tintModel(model, color, k) {
   const c = new THREE.Color(color);
   const tmp = new THREE.Color();
@@ -700,7 +715,9 @@ class Enemy extends Actor {
   constructor(game, type, spawn, lvlRange) {
     let model;
     const seed = (spawn.area[0] * 7 + spawn.area[1] * 13 + (game.enemies ? game.enemies.length : 0) * 31) >>> 0;
-    if (type === 'bestia_lobo') model = tintModel(makeBeast2('wolf'), 0xd8e0f0, 0.7);
+    if (type === 'tiburon') model = makeSharkModel();
+    else if (type === 'rey_bruma') model = HUM({ bone: 0x8a8aa8, cape: 0x3a2a5a, hat: 'horned', hatColor: 0x2a1a3a, hornColor: 0xd8a838, sword: true, blade: 0xb08aff, bladeLen: 0.8, guard: 0xd8a838, eyeGlow: 0xb08aff, pauldron: 0x3a2a5a, trim: 0xd8a838, halo: 0x8a5aff });
+    else if (type === 'bestia_lobo') model = tintModel(makeBeast2('wolf'), 0xd8e0f0, 0.7);
     else if (type === 'bestia_tigre') model = tintModel(makeBeast2('tiger'), 0x2a2030, 0.75);
     else if (type === 'bestia_golem') model = tintModel(makeGolem('stone'), 0x4a8a3a, 0.75);
     else if (type === 'guardian_errante') model = tintModel(makeGolem('stone'), 0x6ad8c8, 0.6);
@@ -744,6 +761,8 @@ class Enemy extends Actor {
     if (type === 'reina_hielo') model_scale(model, 1.55);
     if (type === 'bestia_lobo' || type === 'bestia_tigre') model_scale(model, 2.0);
     if (type === 'bestia_golem' || type === 'guardian_errante') model_scale(model, 2.1);
+    if (type === 'rey_bruma') { model_scale(model, 2.2); for (const m of model.mats) { m.transparent = true; m.opacity = 0.9; } }
+    if (type === 'tiburon') model_scale(model, 1.3);
     if (type === 'sombra_abismo') { model_scale(model, 1.7); for (const m of model.mats) { m.transparent = true; m.opacity = 0.85; } }
     if (type === 'gran_automata') model_scale(model, 2.0);
     if (type === 'rey_pastel') model_scale(model, 1.7);
@@ -994,7 +1013,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge()]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1277,7 +1296,7 @@ class Game {
       n.baseLevel = npcLevel(n.id, area);
       n.setStats(n.baseLevel);
     }
-    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns, ...this.grotto.spawns]) {
+    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns, ...this.grotto.spawns, ...this.wreck.spawns]) {
       for (let i = 0; i < s.count; i++) { const e = new Enemy(this, s.type, s, s.lvl); e.idx = this.enemies.length; this.enemies.push(e); }
     }
     this.baseEnemies = this.enemies.length;
@@ -1424,6 +1443,7 @@ class Game {
     $('btnOrders').addEventListener('click', () => { if (this.started) this.ordersMenu(); });
     $('btnTravel').addEventListener('click', () => { if (this.started) this.travelMenu(); });
     $('btnBanquet').addEventListener('click', () => { if (this.started) this.banquet(); });
+    $('btnMap').addEventListener('click', () => { if (this.started) this.openWorldMap(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1820,6 +1840,8 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      const s11 = this.sailAction11 && this.sailAction11();
+      if (s11) return s11;
       if (!this.deck && this.grottoNear && this.grottoNear()) return { icon: '🚣', label: 'Gruta', fn: () => this.enterGrotto() };
       if (!this.deck && this.velariaNear && this.velariaNear()) return { icon: '🏙', label: 'Velaria', fn: () => this.velariaShop() };
       const d = this.nearDock();
@@ -1829,6 +1851,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c11 = this.contextAction11 && this.contextAction11();
+    if (c11) return c11;
     const c10 = this.contextAction10 && this.contextAction10();
     if (c10) return c10;
     const c7 = this.contextAction7 && this.contextAction7();
@@ -2304,6 +2328,7 @@ class Game {
       tmaps: this.tmaps || [], raceBoard: this.raceBoard || [],
       famous: this.famous, weather: this.weather, jobs: this.jobs || {}, jobBoard: this.jobBoard ? { day: this.jobBoard.day, list: this.jobBoard.list } : null, wardrobe: this.wardrobe || [],
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
+      conq: Object.fromEntries(Object.entries(this.conq || {}).map(([k, v]) => [k, { fid: v.fid, name: v.name, isle: v.isle }])), owned: this.owned || {}, legend: this.legend || {}, wmap: (this.wmap || []).join(''),
       relics: this.relics || [], amulets: this.amulets || [], amuletEq: this.amuletEq ?? null, adv: this.adv || null,
       towns9: this.towns9 || {}, escortId: this.escortId || null, vision: this.vision || null,
       esp: this.esp || null, hunts: this.hunts || null, fishDex: this.fishDex || {}, child: this.child || null, childDay: this.childDay ?? null, crewOrder: this.crewOrder || 'follow', smuggle: this.smuggle || null,
@@ -2503,6 +2528,7 @@ class Game {
     this.day = data.day || 0;
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
+    this.conq = data.conq || {}; this.owned = data.owned || {}; this.legend = data.legend || {}; this.wmap = data.wmap ? data.wmap.split('').map(Number) : null; this.festCur = undefined; this.portCannons = null;
     this.relics = data.relics || []; this.amulets = data.amulets || []; this.amuletEq = data.amuletEq ?? undefined; this.adv = data.adv || null; this.portBuilt = false;
     this.towns9 = data.towns9 || {}; this.escortId = data.escortId || null; this.vision = data.vision || null; this.townsGrown = false;
     this.esp = data.esp || null; this.hunts = data.hunts || null; this.fishDex = data.fishDex || {};
@@ -3010,6 +3036,7 @@ class Game {
       this.updateMore8(dt);
       this.updateMore9(dt);
       this.updateMore10(dt);
+      this.updateMore11(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3243,6 +3270,12 @@ installMore(Game, { sfx, mountModel, EVENT_COS, isFemale: () => window.game && w
 installMore8(Game, { sfx });
 installMore9(Game, { sfx, NPC });
 installMore10(Game, { sfx, NPC });
+installMore11(Game, { sfx });
+LOGROS.push(
+  { id: 'leyenda', name: 'Leyenda de la Bruma', title: 'Leyenda de la Bruma', desc: 'Derrota al Rey de la Bruma', ok: (g) => !!g.flags.legendDone },
+  { id: 'libertador_islas', name: 'Libertador de islas', title: 'Libertador', desc: 'Recupera una isla conquistada', ok: (g) => (g.stats.liberated || 0) >= 1 },
+  { id: 'cartografo', name: 'Cartógrafo', title: 'Cartógrafo', desc: 'Explora el 50% del mapa del mundo', ok: (g) => g.wmap && g.wmap.filter(Boolean).length >= g.wmap.length / 2 },
+);
 LOGROS.push(
   { id: 'arqueologo', name: 'Arqueólogo', title: 'Arqueólogo', desc: 'Excava 10 hallazgos', ok: (g) => (g.stats.digs || 0) >= 10 },
   { id: 'gremio_oro', name: 'Aventurero de oro', title: 'Aventurero de oro', desc: 'Llega a rango Oro en el gremio', ok: (g) => g.advRank && g.advRank() >= 2 },

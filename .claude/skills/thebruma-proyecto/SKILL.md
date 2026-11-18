@@ -108,6 +108,12 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Arqueología (`pala` de Tadeo, 6 montículos diarios `digSites`, `excavate`), reliquias `RELICS` (type 'relic', máx 2 activas `relics`, `passiveMul` en buffMul/jobHp/shipStats). Gremio de aventureros (NPC 'orla', `adv` semanal, rangos Bronce→Leyenda, `c_capa_gremio`). Puente de hielo en invierno (región 'hielo' x 202-208, `season()===3`). Puerto propio (Isla Libre ox128 oz146, `flags.portLv` 1-5, impuestos `portDay`, `portMenu`). Concurso de barcos semanal (Nerea). Amuletos de 3 gemas (`GEMS`, `amulets`, `amuletEq`, Tadeo/Helga). Historia de la pareja (`soc.pq.s` 0-5: carta → Sombra → cazadores → medallón al excavar → Capitán Varek; premio `c_anillo_destino`, título, `loyal`).
 - El usuario NO quiere «enemigos que aprenden».
 
+## v3.9 (more11.js; se instala tras more8/9/10 porque envuelve compStats/crewDmgMul/companionTick/hurtCompanion)
+- Islas conquistadas por famosos (`conq`, `updateConquest`, precios ×1,2, liberar u `owned` tributo 400/día). Alquimia (Mambé/Volta, `ELIXIRS` type 'elixir', `BUFFS.e_*`, oficio `alquimista`) y joyería (Tadeo/Helga, `cutAmulet` ×1,25 hasta 3, oficio `joyero`; añadidos a `JOBS`).
+- Eventos de temporada por `season()`: 0 carnaval (Tortuga), 2 halloween (calabazas, fantasmas nocturnos → `caramelo` → disfraces con Marisol), 3 navidad (árbol en (54,47), regalo diario, nieve en Villarroca).
+- Pecio submarino (región 'pecio' x=2300 `underwater`, `WRECK_SPOTS`, tiburones `tiburon` con `makeSharkModel`, 3 cofres diarios). Defensa del puerto con cañones en tierra (`praid`, `portCannons`, `fireLandCannon`). Rasgos (`TRAITS`, `soc.trait`). Mapa del mundo revelable (`wmap`, celdas de 6, Atajos `btnMap`). Leyenda final (`legend` 5 fragmentos de jefes → `summonFinal` `rey_bruma` 60000 vida con fases; premio `c_corona_bruma`, título «Leyenda de la Bruma»).
+- En main.js ya existía `makeWreck` (barco hundido decorativo): el de buceo se llama `makeWreckDive`.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

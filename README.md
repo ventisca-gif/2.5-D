@@ -42,6 +42,7 @@ Todo el arte es procedural (Three.js + primitivas low-poly): no hay imágenes ni
 - **v3.6**: habilidades y equipo propio para cada tripulante, rangos, diario de la tripulación, asedio al Bastión, fiesta de boda, mascotas guerreras con vida y peligros en el mar (icebergs, remolinos y rayos).
 - **v3.7**: segundo barco capitaneado por tu tripulación, escuela de combate, pueblos que crecen, bestias legendarias, banquete, sueños y visiones, torneo de tripulaciones e Isla Errante con laberinto y guardián.
 - **v3.8**: pestaña Guía en la Bitácora con todo lo nuevo, arqueología y reliquias, gremio de aventureros, mar helado en invierno, tu propio puerto pirata, concurso de barcos, amuletos de gemas e historia secreta de tu pareja.
+- **v3.9**: islas conquistadas por piratas famosos, alquimia y joyería, Halloween, Navidad y Carnaval, pecios hundidos con tiburones, defensa del puerto con cañones, rasgos de la tripulación, mapa del mundo que se revela y la Leyenda de la Bruma con el jefe final.
 - **Recompensa (Se busca)**: sube con cada victoria; la Marina te ataca, pregunta por ti en los pueblos y desembarca para cazarte (los vecinos te defienden). Hay guardias corruptos.
 - **Recursos**: tala árboles (madera) y pica rocas (piedra); vende al mercader o mejora arma y armadura en la herrería.
 - **Ciclo día/noche** con farolas, ventanas encendidas y haz de luz del faro.
