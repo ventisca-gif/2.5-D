@@ -265,6 +265,7 @@ export function dialogFor(id, G) {
   if (G.npcDialog14) { const t14 = G.npcDialog14(id, opts); if (t14 && !text) text = t14; }
   if (G.npcDialog15) { const t15 = G.npcDialog15(id, opts); if (t15 && !text) text = t15; }
   if (G.npcDialog16) { const t16 = G.npcDialog16(id, opts); if (t16 && !text) text = t16; }
+  if (G.npcDialog17) { const t17 = G.npcDialog17(id, opts); if (t17 && !text) text = t17; }
   for (const [mid, m] of Object.entries(MOUNTS)) if (m.seller === id) opts.push({ label: (G.ownMounts || []).includes(mid) ? `${m.icon} Montar en tu ${m.name.toLowerCase()}` : `${m.icon} Comprar ${m.name} (${m.price} oro)`, action: () => G.buyMount(mid) });
   if (id === 'nerea') opts.push({ label: `🏁 Regata alrededor de Isla Bruma (50 oro)${G.stats.raceBest ? ' · récord ' + G.stats.raceBest + 's' : ''}`, action: () => G.buy({ gold: 50 }, () => G.startRace()) });
   if (id === 'marisol') opts.push({ label: '⚔️ Torneo de duelos de Villarroca (1 al día)', action: () => G.startTournament() });

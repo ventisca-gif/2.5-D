@@ -151,6 +151,15 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Bestias legendarias del mar: envuelven `updateSeaMonster`/`harpoon` (`smon.legend`, `legendSea`). Mercado entre jugadores: `mkt`, mensajes `mktAdd/mktDel/mktBuy/mktSold` en `onNetX4` (el vendedor es la autoridad). Carrera de dragones: Ysolde, `dRace`, `stats.dragonBest`.
 - Pruebas: con swiftshader a 960×540×2 las capturas tardan mucho cuando hay muchas cosas; usar 1280×720×1 y timeout de captura largo, y `purgeTemps()` tras spawnear decenas de enemigos.
 
+
+## v5.5 (more17.js)
+- Faro Maldito: región x6600 (`this.faroR`), entrada solo con niebla en el mar (-50,60) (`sailAction17`), NPC 'elara', `faro {part 0-4, lit}`: braseros → marineros fantasma → Capitán Morvane (ghost_captain escalado).
+- Fusión de armas: NPC 'ingrid' (57,49); `fusions[] {id,a,b,atk,name}` crea EQUIP/ITEMS dinámicos con `registerFusion` (se vuelven a registrar al cargar, `m17init`).
+- Expediciones (Atajos 🧭): `exps[] {ids,names,k,until}` con tiempo REAL (Date.now); tripulantes con `soc.role='exp'` y modelo oculto. Arena de Bestias: NPC 'kazu', `flags.beastRank` 0-5, mascota (`petLevel`) o dragón adulto (Nv 70), 3 combates/día.
+- Mapa estelar: telescopio ≈(39,44), de noche, constelación del día = `day % 5`, une estrellas por brillo → BUFFS star_*, `stars[]`. Isla de los Relojes: región x6800 (`clockR`), puertas d/n según `clockR.night`, 3 palancas, cofre diario; entrada desde el Oráculo.
+- Cocina de leyenda: NPC 'aurelio' (53,47), 4 platos con BUFFS dish_* de 1 h. Restaurante en la aldea (`vil.rest {built,stock,earned,rating,day}`). Jefe mundial `behemot` (`wboss`, isla según la semana, aparece al acercarse). Nave fantasma: tras matar al almirante_muerto, `flags.ghostOn` hace que `shipBlocked` solo mire los bordes del mar.
+- Los diálogos encadenados deben abrirse síncronos dentro de la acción (no con setTimeout): `ui` cierra el diálogo antes de ejecutar la acción.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

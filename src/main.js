@@ -41,6 +41,7 @@ import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
 import { installMore13, makeExpansionIslets } from './more13.js';
 import { installMore14, makeFarIslets } from './more14.js';
+import { installMore17, makeCursedLighthouse, makeClockIsland } from './more17.js';
 import { installMore16, makeVillage, makeIceCave } from './more16.js';
 import { installMore15, makeNewLands, makeInfTower, makeVolcano, makeDragonModel, makeCrystalModel } from './more15.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
@@ -162,6 +163,7 @@ const ENEMY_DEF = {
   leviatan_fuego: { name: 'Ignaroth, Leviatán de Fuego', hp: () => 220000, atk: () => 10500, speed: 2.6, xp: () => 4000000, gold: () => 300000, aggro: 12, cd: 1.3, boss: true, super: 'leviatan5', sCol: 0xff3a10, sTxt: '¡Marea de magma!', sMin: 'pez_lava', bounty: 40000 },
   titan_eterno: { name: 'Titán Eterno', hp: () => 300000, atk: () => 10000, speed: 2.2, xp: () => 4000000, gold: () => 200000, aggro: 14, cd: 1.5, boss: true, super: 'titan5', sCol: 0xffd040, sTxt: '¡Puño del firmamento!', sMin: 'caballero_vacio', bounty: 30000 },
   cristal_escudo: { name: 'Cristal del escudo', hp: () => 12000, atk: () => 1, speed: 0.01, xp: () => 20000, gold: () => 0, aggro: 0, cd: 99 },
+  behemot: { name: 'Behemot de la Bruma', hp: (L) => 150 * L + 0.8 * L * L, atk: (L) => 20 + 8 * L, speed: 2.4, xp: (L) => 2000 * L, gold: (L) => 200 * L, aggro: 14, cd: 1.5, boss: true, super: 'behemot', sCol: 0xff5a1a, sTxt: '¡Terremoto!', sMin: 'golem', bounty: 20000 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
 // equilibrio v5.3: el ataque de los enemigos crece con el nivel (los de los mares lejanos ya vienen ajustados)
@@ -792,6 +794,7 @@ class Enemy extends Actor {
     else if (type === 'leviatan_fuego') model = tintModel(makeSharkModel(), 0xa81a08, 0.7);
     else if (type === 'titan_eterno') model = tintModel(makeGolem('obs'), 0xd8a838, 0.65);
     else if (type === 'cristal_escudo') model = makeCrystalModel();
+    else if (type === 'behemot') model = tintModel(makeBeast2('tiger'), 0x3a2a2a, 0.7);
     else if (type === 'grifo') model = tintModel(makeBeast2('tiger'), 0xe8c060, 0.65);
     else if (type === 'caballero_celeste') model = HUM({ ...EQUIP.peto_templario.look, cape: 0xf4f4f8, tabard: 0x5a8ad8, hat: 'helmet', hatColor: 0xf4f4f8, plume: 0xffffff, sword: true, blade: 0xfff4c0, shield: { type: 'kite', color: 0xf4f4f8, rim: 0xffd040, boss: 0x5a8ad8 }, wings: 0xffffff, skin: 0xf0d8c0 });
     else if (type === 'golem_nube') model = tintModel(makeGolem('stone'), 0xf4f8ff, 0.85);
@@ -868,6 +871,7 @@ class Enemy extends Actor {
     if (type === 'pez_lava') model_scale(model, 1.4);
     if (type === 'leviatan_fuego') model_scale(model, 3.4);
     if (type === 'titan_eterno') model_scale(model, 3.2);
+    if (type === 'behemot') model_scale(model, 4.2);
     if (type === 'marinero_fantasma' || type === 'almirante_muerto') { for (const m of model.mats) { m.transparent = true; m.opacity = 0.7; } }
     if (type === 'golem_nube' || type === 'wyrm_antiguo') model_scale(model, 1.7);
     if (type === 'demonio_alado') model_scale(model, 2.2);
@@ -1128,7 +1132,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano(), this.iceCave = makeIceCave()]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano(), this.iceCave = makeIceCave(), this.faroR = makeCursedLighthouse(), this.clockR = makeClockIsland()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1566,6 +1570,7 @@ class Game {
     $('btnSoul').addEventListener('click', () => { if (this.started) this.soulMenu(); });
     $('btnMarket').addEventListener('click', () => { if (this.started) this.marketMenu(); });
     $('btnParty').addEventListener('click', () => { if (this.started) this.partyMenu(); });
+    $('btnExped').addEventListener('click', () => { if (this.started) this.expMenu(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1962,6 +1967,8 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      const s17 = this.sailAction17 && this.sailAction17();
+      if (s17) return s17;
       const s15 = this.sailAction15 && this.sailAction15();
       if (s15) return s15;
       const s13 = this.sailAction13 && this.sailAction13();
@@ -1979,6 +1986,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c17 = this.contextAction17 && this.contextAction17();
+    if (c17) return c17;
     const c16 = this.contextAction16 && this.contextAction16();
     if (c16) return c16;
     const c15 = this.contextAction15 && this.contextAction15();
@@ -2466,6 +2475,7 @@ class Game {
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
       zq: this.zq || {}, zqBase: this.zqBase || {}, nem: this.nem || null, myShop: this.myShop || null,
       rvc: this.rvc || null, gz: this.gz || null,
+      faro: this.faro || null, fusions: this.fusions || [], exps: this.exps || [], stars: this.stars || [], wboss: this.wboss ? { ...this.wboss, e: null } : null,
       diary: this.diary || null, soul: this.soul || {}, morale: this.morale ?? 50, atl: this.atl || 0, gc: this.gc ? { ...this.gc, spawned: false } : null, huntW: this.huntW || null, vil: this.vil || null, books: this.books || [], legendSea: this.legendSea || {},
       awakened: this.awakened || [], myDragon: this.myDragon || null, trophies: this.trophies || {}, clanIsles: this.clanIsles || null,
       conq: Object.fromEntries(Object.entries(this.conq || {}).map(([k, v]) => [k, { fid: v.fid, name: v.name, isle: v.isle }])), owned: this.owned || {}, legend: this.legend || {}, wmap: (this.wmap || []).join(''),
@@ -2670,6 +2680,7 @@ class Game {
     this.honor = data.honor || 0;
     this.zq = data.zq || {}; this.zqBase = data.zqBase || {}; this.nem = data.nem || null; this.myShop = data.myShop || null;
     this.rvc = data.rvc || null; this.gz = data.gz || null;
+    this.faro = data.faro || null; this.fusions = data.fusions || []; this.exps = data.exps || []; this.stars = data.stars || []; this.wboss = data.wboss || null; this.m17init = false; this.faroTemps = null;
     this.diary = data.diary || null; this.soul = data.soul || {}; this.morale = data.morale ?? 50; this.atl = data.atl || 0; this.gc = data.gc || null; this.huntW = data.huntW || null; this.vil = data.vil || null; this.books = data.books || []; this.legendSea = data.legendSea || {}; this.m16init = false; this.vilRaid = null; this.dRace = null;
     this.awakened = data.awakened || []; this.awakenApplied = false; this.myDragon = data.myDragon || null; this.dragonLast = undefined; this.trophies = data.trophies || {}; this.clanIsles = data.clanIsles || null; this.bdayChecked = null;
     this.conq = data.conq || {}; this.owned = data.owned || {}; this.legend = data.legend || {}; this.wmap = data.wmap ? data.wmap.split('').map(Number) : null; this.festCur = undefined; this.portCannons = null;
@@ -3189,6 +3200,7 @@ class Game {
       this.updateMore14(dt);
       this.updateMore15(dt);
       this.updateMore16(dt);
+      this.updateMore17(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3428,6 +3440,13 @@ installMore13(Game, { sfx, NPC, crewGear });
 installMore14(Game, { sfx, NPC });
 installMore15(Game, { sfx, NPC });
 installMore16(Game, { sfx, NPC });
+installMore17(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'farera', name: 'Luz para Elara', title: 'Guardián del faro', desc: 'Completa la historia del Faro Maldito', ok: (g) => !!(g.faro && g.faro.part >= 4) },
+  { id: 'behemot', name: 'Cazador de Behemots', title: 'Azote de Behemots', desc: 'Vence al jefe mundial', ok: (g) => (g.stats.wboss || 0) >= 1 },
+  { id: 'bestias', name: 'Campeón de bestias', title: 'Domador supremo', desc: 'Gana la Arena de Bestias', ok: (g) => (g.flags.beastRank || 0) >= 5 },
+  { id: 'estrellas', name: 'Navegante estelar', title: 'Astrónomo', desc: 'Une las 5 constelaciones', ok: (g) => (g.stars || []).length >= 5 },
+);
 LOGROS.push(
   { id: 'atlantida', name: 'Atlántida renace', title: 'Rey de Atlántida', desc: 'Restaura Atlántida por completo', ok: (g) => (g.atl || 0) >= 5 },
   { id: 'alma20', name: 'Alma del acero', title: 'Alma gemela del acero', desc: 'Sube el alma de un arma a nivel 20', ok: (g) => Object.values(g.soul || {}).some((s) => s.lvl >= 20) },
