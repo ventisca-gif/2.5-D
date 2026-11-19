@@ -427,6 +427,7 @@ export function animateModel(model, st, dt) {
     p.head.rotation.x = st.attackT > 0 ? -0.5 * Math.sin((1 - st.attackT / 0.32) * Math.PI) : 0;
     if (st.attackT > 0) p.torso.position.z = Math.sin((1 - st.attackT / 0.32) * Math.PI) * 0.18;
     else p.torso.position.z = 0;
+    if (p.wings) { const fl = Math.sin(st.phase * 2.4); p.wings[0].rotation.z = 0.2 + fl * 0.5; p.wings[1].rotation.z = -0.2 - fl * 0.5; }
   } else if (model.kind === 'bat') {
     const fl = Math.sin(st.phase * (moving ? 3 : 2.2));
     p.wings[0].rotation.z = 0.2 + fl * 0.7;

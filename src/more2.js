@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { makeIslet } from './regions.js';
 import { T } from './world.js';
 import { makeBeast2 } from './chars2.js';
+import { makeDragonModel } from './more15.js';
 
 // ---------------------------------------------------------------- monturas
 export const MOUNTS = {
@@ -12,6 +13,7 @@ export const MOUNTS = {
   salamandra: { name: 'Salamandra de lava', icon: '🦎', price: 4000, seller: 'brasa', speed: 2.0, col: 0x3a2a2a, mane: 0xff6020, lizard: true },
   tigre_m: { name: 'Tigre domado', icon: '🐅', price: 0, seller: null, speed: 1.95, beast: 'tiger', tame: true },
   lobo_m: { name: 'Lobo de las nieves domado', icon: '🐺', price: 0, seller: null, speed: 1.9, beast: 'wolf', tint: 0xf4f8fc, tame: true },
+  dragon_real: { name: 'Dragón real', icon: '🐉', price: 0, seller: null, speed: 2.6, dragon: true, tame: true },
   trineo: { name: 'Trineo de perros', icon: '🛷', price: 5000, seller: 'helga', speed: 1.85, col: 0x8a8a90, mane: 0xf4f4f4, sled: true },
 };
 export function mountModel(type) {
@@ -19,6 +21,7 @@ export function mountModel(type) {
   if (d.lizard) return lizardModel(d);
   if (d.sled) return sledModel(d);
   if (d.beast) return beastMount(d);
+  if (d.dragon) { const m = makeDragonModel(0xc83a2a, 0xe8c070), g = new THREE.Group(); m.root.scale.setScalar(1.25); g.add(m.root); g.userData = { legs: m.parts.legs, body: m.parts.body, tail: m.parts.tail, wings: m.parts.wings, h: 1.0 * 1.25 * 0.9 }; return g; }
   const camel = !!d.hump;
   const g = new THREE.Group();
   const body = new THREE.Group(); g.add(body);
@@ -253,6 +256,7 @@ export function installMore2(Game, D) {
     });
     u.body.position.y = p.st.moving ? Math.abs(Math.sin(ph)) * (run ? 0.08 : 0.04) : Math.sin(this.time * 1.5) * 0.008;
     if (u.neck) u.neck.rotation.x = p.st.moving ? Math.sin(ph * 2) * 0.06 : Math.sin(this.time * 0.7) * 0.05;
+    if (u.wings) { const fl = Math.sin(this.time * (p.st.moving ? 9 : 2)); u.wings[0].rotation.z = 0.2 + fl * 0.6; u.wings[1].rotation.z = -0.2 - fl * 0.6; }
     if (u.tail) u.tail.rotation.x = p.st.moving ? 0.35 + Math.sin(ph) * 0.1 : Math.sin(this.time * 1.3) * 0.12;
   };
 

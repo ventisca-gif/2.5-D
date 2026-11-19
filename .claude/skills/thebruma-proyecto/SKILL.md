@@ -133,6 +133,15 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Enemigos de los mares lejanos con ataque ×3 (la defensa a nivel 500 ronda 1200 y si no no hacían daño).
 - El usuario quiere seguir ampliando mucho la escala de poder, con islas nuevas que no repitan temas.
 
+
+## v5.3 equilibrio + 15 ideas (more15.js)
+- **Equilibrio** (bloque tras `ENEMY_DEF` en main.js): ataque de enemigos normales × `atkCurve(L)` (1 hasta Nv60 → 2,9 a Nv350+); los de `FAR_T` (mares lejanos y v5.3) llevan ataque explícito y no se curvan. `HP_K` rebaja la vida de los más duros (normales lejanos 0,7; jefes 0,35-0,8). Objetivo medido con la simulación bal.cjs: normales 3-10 golpes para matar, el jugador aguanta 12-20; jefes ~85-115 golpes.
+- **Despertar** (Oráculo, Nv500, 3 núcleos + 50000): `awakened[]`, `applyAwaken` muta EQUIP (+35% atk, hoja más larga), botón `.skb.awk` 🌟 (no usar la clase `espk`: addEspSkillBtn la borra). **Aura dorada**: esp.l≥50 y espT>0 empuja/daña cada 1,6 s. **Transformación** (⚡ Atajos, 5 núcleos, gasta 1): BUFFS.transform ×2/×1,5, escala ×1,5, 30 s, cd 300 s con contador propio (`this.time` puede ser negativo: no usarlo para cooldowns).
+- **Torre Infinita** (región x6000, `this.infTower`; `makeTower` ya existe en props.js): Oráculo Nv450, «Subir» en el centro, enemigos Nv 480+3·piso, guardián cada 10, `stats.towerBest`. **Volcán Submarino** (x6200, `this.volcano`, underwater sin ahogo): submarino de Volta (`flags.submarine`, Nv400, 30000), punto de mar (238,140), `pez_lava`, jefe `leviatan_fuego`.
+- **Nuevas zonas** en `ZONES`: Archipiélago de los Dragones (x4700, Nv300, Ysolde, jefe `dragon_ancestral`, `dragon_salvaje`, `wyvern`) y Ciudad de los Piratas Famosos (x4950, Nv150, giver null, NPC 'heraldo' + `fam_<id>` de FAMOUS, Torneo de las Leyendas `legT`; ojo: `famT` ya lo usa life.js). isInterior excluye 2990-5100.
+- **Dragón**: `huevo_dragon_real` → `myDragon {born}`; etapa = días/2 (3 = adulto → montura `dragon_real` en MOUNTS, modelo `makeDragonModel`); ⚡ Atajos › Volar a cualquier muelle. **Eclipse** cada 30-50 min, 4 min (overlay #eclipseFx, enemigos +30% atk / −20% daño recibido, `fragmento_eclipse`).
+- Escuela del hijo (`soc('hijo').school`: lucha/navegacion/vudu), legendarios seraphine/aldwin/ignis (duelo Nv400 → `legendOk`, RECRUITABLE, ×1,5 daño), mansión en las nubes (`flags.cloudHouse`, BUFFS.nubes), asalto `titan_eterno` con escudo de 2 `cristal_escudo` (`raid5`, net `raid5Win`), guerra de clanes por islas (`clanIsles`, net `clanIsle`, tributo 500/día), `trophies` (primer kill de cada jefe) y foto automática de jefe (`bossPhoto`, álbum en localStorage `bruma_album`, Novedades).
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

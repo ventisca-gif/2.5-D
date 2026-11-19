@@ -104,7 +104,7 @@ export function installMore13(Game, D) {
     for (const n of this.following()) this.placeNear(n, Math.round(p.x), Math.round(p.z));
     this.camTarget.set(p.x, 0, p.z);
     this.buildZoneFx();
-    this.toast({ celeste: '🎈 El globo de Volta te deja en la Ciudad Celeste, sobre las nubes', pasado: '⏳ El portal del tiempo te lleva a la Isla Bruma de hace 100 años', abismo: '🔥 Cruzas el portal del Abismo Ardiente...' }[key], 'area');
+    this.toast({ celeste: '🎈 El globo de Volta te deja en la Ciudad Celeste, sobre las nubes', pasado: '⏳ El portal del tiempo te lleva a la Isla Bruma de hace 100 años', abismo: '🔥 Cruzas el portal del Abismo Ardiente...' }[key] || `🌀 El Oráculo te lleva a ${z.name}`, 'area');
     sfx('quest');
   };
   P.returnZone = function () {
@@ -365,7 +365,7 @@ export function installMore13(Game, D) {
     return null;
   };
   P.updateMore13 = function (dt) {
-    if (!this.W._isIntPatched) { this.W._isIntPatched = true; const base = this.W.isInterior; this.W.isInterior = (x) => base(x) && !(x >= 2990 && x < 4700); }
+    if (!this.W._isIntPatched) { this.W._isIntPatched = true; const base = this.W.isInterior; this.W.isInterior = (x) => base(x) && !(x >= 2990 && x < 5100); }
     this.updateZone();
     this.updateNemesis(dt);
     this.updateSeaMonster(dt);

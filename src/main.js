@@ -41,6 +41,7 @@ import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
 import { installMore13, makeExpansionIslets } from './more13.js';
 import { installMore14, makeFarIslets } from './more14.js';
+import { installMore15, makeNewLands, makeInfTower, makeVolcano, makeDragonModel, makeCrystalModel } from './more15.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
 const HUM = makeHumanoid2;
@@ -153,8 +154,27 @@ const ENEMY_DEF = {
   devorador_estelar: { name: 'Devorador estelar', hp: (L) => 400 + 46 * L, atk: (L) => 96 + 19.8 * L, speed: 3.6, xp: (L) => 175 + 41 * L, gold: (L) => 95 + Math.floor(Math.random() * L), aggro: 7, cd: 1.0, fly: true },
   caballero_vacio: { name: 'Caballero del vacío', hp: (L) => 460 + 52 * L, atk: (L) => 102 + 20.4 * L, speed: 2.8, xp: (L) => 190 + 44 * L, gold: (L) => 100 + Math.floor(Math.random() * L), aggro: 7, cd: 1.2 },
   nihil: { name: 'Nihil, el Devorador de Mundos', hp: () => 800000, atk: () => 12000, speed: 3.0, xp: () => 5000000, gold: () => 500000, aggro: 12, cd: 1.2, boss: true, super: 'nihil', sCol: 0xb03aff, sTxt: '¡El fin de todo!', sMin: 'caballero_vacio', bounty: 50000 },
+  dragon_salvaje: { name: 'Dragón salvaje', hp: (L) => 420 + 48 * L, atk: (L) => 80 + 17.4 * L, speed: 3.0, xp: (L) => 160 + 38 * L, gold: (L) => 90 + Math.floor(Math.random() * L), aggro: 7, cd: 1.3 },
+  wyvern: { name: 'Wyvern', hp: (L) => 340 + 42 * L, atk: (L) => 84 + 18 * L, speed: 3.6, xp: (L) => 160 + 38 * L, gold: (L) => 90 + Math.floor(Math.random() * L), aggro: 8, cd: 1.0, fly: true },
+  dragon_ancestral: { name: 'Vharak, Dragón Ancestral', hp: () => 120000, atk: () => 6000, speed: 2.8, xp: () => 1500000, gold: () => 150000, aggro: 10, cd: 1.4, boss: true, super: 'dragon5', sCol: 0xff5a10, sTxt: '¡Aliento ancestral!', sMin: 'wyvern', bounty: 20000 },
+  pez_lava: { name: 'Pez de lava', hp: (L) => 380 + 44 * L, atk: (L) => 96 + 19.8 * L, speed: 3.4, xp: (L) => 180 + 42 * L, gold: (L) => 100 + Math.floor(Math.random() * L), aggro: 7, cd: 1.0 },
+  leviatan_fuego: { name: 'Ignaroth, Leviatán de Fuego', hp: () => 220000, atk: () => 10500, speed: 2.6, xp: () => 4000000, gold: () => 300000, aggro: 12, cd: 1.3, boss: true, super: 'leviatan5', sCol: 0xff3a10, sTxt: '¡Marea de magma!', sMin: 'pez_lava', bounty: 40000 },
+  titan_eterno: { name: 'Titán Eterno', hp: () => 300000, atk: () => 10000, speed: 2.2, xp: () => 4000000, gold: () => 200000, aggro: 14, cd: 1.5, boss: true, super: 'titan5', sCol: 0xffd040, sTxt: '¡Puño del firmamento!', sMin: 'caballero_vacio', bounty: 30000 },
+  cristal_escudo: { name: 'Cristal del escudo', hp: () => 12000, atk: () => 1, speed: 0.01, xp: () => 20000, gold: () => 0, aggro: 0, cd: 99 },
   golem_boss: { name: 'Gólem Primigenio', hp: () => 6000, atk: () => 150, speed: 1.9, xp: () => 6000, gold: () => 1500, aggro: 7, cd: 2.0, boss: true },
 };
+// equilibrio v5.3: el ataque de los enemigos crece con el nivel (los de los mares lejanos ya vienen ajustados)
+// y se rebaja la vida de los enemigos y jefes más duros
+{
+  const FAR_T = new Set(['sapo_gigante', 'bruja_pantano', 'hidra_pantano', 'hongo_andante', 'escarabajo_luz', 'druida_esporas', 'marinero_fantasma', 'cangrejo_coloso', 'kraken_joven', 'centinela_vacio', 'devorador_estelar', 'caballero_vacio', 'reina_cienaga', 'micelio_rey', 'almirante_muerto', 'nihil', 'dragon_salvaje', 'wyvern', 'dragon_ancestral', 'pez_lava', 'leviatan_fuego', 'titan_eterno', 'cristal_escudo']);
+  const atkCurve = (L) => (L <= 60 ? 1 : L <= 100 ? 1 + 0.3 * (L - 60) / 40 : L <= 350 ? 1.3 + (L - 100) / 250 * 1.6 : 2.9);
+  const HP_K = { sapo_gigante: 0.7, bruja_pantano: 0.7, hidra_pantano: 0.7, hongo_andante: 0.7, escarabajo_luz: 0.7, druida_esporas: 0.7, marinero_fantasma: 0.7, cangrejo_coloso: 0.7, kraken_joven: 0.7, centinela_vacio: 0.7, devorador_estelar: 0.7, caballero_vacio: 0.7, senor_infernal: 0.6, cronos: 0.8, reina_cienaga: 0.5, micelio_rey: 0.45, almirante_muerto: 0.4, nihil: 0.35, dragon_salvaje: 0.7, wyvern: 0.7, pez_lava: 0.7 };
+  for (const [k, d] of Object.entries(ENEMY_DEF)) {
+    const fa = d.atk, fh = d.hp;
+    if (!FAR_T.has(k)) d.atk = (L) => fa(L) * atkCurve(L || 1);
+    if (HP_K[k]) d.hp = (L) => Math.round(fh(L) * HP_K[k]);
+  }
+}
 export { ENEMY_DEF };
 // recompensa a partir de la cual la Marina te ataca nada más verte
 const WANTED = 300;
@@ -764,6 +784,13 @@ class Enemy extends Actor {
     else if (type === 'devorador_estelar') model = tintModel(makeBat(), 0x6a2aaa, 0.7);
     else if (type === 'caballero_vacio') model = HUM({ ...EQUIP.peto_vacio.look, ...EQUIP.casco_vacio.look, ...EQUIP.arma_vacio.look, skin: 0x4a3a5a, eyeGlow: 0xd88aff });
     else if (type === 'nihil') model = HUM({ ...EQUIP.peto_vacio.look, ...EQUIP.casco_vacio.look, ...EQUIP.arma_vacio.look, skin: 0x1a0a2a, eyeGlow: 0xd88aff });
+    else if (type === 'dragon_salvaje') model = makeDragonModel(0x8a3a2a, 0xd8a870);
+    else if (type === 'wyvern') model = makeDragonModel(0x3a6a4a, 0xa8c890);
+    else if (type === 'dragon_ancestral') model = makeDragonModel(0x1a1a24, 0xd8a838);
+    else if (type === 'pez_lava') model = tintModel(makeSharkModel(), 0xff5010, 0.6);
+    else if (type === 'leviatan_fuego') model = tintModel(makeSharkModel(), 0xa81a08, 0.7);
+    else if (type === 'titan_eterno') model = tintModel(makeGolem('obs'), 0xd8a838, 0.65);
+    else if (type === 'cristal_escudo') model = makeCrystalModel();
     else if (type === 'grifo') model = tintModel(makeBeast2('tiger'), 0xe8c060, 0.65);
     else if (type === 'caballero_celeste') model = HUM({ ...EQUIP.peto_templario.look, cape: 0xf4f4f8, tabard: 0x5a8ad8, hat: 'helmet', hatColor: 0xf4f4f8, plume: 0xffffff, sword: true, blade: 0xfff4c0, shield: { type: 'kite', color: 0xf4f4f8, rim: 0xffd040, boss: 0x5a8ad8 }, wings: 0xffffff, skin: 0xf0d8c0 });
     else if (type === 'golem_nube') model = tintModel(makeGolem('stone'), 0xf4f8ff, 0.85);
@@ -834,6 +861,12 @@ class Enemy extends Actor {
     if (type === 'micelio_rey') model_scale(model, 2.7);
     if (type === 'reina_cienaga' || type === 'almirante_muerto') model_scale(model, 2.3);
     if (type === 'nihil') model_scale(model, 2.2);
+    if (type === 'dragon_salvaje') model_scale(model, 2.0);
+    if (type === 'wyvern') model_scale(model, 1.5);
+    if (type === 'dragon_ancestral') model_scale(model, 3.6);
+    if (type === 'pez_lava') model_scale(model, 1.4);
+    if (type === 'leviatan_fuego') model_scale(model, 3.4);
+    if (type === 'titan_eterno') model_scale(model, 3.2);
     if (type === 'marinero_fantasma' || type === 'almirante_muerto') { for (const m of model.mats) { m.transparent = true; m.opacity = 0.7; } }
     if (type === 'golem_nube' || type === 'wyrm_antiguo') model_scale(model, 1.7);
     if (type === 'demonio_alado') model_scale(model, 2.2);
@@ -1085,7 +1118,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets(), ...makeFarIslets()];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets(), ...makeFarIslets(), ...makeNewLands()];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -1094,7 +1127,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave()]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1377,7 +1410,7 @@ class Game {
       n.baseLevel = npcLevel(n.id, area);
       n.setStats(n.baseLevel);
     }
-    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns, ...this.grotto.spawns, ...this.wreck.spawns]) {
+    for (const s of [...W.spawns, ...this.islets.flatMap((r) => r.spawns), ...this.coralia.spawns, ...this.grotto.spawns, ...this.wreck.spawns, ...this.volcano.spawns]) {
       for (let i = 0; i < s.count; i++) { const e = new Enemy(this, s.type, s, s.lvl); e.idx = this.enemies.length; this.enemies.push(e); }
     }
     this.baseEnemies = this.enemies.length;
@@ -1526,6 +1559,8 @@ class Game {
     $('btnBanquet').addEventListener('click', () => { if (this.started) this.banquet(); });
     $('btnMap').addEventListener('click', () => { if (this.started) this.openWorldMap(); });
     $('btnGazette').addEventListener('click', () => { if (this.started) this.gazette(); });
+    $('btnTransform').addEventListener('click', () => { if (this.started) this.transform(); });
+    $('btnFly').addEventListener('click', () => { if (this.started) this.flyMenu(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1922,6 +1957,8 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      const s15 = this.sailAction15 && this.sailAction15();
+      if (s15) return s15;
       const s13 = this.sailAction13 && this.sailAction13();
       if (s13) return s13;
       const s12 = this.sailAction12 && this.sailAction12();
@@ -1937,6 +1974,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c15 = this.contextAction15 && this.contextAction15();
+    if (c15) return c15;
     const c13 = this.contextAction13 && this.contextAction13();
     if (c13) return c13;
     const c12 = this.contextAction12 && this.contextAction12();
@@ -2420,6 +2459,7 @@ class Game {
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
       zq: this.zq || {}, zqBase: this.zqBase || {}, nem: this.nem || null, myShop: this.myShop || null,
       rvc: this.rvc || null, gz: this.gz || null,
+      awakened: this.awakened || [], myDragon: this.myDragon || null, trophies: this.trophies || {}, clanIsles: this.clanIsles || null,
       conq: Object.fromEntries(Object.entries(this.conq || {}).map(([k, v]) => [k, { fid: v.fid, name: v.name, isle: v.isle }])), owned: this.owned || {}, legend: this.legend || {}, wmap: (this.wmap || []).join(''),
       relics: this.relics || [], amulets: this.amulets || [], amuletEq: this.amuletEq ?? null, adv: this.adv || null,
       towns9: this.towns9 || {}, escortId: this.escortId || null, vision: this.vision || null,
@@ -2621,7 +2661,8 @@ class Game {
     this.bounty = data.bounty || 0;
     this.honor = data.honor || 0;
     this.zq = data.zq || {}; this.zqBase = data.zqBase || {}; this.nem = data.nem || null; this.myShop = data.myShop || null;
-    this.rvc = data.rvc || null; this.gz = data.gz || null; this.bdayChecked = null;
+    this.rvc = data.rvc || null; this.gz = data.gz || null;
+    this.awakened = data.awakened || []; this.awakenApplied = false; this.myDragon = data.myDragon || null; this.dragonLast = undefined; this.trophies = data.trophies || {}; this.clanIsles = data.clanIsles || null; this.bdayChecked = null;
     this.conq = data.conq || {}; this.owned = data.owned || {}; this.legend = data.legend || {}; this.wmap = data.wmap ? data.wmap.split('').map(Number) : null; this.festCur = undefined; this.portCannons = null;
     this.relics = data.relics || []; this.amulets = data.amulets || []; this.amuletEq = data.amuletEq ?? undefined; this.adv = data.adv || null; this.portBuilt = false;
     this.towns9 = data.towns9 || {}; this.escortId = data.escortId || null; this.vision = data.vision || null; this.townsGrown = false;
@@ -3137,6 +3178,7 @@ class Game {
       this.updateMore12(dt);
       this.updateMore13(dt);
       this.updateMore14(dt);
+      this.updateMore15(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3374,6 +3416,15 @@ installMore11(Game, { sfx });
 installMore12(Game, { sfx, NPC });
 installMore13(Game, { sfx, NPC, crewGear });
 installMore14(Game, { sfx, NPC });
+installMore15(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'despertar', name: 'Arma despierta', title: 'Portador del despertar', desc: 'Despierta un arma con el Oráculo', ok: (g) => (g.awakened || []).length >= 1 },
+  { id: 'torre50', name: 'Cima de la torre', title: 'Señor de la Torre', desc: 'Llega al piso 50 de la Torre Infinita', ok: (g) => (g.stats.towerBest || 0) >= 50 },
+  { id: 'jinete', name: 'Jinete de dragón', title: 'Jinete de dragones', desc: 'Cría a tu dragón hasta adulto', ok: (g) => (g.ownMounts || []).includes('dragon_real') },
+  { id: 'leyendas', name: 'Leyenda entre leyendas', title: 'Rey de las Leyendas', desc: 'Gana el Torneo de las Leyendas', ok: (g) => (g.stats.famTours || 0) >= 1 },
+  { id: 'titan', name: 'Matatitanes', title: 'Matatitanes', desc: 'Vence al Titán Eterno en un asalto', ok: (g) => (g.stats.raids || 0) >= 1 },
+  { id: 'trofeos10', name: 'Sala de trofeos', title: 'Coleccionista de jefes', desc: 'Consigue 10 trofeos de jefes', ok: (g) => Object.keys(g.trophies || {}).length >= 10 },
+);
 LOGROS.push(
   { id: 'nivel500', name: 'Dios de la Bruma', title: 'Dios de la Bruma', desc: 'Llega al nivel 500', ok: (g) => g.player.level >= 500 },
   { id: 'nihil', name: 'Devorador vencido', title: 'Salvador de los mundos', desc: 'Derrota a Nihil, el Devorador de Mundos', ok: (g) => (g.stats.k_nihil || 0) >= 1 },
@@ -3413,6 +3464,7 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     try {
       window.game = new Game();
+     
     } catch (err) {
       $('loading').innerHTML = `<div style="padding:20px;text-align:center">No se pudo iniciar el juego.<br><small>${String(err && err.message || err)}</small></div>`;
       console.error(err);
