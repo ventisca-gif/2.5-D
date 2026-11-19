@@ -41,6 +41,7 @@ import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
 import { installMore13, makeExpansionIslets } from './more13.js';
 import { installMore14, makeFarIslets } from './more14.js';
+import { installMore18, makeOpenSea, makeTrialTemple } from './more18.js';
 import { installMore17, makeCursedLighthouse, makeClockIsland } from './more17.js';
 import { installMore16, makeVillage, makeIceCave } from './more16.js';
 import { installMore15, makeNewLands, makeInfTower, makeVolcano, makeDragonModel, makeCrystalModel } from './more15.js';
@@ -1132,7 +1133,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano(), this.iceCave = makeIceCave(), this.faroR = makeCursedLighthouse(), this.clockR = makeClockIsland()]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano(), this.iceCave = makeIceCave(), this.faroR = makeCursedLighthouse(), this.clockR = makeClockIsland(), this.openSea = makeOpenSea(), this.temple = makeTrialTemple()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1571,6 +1572,7 @@ class Game {
     $('btnMarket').addEventListener('click', () => { if (this.started) this.marketMenu(); });
     $('btnParty').addEventListener('click', () => { if (this.started) this.partyMenu(); });
     $('btnExped').addEventListener('click', () => { if (this.started) this.expMenu(); });
+    $('btnBanners').addEventListener('click', () => { if (this.started) this.bannerMenu(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1967,6 +1969,8 @@ class Game {
     if (this.sailing) {
       const nv = this.navalAction();
       if (nv) return nv;
+      const s18 = this.sailAction18 && this.sailAction18();
+      if (s18) return s18;
       const s17 = this.sailAction17 && this.sailAction17();
       if (s17) return s17;
       const s15 = this.sailAction15 && this.sailAction15();
@@ -1986,6 +1990,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c18 = this.contextAction18 && this.contextAction18();
+    if (c18) return c18;
     const c17 = this.contextAction17 && this.contextAction17();
     if (c17) return c17;
     const c16 = this.contextAction16 && this.contextAction16();
@@ -2475,6 +2481,7 @@ class Game {
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
       zq: this.zq || {}, zqBase: this.zqBase || {}, nem: this.nem || null, myShop: this.myShop || null,
       rvc: this.rvc || null, gz: this.gz || null,
+      fishW: this.fishW || null, legFish: this.legFish || {}, bannerKills: this.bannerKills || {}, capFlags: this.capFlags || [], hoisted: this.hoisted || null, coupleDone: this.coupleDone || 0, pq: this.pq || null,
       faro: this.faro || null, fusions: this.fusions || [], exps: this.exps || [], stars: this.stars || [], wboss: this.wboss ? { ...this.wboss, e: null } : null,
       diary: this.diary || null, soul: this.soul || {}, morale: this.morale ?? 50, atl: this.atl || 0, gc: this.gc ? { ...this.gc, spawned: false } : null, huntW: this.huntW || null, vil: this.vil || null, books: this.books || [], legendSea: this.legendSea || {},
       awakened: this.awakened || [], myDragon: this.myDragon || null, trophies: this.trophies || {}, clanIsles: this.clanIsles || null,
@@ -2680,6 +2687,7 @@ class Game {
     this.honor = data.honor || 0;
     this.zq = data.zq || {}; this.zqBase = data.zqBase || {}; this.nem = data.nem || null; this.myShop = data.myShop || null;
     this.rvc = data.rvc || null; this.gz = data.gz || null;
+    this.fishW = data.fishW || null; this.legFish = data.legFish || {}; this.bannerKills = data.bannerKills || {}; this.capFlags = data.capFlags || []; this.hoisted = data.hoisted || null; this.coupleDone = data.coupleDone || 0; this.pq = data.pq || null; this._fishN = undefined; this.m18init = false; this.volEv = null; this.thief = null; this.tpl = null; this.cduel = null;
     this.faro = data.faro || null; this.fusions = data.fusions || []; this.exps = data.exps || []; this.stars = data.stars || []; this.wboss = data.wboss || null; this.m17init = false; this.faroTemps = null;
     this.diary = data.diary || null; this.soul = data.soul || {}; this.morale = data.morale ?? 50; this.atl = data.atl || 0; this.gc = data.gc || null; this.huntW = data.huntW || null; this.vil = data.vil || null; this.books = data.books || []; this.legendSea = data.legendSea || {}; this.m16init = false; this.vilRaid = null; this.dRace = null;
     this.awakened = data.awakened || []; this.awakenApplied = false; this.myDragon = data.myDragon || null; this.dragonLast = undefined; this.trophies = data.trophies || {}; this.clanIsles = data.clanIsles || null; this.bdayChecked = null;
@@ -3201,6 +3209,7 @@ class Game {
       this.updateMore15(dt);
       this.updateMore16(dt);
       this.updateMore17(dt);
+      this.updateMore18(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3441,6 +3450,13 @@ installMore14(Game, { sfx, NPC });
 installMore15(Game, { sfx, NPC });
 installMore16(Game, { sfx, NPC });
 installMore17(Game, { sfx, NPC });
+installMore18(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'templo7', name: 'Las siete pruebas', title: 'Elegido del Templo', desc: 'Supera el Templo de las Pruebas', ok: (g) => (g.stats.temple || 0) >= 1 },
+  { id: 'ladron', name: 'Mano invisible', title: 'Príncipe de los ladrones', desc: 'Completa 5 golpes del Gremio de Ladrones', ok: (g) => (g.stats.heists || 0) >= 5 },
+  { id: 'rescate', name: 'Héroe de Ceniza', title: 'Héroe del volcán', desc: 'Rescata a todos los aldeanos durante una erupción', ok: (g) => (g.stats.evac || 0) >= 1 },
+  { id: 'banderas', name: 'Coleccionista de banderas', title: 'Señor de las banderas', desc: 'Consigue 5 banderas', ok: (g) => g.bannerList && g.bannerList().filter((b) => b.have).length >= 5 },
+);
 LOGROS.push(
   { id: 'farera', name: 'Luz para Elara', title: 'Guardián del faro', desc: 'Completa la historia del Faro Maldito', ok: (g) => !!(g.faro && g.faro.part >= 4) },
   { id: 'behemot', name: 'Cazador de Behemots', title: 'Azote de Behemots', desc: 'Vence al jefe mundial', ok: (g) => (g.stats.wboss || 0) >= 1 },

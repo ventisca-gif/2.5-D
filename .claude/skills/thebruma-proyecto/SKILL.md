@@ -160,6 +160,14 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - Cocina de leyenda: NPC 'aurelio' (53,47), 4 platos con BUFFS dish_* de 1 h. Restaurante en la aldea (`vil.rest {built,stock,earned,rating,day}`). Jefe mundial `behemot` (`wboss`, isla según la semana, aparece al acercarse). Nave fantasma: tras matar al almirante_muerto, `flags.ghostOn` hace que `shipBlocked` solo mire los bordes del mar.
 - Los diálogos encadenados deben abrirse síncronos dentro de la acción (no con setTimeout): `ui` cierra el diálogo antes de ejecutar la acción.
 
+
+## v5.6 (more18.js)
+- Buceo libre: traje (`flags.divingSuit`, Marga), opción en `sailMenu` solo en mar abierto; región x7000 `openSea` (underwater → usa el aire de more3 y `surface`), rocas/tesoros generados con semilla según la posición del barco (`diveT`, `diveTemps`).
+- Volcán que despierta (`volEv`, cada 50-70 min, 7 min para rescatar 5 NPC temporales `evac_i` en Isla Ceniza). Gremio de ladrones: NPC 'ladrona' en Tortuga (¡'sombra' ya existe!), `thief {stage go/sneak/escape}`, guardias NPC en el Bastión de noche, detección 2,4 casillas andando / 4,2 corriendo.
+- Peces legendarios: `watchFish` detecta capturas por el total de `fishDex`; `legFish[isla]`, concurso semanal `fishW` con NPC 'tomeu' (Puerto Salitre). Nuevos `CREW_JOBS`: vigia, pesca, tesorero.
+- Aventuras de pareja (`coupleDone`, `pq`, 6 `STORIES`, botón «Momento»). Ciudad flotante: `FLOAT_POS[day%5]` (posiciones comprobadas en agua libre), tienda diaria y duelo de capitanes (`cduel`, barco pirata ×3 de vida) → `capFlags`. Banderas: `bannerKills` (25 por bando) + capFlags, `hoisted` pinta la bandera del barco con un canvas.
+- Templo de las Pruebas: región x7200 (`this.temple`), desde el Oráculo, 7 reglas (`tpl.rule`): pociones (parche en el prototipo de Player.usePotion), oscuras (#darkFx), reloj 45 s, frágil (hitTarget ×2), veloces (e.speed ×1,7), solo (wait + hand=false y se restauran), guardián.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

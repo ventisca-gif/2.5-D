@@ -523,6 +523,7 @@ export function installMore4(Game, D) {
       <div class="sub">🎣 Acuario (pesca con minijuego)</div><p>${fishRows}</p>
       <p class="muted small">Cuando pica un pez, mantén pulsada la barra para que la zona verde siga al pez hasta llenar el medidor.</p>
       <div class="sub">🛠 Oficios</div><p>Niveles totales: <b>${jobsT}</b> · daño +${jobsT}% · vida +${(jobsT * 0.3).toFixed(1)}%. Hitos en los niveles 10, 20 y 30 de cada oficio (oro, fichas y ropa). Ahora hay 4 trabajos al día y pagan el doble.</p>
+      ${this.newsHtml18 ? this.newsHtml18() : ''}
       ${this.newsHtml17 ? this.newsHtml17() : ''}
       ${this.newsHtml16 ? this.newsHtml16() : ''}
       ${this.newsHtml15 ? this.newsHtml15() : ''}
