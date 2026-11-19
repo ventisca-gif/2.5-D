@@ -142,6 +142,15 @@ Combate **manual** (solo se ataca con el botón ⚔️, también andando/corrien
 - **Dragón**: `huevo_dragon_real` → `myDragon {born}`; etapa = días/2 (3 = adulto → montura `dragon_real` en MOUNTS, modelo `makeDragonModel`); ⚡ Atajos › Volar a cualquier muelle. **Eclipse** cada 30-50 min, 4 min (overlay #eclipseFx, enemigos +30% atk / −20% daño recibido, `fragmento_eclipse`).
 - Escuela del hijo (`soc('hijo').school`: lucha/navegacion/vudu), legendarios seraphine/aldwin/ignis (duelo Nv400 → `legendOk`, RECRUITABLE, ×1,5 daño), mansión en las nubes (`flags.cloudHouse`, BUFFS.nubes), asalto `titan_eterno` con escudo de 2 `cristal_escudo` (`raid5`, net `raid5Win`), guerra de clanes por islas (`clanIsles`, net `clanIsle`, tributo 500/día), `trophies` (primer kill de cada jefe) y foto automática de jefe (`bossPhoto`, álbum en localStorage `bruma_album`, Novedades).
 
+
+## v5.4 (more16.js)
+- Atlántida: piedra en Coralia (CX+5, CZ+21), `atl` 0-5, edificios `buildAtl`, mercado/bendición `BUFFS.atlante`/tributo. Barco volador: Marga (`flags.flyShip`, Nv450, 300000 + 5 núcleos), opción añadida al principio de `sailMenu`, `flyShipTo` → `dock(d)`; alas en `this.ship.userData.wings`.
+- Diario (`diary {cur, list}`, `diaryNote(k,v)`, Atajos 📔). Armas con alma (`soul[weaponId] {xp,lvl,t}`, +1%/nivel hasta 20, técnicas a 5/10/15 en `SOUL_TECH`, aplicadas en el wrapper de `damageEnemy` solo para golpes del jugador local). Moral (`morale` 0-100, ×0,9-1,3 en `crewDmgMul`, fiesta Atajos 🎉, baile `n.st.dance` tras cada jefe).
+- Gremio: NPC 'cazadora' (55,55), contrato `gc` (¡`hunt` ya lo usa more4!), élite ×4 vida con `e.huntElite`, ranking semanal `huntW` contra 5 cazadores ficticios. Biblioteca: NPC 'archivero' (43,49), 12 `BOOKS`, 3 colecciones → +5% xp/atk/def en `buffMul`.
+- Loma de las estaciones (≈61,45): cambia con `season()`; en invierno abre la Cueva Helada (región x6400, `this.iceCave`, enemigos temporales). Aldea propia: zona `aldea` (x5100, en ZONES → Oráculo), `vil {founded,res,store,raid,day}`, 8 vecinos `VILLAGERS`, producción diaria y asaltos. isInterior excluye 2990-5200.
+- Bestias legendarias del mar: envuelven `updateSeaMonster`/`harpoon` (`smon.legend`, `legendSea`). Mercado entre jugadores: `mkt`, mensajes `mktAdd/mktDel/mktBuy/mktSold` en `onNetX4` (el vendedor es la autoridad). Carrera de dragones: Ysolde, `dRace`, `stats.dragonBest`.
+- Pruebas: con swiftshader a 960×540×2 las capturas tardan mucho cuando hay muchas cosas; usar 1280×720×1 y timeout de captura largo, y `purgeTemps()` tras spawnear decenas de enemigos.
+
 ## Ideas pendientes (propuestas al usuario tras v2.8)
 Ver el último mensaje de ideas en la conversación; se van implementando por lotes de 8.
 

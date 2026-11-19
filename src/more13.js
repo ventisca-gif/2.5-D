@@ -365,7 +365,7 @@ export function installMore13(Game, D) {
     return null;
   };
   P.updateMore13 = function (dt) {
-    if (!this.W._isIntPatched) { this.W._isIntPatched = true; const base = this.W.isInterior; this.W.isInterior = (x) => base(x) && !(x >= 2990 && x < 5100); }
+    if (!this.W._isIntPatched) { this.W._isIntPatched = true; const base = this.W.isInterior; this.W.isInterior = (x) => base(x) && !(x >= 2990 && x < 5200); }
     this.updateZone();
     this.updateNemesis(dt);
     this.updateSeaMonster(dt);

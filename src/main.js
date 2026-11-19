@@ -41,6 +41,7 @@ import { installMore11, makeWreckDive, WRECK_SPOTS } from './more11.js';
 import { installMore12, makeMarea, makeCrystalCave } from './more12.js';
 import { installMore13, makeExpansionIslets } from './more13.js';
 import { installMore14, makeFarIslets } from './more14.js';
+import { installMore16, makeVillage, makeIceCave } from './more16.js';
 import { installMore15, makeNewLands, makeInfTower, makeVolcano, makeDragonModel, makeCrystalModel } from './more15.js';
 import { makeHumanoid2, makeBeast2, makeCrab2, makeBat, makeScorpion, makeGolem, makeFlameSkull, makeSerpent, OUTFITS2, OUTLINE } from './chars2.js';
 
@@ -1118,7 +1119,7 @@ class Game {
 
     this.W = generateWorld();
     this.ghostIsle = makeGhostIslet();
-    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets(), ...makeFarIslets(), ...makeNewLands()];
+    this.islets = [...makeIslets(), ...makeNewIslets(), ...makeIslands4(), this.ghostIsle, this.newbornIsle = makeNewbornIslet(), ...(this.wanderIsles = makeWanderIslets()), this.ownPort = makeOwnPort(), ...makeExpansionIslets(), ...makeFarIslets(), ...makeNewLands(), makeVillage()];
     this.addBeachHouse();
     this.rooms = makeInteriors(this.W.buildings);
     this.addPosters();
@@ -1127,7 +1128,7 @@ class Game {
     this.dungeon = makeDungeonRegion();
     this.coralia = makeCoralia();
     this.grotto = makeGrotto();
-    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano()]);
+    attachRegions(this.W, [...this.islets, ...this.rooms, this.arena, this.dungeon, this.coralia, this.grotto, this.iceBridge = makeIceBridge(), this.wreck = makeWreckDive(), this.marea = makeMarea(), this.cave = makeCrystalCave(), this.infTower = makeInfTower(), this.volcano = makeVolcano(), this.iceCave = makeIceCave()]);
     this.isMobile = isMobile;
     this.ENEMY_DEF = ENEMY_DEF;
     this.docks = [
@@ -1561,6 +1562,10 @@ class Game {
     $('btnGazette').addEventListener('click', () => { if (this.started) this.gazette(); });
     $('btnTransform').addEventListener('click', () => { if (this.started) this.transform(); });
     $('btnFly').addEventListener('click', () => { if (this.started) this.flyMenu(); });
+    $('btnDiary').addEventListener('click', () => { if (this.started) this.diaryMenu(); });
+    $('btnSoul').addEventListener('click', () => { if (this.started) this.soulMenu(); });
+    $('btnMarket').addEventListener('click', () => { if (this.started) this.marketMenu(); });
+    $('btnParty').addEventListener('click', () => { if (this.started) this.partyMenu(); });
     $('btnMenu').addEventListener('click', () => this.toggleMenu());
     window.onAndroidBack = () => {
       if (!this.started) return false;
@@ -1974,6 +1979,8 @@ class Game {
       return { icon: '⚙️', label: 'Barco', fn: () => this.sailMenu() };
     }
     if (this.jailNear && this.jailNear()) return { icon: '🔓', label: 'Liberar', fn: () => this.startRescue() };
+    const c16 = this.contextAction16 && this.contextAction16();
+    if (c16) return c16;
     const c15 = this.contextAction15 && this.contextAction15();
     if (c15) return c15;
     const c13 = this.contextAction13 && this.contextAction13();
@@ -2459,6 +2466,7 @@ class Game {
       shipDecor: (this.shipDecor || []).map((d) => ({ room: d.room, t: d.t, lx: d.lx, lz: d.lz, rot: d.rot })), builds: this.builds ? this.builds.map((b) => ({ t: b.t, x: b.x, z: b.z, hp: Math.round(b.hp), town: b.town, strong: b.strong, grow: b.grow, crop: b.crop || null, cropN: b.cropN, cropT: b.cropT, water: b.water, stock: b.stock || 0 })) : [], townDef: this.townDef || {},
       zq: this.zq || {}, zqBase: this.zqBase || {}, nem: this.nem || null, myShop: this.myShop || null,
       rvc: this.rvc || null, gz: this.gz || null,
+      diary: this.diary || null, soul: this.soul || {}, morale: this.morale ?? 50, atl: this.atl || 0, gc: this.gc ? { ...this.gc, spawned: false } : null, huntW: this.huntW || null, vil: this.vil || null, books: this.books || [], legendSea: this.legendSea || {},
       awakened: this.awakened || [], myDragon: this.myDragon || null, trophies: this.trophies || {}, clanIsles: this.clanIsles || null,
       conq: Object.fromEntries(Object.entries(this.conq || {}).map(([k, v]) => [k, { fid: v.fid, name: v.name, isle: v.isle }])), owned: this.owned || {}, legend: this.legend || {}, wmap: (this.wmap || []).join(''),
       relics: this.relics || [], amulets: this.amulets || [], amuletEq: this.amuletEq ?? null, adv: this.adv || null,
@@ -2662,6 +2670,7 @@ class Game {
     this.honor = data.honor || 0;
     this.zq = data.zq || {}; this.zqBase = data.zqBase || {}; this.nem = data.nem || null; this.myShop = data.myShop || null;
     this.rvc = data.rvc || null; this.gz = data.gz || null;
+    this.diary = data.diary || null; this.soul = data.soul || {}; this.morale = data.morale ?? 50; this.atl = data.atl || 0; this.gc = data.gc || null; this.huntW = data.huntW || null; this.vil = data.vil || null; this.books = data.books || []; this.legendSea = data.legendSea || {}; this.m16init = false; this.vilRaid = null; this.dRace = null;
     this.awakened = data.awakened || []; this.awakenApplied = false; this.myDragon = data.myDragon || null; this.dragonLast = undefined; this.trophies = data.trophies || {}; this.clanIsles = data.clanIsles || null; this.bdayChecked = null;
     this.conq = data.conq || {}; this.owned = data.owned || {}; this.legend = data.legend || {}; this.wmap = data.wmap ? data.wmap.split('').map(Number) : null; this.festCur = undefined; this.portCannons = null;
     this.relics = data.relics || []; this.amulets = data.amulets || []; this.amuletEq = data.amuletEq ?? undefined; this.adv = data.adv || null; this.portBuilt = false;
@@ -3179,6 +3188,7 @@ class Game {
       this.updateMore13(dt);
       this.updateMore14(dt);
       this.updateMore15(dt);
+      this.updateMore16(dt);
       this.jailInit();
       this.addEspSkillBtn();
       this.updateEruption(dt);
@@ -3417,6 +3427,15 @@ installMore12(Game, { sfx, NPC });
 installMore13(Game, { sfx, NPC, crewGear });
 installMore14(Game, { sfx, NPC });
 installMore15(Game, { sfx, NPC });
+installMore16(Game, { sfx, NPC });
+LOGROS.push(
+  { id: 'atlantida', name: 'Atlántida renace', title: 'Rey de Atlántida', desc: 'Restaura Atlántida por completo', ok: (g) => (g.atl || 0) >= 5 },
+  { id: 'alma20', name: 'Alma del acero', title: 'Alma gemela del acero', desc: 'Sube el alma de un arma a nivel 20', ok: (g) => Object.values(g.soul || {}).some((s) => s.lvl >= 20) },
+  { id: 'aldea8', name: 'Aldea próspera', title: 'Fundador', desc: 'Ten 8 vecinos en tu aldea', ok: (g) => !!(g.vil && g.vil.res && g.vil.res.length >= 8) },
+  { id: 'bestias4', name: 'Domador de leyendas', title: 'Cazador de leyendas', desc: 'Caza a las 4 bestias legendarias del mar', ok: (g) => Object.keys(g.legendSea || {}).length >= 4 },
+  { id: 'biblio', name: 'Sabio de la Bruma', title: 'Sabio', desc: 'Reúne los 12 libros antiguos', ok: (g) => (g.books || []).length >= 12 },
+  { id: 'gremio10', name: 'Cazador del gremio', title: 'Cazador de élite', desc: 'Cumple 10 contratos del gremio', ok: (g) => (g.stats.hunts || 0) >= 10 },
+);
 LOGROS.push(
   { id: 'despertar', name: 'Arma despierta', title: 'Portador del despertar', desc: 'Despierta un arma con el Oráculo', ok: (g) => (g.awakened || []).length >= 1 },
   { id: 'torre50', name: 'Cima de la torre', title: 'Señor de la Torre', desc: 'Llega al piso 50 de la Torre Infinita', ok: (g) => (g.stats.towerBest || 0) >= 50 },
